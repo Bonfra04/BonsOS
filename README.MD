@@ -1,5 +1,7 @@
 # Bons-OS
+Bons-OS is a simple operating system. A two stage bootloader loads a lower half kernel. The kernel is responsible to setup all the essential things and initialize the comunication between the software and the hardware. The primary objective is to implement a fully working standard C library to then implement the interface of the operating system. 
 
+## Build tools
 If you are using Windows is recommended to use the [WSL](https://docs.microsoft.com/it-it/windows/wsl/install-win10) with [Debian](https://www.microsoft.com/it-it/p/debian/9msvkqc78pk6?activetab=pivot:overviewtab) or [Ubuntu](https://www.microsoft.com/it-it/p/ubuntu/9nblggh4msv6?activetab=pivot:overviewtab) (Ubuntu may be faster). WSL does not include a graphical interface so [QEMU](https://www.qemu.org/download/#windows) must be installed to run and debug the OS. [GDB](https://www.gnu.org/software/gdb/) is used as a debugger and it can be installed with [MinGW](https://osdn.net/projects/mingw/downloads/68260/mingw-get-setup.exe/) as it contains GDB and other usefull programs. Don't forget to [add to Window's path](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/) QEMU and GDB.
 
 ## Install needed dependencies:
