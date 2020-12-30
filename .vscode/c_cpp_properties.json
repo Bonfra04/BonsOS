@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "Bons",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/libc/include/",
+                "${workspaceFolder}/libk/include/"
+            ]
+        }
+    ],
+    "version": 4
+}

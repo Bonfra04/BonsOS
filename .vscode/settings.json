@@ -1,0 +1,51 @@
+{
+    "files.exclude": {
+        // Git
+        ".gitignore": true,
+        ".gitattributes": true,
+
+        // Output files and dirs
+        "bin/": true,
+        "bin-int/": true,
+        "BonsOS.img": true,
+
+        // Tools
+        "tools/": true,
+        "dependencies.sh": true,
+
+        // Docs
+        "README.MD": true,
+        "docs/": true,
+
+        // Build files and dirs
+        "run.cmd": true,
+        "create_image.sh": true,
+        "scripts": true,
+        "Makefile": true,
+        "kernel/Makefile": true,
+        "libc/Makefile": true,
+        "libk/Makefile": true,
+        "boot/Makefile": true,
+    },
+    "git.ignoreLimitWarning": true,
+    "files.associations": {
+        "*.make": "makefile",
+        "cstdio": "c",
+        "string_view": "c",
+        "*.tcc": "c",
+        "cctype": "c",
+        "bitset": "c",
+        "chrono": "c",
+        "condition_variable": "c",
+        "algorithm": "c",
+        "istream": "c",
+        "limits": "c",
+        "mutex": "c",
+        "shared_mutex": "c",
+        "streambuf": "c",
+        "thread": "c",
+        "cstring": "c",
+        "array": "c",
+        "string": "c"
+    }
+}
