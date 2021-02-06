@@ -1,4 +1,5 @@
 #include <x86/cpu.h>
+#include <x86/ports.h>
 
 #define PIC_PORT_CMD_MASTER     0x20
 #define PIC_PORT_CMD_SLAVE      0xA0

@@ -7,9 +7,13 @@
 #include <memory/heap.h>
 #include <device/pci.h>
 #include <device/ata.h>
+#include <device/pit.h>
+#include <device/ata/sata.h>
 
 #include <string.h>
 #include <stdlib.h>
+
+#include <x86/cpu.h>
 
 #include "bootinfo.h"
 
@@ -17,11 +21,14 @@ heap_data_t kernel_heap;
 
 void init(bootinfo_t* bootinfo)
 {
+    tty_init();
+    
     interrupts_init();
     exceptions_init();
 
-    tty_init();
     kb_init();
+    //pit_initialize();
+    //pit_reset_counter(100, PIT_OCW_COUNTER_0, PIT_OCW_MODE_SQUAREWAVEGEN);
 
     enable_interrupts();
 

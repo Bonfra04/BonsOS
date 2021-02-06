@@ -46,6 +46,15 @@
         "thread": "c",
         "cstring": "c",
         "array": "c",
-        "string": "c"
+        "string": "c",
+        "deque": "c",
+        "forward_list": "c",
+        "list": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "vector": "c",
+        "initializer_list": "c",
+        "valarray": "c",
+        "future": "c"
     }
 }

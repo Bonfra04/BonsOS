@@ -76,7 +76,6 @@ void pci_init()
     ata_init();
 
     // register devices
-    size_t current_device = 0;
     for(int bus = 0; bus < PCI_MAX_BUS; bus++)
         for(int dev = 0; dev < PCI_MAX_DEVICE; dev++)
             for(int func = 0; func < PCI_MAX_FUNCTION; func++)
