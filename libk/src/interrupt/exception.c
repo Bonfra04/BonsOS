@@ -31,7 +31,7 @@ static const char *exceptionstr[] =
 
 static void dump_context(const interrupt_context_t* context)
 {
-    tty_printf("INT: %02x   Error: %08x\n\n", context->interrupt, context->error);
+    tty_printf("INT: %x   Error: %x\n\n", context->interrupt, context->error);
     tty_printf("CS:RIP: %04x:%016lx             SS:RSP: %04x:%016lx\n\n", context->cs, context->retaddr, context->ss, context->rsp);
 
     char buf[640];

@@ -7,10 +7,10 @@ section .text
     global outportw
     global inportd
     global outportd
-
+    global port_wait
 
 ;-----------------------------------------------------------------------------
-; @function     io_inb
+; @function     inportb
 ; @brief        Retrieve a byte value from an input port.
 ; @reg[in]      rdi     Port number (0-65535).
 ; @reg[out]     rax     Byte value read from the port.
@@ -22,7 +22,7 @@ inportb:
     ret
 
 ;-----------------------------------------------------------------------------
-; @function     inportb
+; @function     outportb
 ; @brief        Write a byte value to an output port.
 ; @reg[in]      rdi     Port number (0-65535).
 ; @reg[in]      rsi     Byte value to write to the port.
@@ -34,7 +34,7 @@ outportb:
     ret
 
 ;-----------------------------------------------------------------------------
-; @function     io_inw
+; @function     inportw
 ; @brief        Retrieve a 16-bit word value from an input port.
 ; @reg[in]      rdi     Port number (0-65535).
 ; @reg[out]     rax     Word value read from the port.
@@ -46,7 +46,7 @@ inportw:
     ret
 
 ;-----------------------------------------------------------------------------
-; @function     io_outw
+; @function     outportw
 ; @brief        Write a 16-bit word value to an output port.
 ; @reg[in]      rdi     Port number (0-65535).
 ; @reg[in]      rsi     Word value to write to the port.
@@ -58,7 +58,7 @@ outportw:
     ret
 
 ;-----------------------------------------------------------------------------
-; @function     io_ind
+; @function     inportd
 ; @brief        Retrieve a 32-bit dword value from an input port.
 ; @reg[in]      rdi     Port number (0-65535).
 ; @reg[out]     rax     Dword value read from the port.
@@ -70,7 +70,7 @@ inportd:
     ret
 
 ;-----------------------------------------------------------------------------
-; @function     io_outd
+; @function     outportd
 ; @brief        Write a 32-bit dword value to an output port.
 ; @reg[in]      rdi     Port number (0-65535).
 ; @reg[in]      rsi     Dord value to write to the port.
@@ -79,4 +79,13 @@ outportd:
     mov dx, di
     mov eax, esi
     out dx, eax
+    ret
+
+;-----------------------------------------------------------------------------
+; @function     port_wait
+; @brief        Write to an unused port to waste 1 io cycle
+;-----------------------------------------------------------------------------
+port_wait:
+    mov al, 0
+    out 0x80, al
     ret

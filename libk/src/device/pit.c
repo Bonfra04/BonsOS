@@ -26,7 +26,7 @@ static volatile uint64_t ticks;
 
 static void isr_pit(const interrupt_context_t* context)
 {
-    void(context);
+    (void)context;
     ticks++;
     ISR_DONE();
 }

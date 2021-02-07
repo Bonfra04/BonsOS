@@ -55,6 +55,9 @@
         "vector": "c",
         "initializer_list": "c",
         "valarray": "c",
-        "future": "c"
+        "future": "c",
+        "interrupt.h": "c",
+        "ports.h": "c",
+        "stdint.h": "c"
     }
 }

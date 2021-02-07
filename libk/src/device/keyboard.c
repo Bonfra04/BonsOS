@@ -84,8 +84,6 @@ void kb_init(void)
     keyboardState.rShiftDown = false;
     keyboardState.lShiftDown = false;
 
-    //idt_register_entry(1, &kb_handler);
-
     isr_set(TRAP_IRQ_KEYBOARD, isr_keyboard);
     irq_enable(IRQ_KEYBOARD);
 }

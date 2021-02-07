@@ -15,6 +15,8 @@ void outportw(uint16_t port, uint16_t value);
 uint32_t inportd(uint16_t port);
 void outportd(uint16_t port, uint32_t value);
 
+void port_wait();
+
 #ifdef __cplusplus
 }
 #endif
