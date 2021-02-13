@@ -14,5 +14,7 @@ void pmm_free_blocks(void* block, size_t size);
 
 void pmm_init(void* bitmap_addr);
 
+uint64_t pmm_get_bitmap_size();
+
 uint64_t pmm_get_free_blocks();
 uint64_t pmm_get_block_size();

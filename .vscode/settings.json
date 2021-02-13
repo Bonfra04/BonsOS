@@ -59,6 +59,7 @@
         "interrupt.h": "c",
         "ports.h": "c",
         "stdint.h": "c",
-        "pit.h": "c"
+        "pit.h": "c",
+        "memory_map.h": "c"
     }
 }

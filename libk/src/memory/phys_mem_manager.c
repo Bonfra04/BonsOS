@@ -109,6 +109,11 @@ void pmm_init(void* bitmap_addr)
 
 }
 
+uint64_t pmm_get_bitmap_size()
+{
+    return memory_map.total_memory * 1024 / PMM_BLOCK_SIZE / (sizeof(uint32_t) * 8);
+}
+
 void* pmm_alloc_block()
 {
     if(pmm_get_free_blocks() < 1)
