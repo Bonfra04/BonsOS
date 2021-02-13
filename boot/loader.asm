@@ -11,6 +11,8 @@ load:
     mov word [partition_offset], si ; Save partition table offset
     mov byte [boot_info+bootinfo.bootDevice], dl ; Save drive number
 
+    mov dword [boot_info+bootinfo.memoryMapAddress], Mem.MemoryMap ; Save memory map address
+
     cli  ; Disable interrupts
 
     ; Clear all general purpose registers.
@@ -198,6 +200,7 @@ error:
 %include "include/bootinfo.inc"
 boot_info:
 istruc bootinfo
+    at bootinfo.memoryMapAddress,   dd 0
     at bootinfo.memoryMapEntries,   dd 0
     at bootinfo.memorySizeLow,      dd 0
     at bootinfo.memorySizeHigh,     dd 0

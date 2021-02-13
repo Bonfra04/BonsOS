@@ -22,7 +22,7 @@
 #define ATA_DEV_CNTR 0x2
 #define ATA_DEV_ADDR 0x3
 
-typedef struct
+typedef struct hba_port
 {
     uint32_t clb;       // 0x00, command list base address, 1K-byte aligned
     uint32_t clbu;      // 0x04, command list base address upper 32 bits
@@ -43,9 +43,9 @@ typedef struct
     uint32_t fbs;       // 0x40, FIS-based switch control
     uint32_t rsv1[11];  // 0x44 ~ 0x6F, Reserved
     uint32_t vendor[4]; // 0x70 ~ 0x7F, vendor specific
-} hba_port_t __attribute__ ((packed));
+} __attribute__ ((packed)) hba_port_t;
 
-typedef struct
+typedef struct hba_mem
 {
     uint32_t cap;       // Host capability
     uint32_t ghc;       // 0x04, Global host control
@@ -63,11 +63,10 @@ typedef struct
     uint8_t vendor[0x60];
  
     hba_port_t ports[];    // 1 ~ 32
-} hba_mem_t __attribute__ ((packed));
+} __attribute__ ((packed)) hba_mem_t;
 
-typedef struct
+typedef struct ahci_device
 {
-    uint32_t abar;
     hba_mem_t* hba_mem;
 } ahci_device_t;
 
@@ -91,10 +90,14 @@ void sata_register_device(pci_device_t* device)
 
     /* init */
     ahci_device_t ahci_device;
-    ahci_device.abar = device->base5;
     ahci_device.hba_mem = (void*)device->base5;
 
+    //uint32_t x = ahci_device.hba_mem->pi;
+
+    //tty_printf("%d\n", x);
+
     devices[registered_devices++] = ahci_device;
+    // mark abar as used in memory manager
 }
 
 void sata_read(size_t device, uint64_t lba, uint8_t count, void* address)

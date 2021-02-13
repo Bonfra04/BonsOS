@@ -33,7 +33,7 @@ void init(bootinfo_t* bootinfo)
     enable_interrupts();
 
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
-    memory_map_init(bootinfo->memoryMapEntries, (void*)0x500, 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull);
+    memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull);
     // After the stack
     pmm_init((void*)0x00300001);
     // Deinit the region the kernel/stack is in as its in use
@@ -55,7 +55,11 @@ void main(bootinfo_t* bootinfo)
     while(true)
     {
         char buff[32];
-        tty_printf("BonsOS $> ");
+        tty_set_textcolor_fg(TEXTCOLOR_LTBLUE);
+        tty_printf("BonsOS ");
+        tty_set_textcolor_fg(TEXTCOLOR_YELLOW);
+        tty_printf("$> ");
+        tty_set_textcolor_fg(TEXTCOLOR_WHITE);
         tty_scanf("%s", buff);
         
         if(strcmp(buff, "exit") == 0)

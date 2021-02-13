@@ -58,6 +58,7 @@
         "future": "c",
         "interrupt.h": "c",
         "ports.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "pit.h": "c"
     }
 }

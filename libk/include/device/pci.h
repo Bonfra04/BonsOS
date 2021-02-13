@@ -3,14 +3,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct
+typedef struct pci_position
 {
     uint8_t bus;
     uint8_t device;
     uint8_t function;
 } pci_position_t;
 
-typedef struct
+typedef struct pci_device
 {
     uint16_t vendor_id;
     uint16_t device_id;

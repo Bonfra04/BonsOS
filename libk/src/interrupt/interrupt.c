@@ -83,20 +83,20 @@ void interrupts_init()
         thunks[i].interrupt = i;
         thunks[i].jmp = 0xE9;
 
-        thunks[i].dispatcher = isr_dispatcher;
+        thunks[i].dispatcher = (uint32_t)(uint64_t)isr_dispatcher;
 
         if(i <= 14)
         {
             int mask = (1 << i);
             int pushesError = (1 << EX_DF) | (1 << EX_TS) | (1 << EX_NP) | (1 << EX_SS) | (1 << EX_GP) | (1 << EX_PF);
             if(mask & pushesError != 0)
-                thunks[i].dispatcher = isr_dispatcher_special;
+                thunks[i].dispatcher = (uint32_t)(uint64_t)isr_dispatcher_special;
         }            
 
-        thunks[i].dispatcher -= (uint32_t)&(thunks[i]) + sizeof(thunk_t);
+        thunks[i].dispatcher -= (uint32_t)(uint64_t)&(thunks[i]) + sizeof(thunk_t);
 
         // install descriptor
-        uint64_t addr = &(thunks[i]);
+        uint64_t addr = (uint64_t)&(thunks[i]);
         idt[i].offset_low = (uint16_t)(addr & 0x000000000000FFFF);
         idt[i].offset_mid = (uint16_t)((addr & 0x00000000FFFF0000) >> 16);
         idt[i].offset_high = (uint32_t)((addr & 0xFFFFFFFF00000000) >> 32);
@@ -117,7 +117,7 @@ void interrupts_init()
 
     // load idt
     idtr.limit = sizeof(idt);
-    idtr.offset = &idt;
+    idtr.offset = (uint64_t)&idt;
     asm ("lidt %0" : : "m" (idtr));
 }
 
