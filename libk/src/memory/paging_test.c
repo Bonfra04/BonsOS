@@ -1,6 +1,8 @@
 #include <memory/paging_test.h>
 
 #include <stdint.h>
+#include <string.h>
+
 typedef struct {
    uint8_t present:1;
    uint8_t readwrite:1;
@@ -69,18 +71,23 @@ page_table_entry page_table[512*512*4] __attribute__((aligned(4096)));
 
 void identity_map_everything()
 {
+    memset(pml4_table,0,sizeof(pml4t_entry)*512);
+    memset(pdp_table,0,sizeof(pdpt_entry)*512);
+    memset(page_dir,0,sizeof(page_dir_entry)*512*4);
+    memset(page_table,0,sizeof(page_table_entry)*512*512*4);
+    
     pml4_table[0].present = 1;
     pml4_table[0].readwrite = 1;
-    pml4_table[0].user = 0; // You'll need to set this to 1 if you are using usermode
+    pml4_table[0].user = 0; // 1 if using usermode
     pml4_table[0].execdisable = 0;
     pml4_table[0].address = ((intptr_t)&pdp_table[0])>>12;
     
     for (int i = 0; i < 4; i++) {
-        pdp_table[0].present = 1;
-        pdp_table[0].readwrite = 1;
-        pdp_table[0].user = 0; // 1 if using usermode
-        pdp_table[0].execdisable = 0;
-        pdp_table[0].address = ((intptr_t)&page_dir[i*512])>>12;
+        pdp_table[i].present = 1;
+        pdp_table[i].readwrite = 1;
+        pdp_table[i].user = 0; // 1 if using usermode
+        pdp_table[i].execdisable = 0;
+        pdp_table[i].address = ((intptr_t)&page_dir[i*512])>>12;
     }
 
     for (int i = 0; i < 512; i++) {
@@ -96,12 +103,7 @@ void identity_map_everything()
         page_table[i].user = 0; // 1 if using usermode
         page_table[i].address = i;
     }
-
-    tty_printf("I got here");
    
     uint64_t new_cr3 = (uint64_t)(intptr_t)&pml4_table[0];
-    asm volatile("mov cr3, %0":: "r"(new_cr3)); // (Since you said you were using Intel Syntax)
-
-    tty_printf("It worked fine"); // Never printed
-    tty_printf("Success");
+    asm volatile("mov cr3, %0" :: "r"(new_cr3));
 }

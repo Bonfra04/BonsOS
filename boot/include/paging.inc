@@ -58,6 +58,9 @@ SetupPageTables:
         mov dword [es:di + 0x10], 0x00400000 | .StdBits | .LargePage
         mov dword [es:di + 0x18], 0x00600000 | .StdBits | .LargePage
         mov dword [es:di + 0x20], 0x00800000 | .StdBits | .LargePage
+        mov dword [es:di + 0x28], 0x00A00000 | .StdBits | .LargePage
+        mov dword [es:di + 0x30], 0x00C00000 | .StdBits | .LargePage
+        mov dword [es:di + 0x38], 0x00E00000 | .StdBits | .LargePage
 
         ; Prepare to create 4K-page table entries for the first 2MiB.
         mov di, Mem.PageTable.PT & 0xffff

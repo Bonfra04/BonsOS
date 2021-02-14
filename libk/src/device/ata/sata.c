@@ -92,9 +92,8 @@ void sata_register_device(pci_device_t* device)
     ahci_device_t ahci_device;
     ahci_device.hba_mem = (void*)device->base5;
 
-    //uint32_t x = ahci_device.hba_mem->pi;
-
-    //tty_printf("%d\n", x);
+    uint32_t x = ahci_device.hba_mem->pi;
+    tty_printf("%d\n", x);
 
     devices[registered_devices++] = ahci_device;
     // mark abar as used in memory manager

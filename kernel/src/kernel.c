@@ -38,9 +38,9 @@ void init(bootinfo_t* bootinfo)
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull);
     // After the stack
-    pfa_init((void*)0x00300001);
+    pfa_init((void*)0x00400001);
     // Deinit the region the kernel/stack is in as its in use
-    pfa_deinit_region(0, 0x00300000);
+    pfa_deinit_region(0, 0x00400000);
     
     kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     heap_activate(&kernel_heap);
