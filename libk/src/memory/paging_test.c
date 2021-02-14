@@ -58,13 +58,13 @@ typedef struct {
 
 pml4t_entry pml4_table[512] __attribute__((aligned(4096)));
 pdpt_entry pdp_table[512] __attribute__((aligned(4096)));
-page_dir_entry page_dir[1024] __attribute__((aligned(4096)));
-page_table_entry page_table[1024*1024] __attribute__((aligned(4096)));
+page_dir_entry page_dir[512] __attribute__((aligned(4096)));
+page_table_entry page_table[512] __attribute__((aligned(4096)));
 
 void identity_map_everything() {
    pml4_table[0].present = 1;
    pml4_table[0].readwrite = 1;
-   pml4_table[0].user = 0; // You'll need to set this to 1 if you are using usermode
+   pml4_table[0].user = 0; // 1 if using usermode
    pml4_table[0].execdisable = 0;
    pml4_table[0].address = ((intptr_t)&pdp_table[0])>>12;
    
@@ -74,14 +74,14 @@ void identity_map_everything() {
    pdp_table[0].execdisable = 0;
    pdp_table[0].address = ((intptr_t)&page_dir[0])>>12;
 
-   for (int i = 0; i < 1024; i++) {
+   for (int i = 0; i < 512; i++) {
       page_dir[i].present = 1;
       page_dir[i].readwrite = 1;
       page_dir[i].user = 0; // 1 if using usermode
-      page_dir[i].address = ((intptr_t)&page_table[i*1024])>>12;
+      page_dir[i].address = ((intptr_t)&page_table[i*512])>>12;
    }
 
-   for (int i = 0; i < 1024*1024; i++) {
+   for (int i = 0; i < 512; i++) {
       page_table[i].present = 1;
       page_table[i].readwrite = 1;
       page_table[i].user = 0; // 1 if using usermode
