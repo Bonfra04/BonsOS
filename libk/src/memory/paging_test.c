@@ -78,7 +78,7 @@ void identity_map_everything() {
       page_dir[i].present = 1;
       page_dir[i].readwrite = 1;
       page_dir[i].user = 0; // 1 if using usermode
-      page_dir[i].address = ((intptr_t)&page_table[i*512])>>12;
+      page_dir[i].address = ((intptr_t)&page_table[i])>>12;
    }
 
    for (int i = 0; i < 512; i++) {
