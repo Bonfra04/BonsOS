@@ -3,7 +3,7 @@
 #include <interrupt/exception.h>
 #include <device/keyboard.h>
 #include <memory/memory_map.h>
-#include <memory/phys_mem_manager.h>
+#include <memory/page_frame_allocator.h>
 #include <memory/heap.h>
 #include <device/pci.h>
 #include <device/ata.h>
@@ -38,11 +38,11 @@ void init(bootinfo_t* bootinfo)
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull);
     // After the stack
-    pmm_init((void*)0x00300001);
+    pfa_init((void*)0x00300001);
     // Deinit the region the kernel/stack is in as its in use
-    pmm_deinit_region(0, 0x00300000);
+    pfa_deinit_region(0, 0x00300000);
     
-    kernel_heap = heap_create(pmm_alloc_block(), pmm_get_block_size());
+    kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     heap_activate(&kernel_heap);
 
     pci_init();
