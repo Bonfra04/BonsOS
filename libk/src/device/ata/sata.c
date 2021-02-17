@@ -4,6 +4,7 @@
 #include <memory/page_frame_allocator.h>
 #include <string.h>
 #include <stdbool.h>
+#include "sata_types.h"
 
 #define MAX_DEVICES 32
 
@@ -15,82 +16,13 @@
 #define HBA_PxCMD_FR    (1 << 14)
 #define HBA_PxCMD_CR    (1 << 15)
 
-typedef struct hba_cmd_header
-{
-    // DW0
-    uint8_t cfl : 5;    // Command FIS length in DWORDS, 2 ~ 16
-    uint8_t a : 1;      // ATAPI
-    uint8_t w : 1;      // Write, 1: H2D, 0: D2H
-    uint8_t p : 1;      // Prefetchable
- 
-    uint8_t r : 1;      // Reset
-    uint8_t b : 1;      // BIST
-    uint8_t c : 1;      // Clear busy upon R_OK
-    uint8_t reserved0 : 1; // Reserved
-    uint8_t pmp : 4;    // Port multiplier port
- 
-    uint16_t prdtl;     // Physical region descriptor table length in entries
- 
-    // DW1
-    volatile int32_t prdbc; // Physical region descriptor byte count transferred
- 
-    // DW2, 3
-    uint32_t ctba;      // Command table descriptor base address
-    uint32_t ctbau;     // Command table descriptor base address upper 32 bits
- 
-    // DW4 - 7
-    uint32_t reserved1[4]; // Reserved
-} __attribute__ ((packed)) hba_cmd_header_t;
+#define ATA_DEV_BUSY    (1 << 7)
+#define ATA_DEV_DRQ     (1 << 3)
 
-typedef struct hba_port
-{
-    uint32_t clb;       // 0x00, command list base address, 1K-byte aligned
-    uint32_t clbu;      // 0x04, command list base address upper 32 bits
-    uint32_t fb;        // 0x08, FIS base address, 256-byte aligned
-    uint32_t fbu;       // 0x0C, FIS base address upper 32 bits
-    uint32_t is;        // 0x10, interrupt status
-    uint32_t ie;        // 0x14, interrupt enable
-    uint32_t cmd;       // 0x18, command and status
-    uint32_t reserved0; // 0x1C, Reserved
-    uint32_t tfd;       // 0x20, task file data
-    uint32_t sig;       // 0x24, signature
-    uint32_t ssts;      // 0x28, SATA status (SCR0:SStatus)
-    uint32_t sctl;      // 0x2C, SATA control (SCR2:SControl)
-    uint32_t serr;      // 0x30, SATA error (SCR1:SError)
-    uint32_t sact;      // 0x34, SATA active (SCR3:SActive)
-    uint32_t ci;        // 0x38, command issue
-    uint32_t sntf;      // 0x3C, SATA notification (SCR4:SNotification)
-    uint32_t fbs;       // 0x40, FIS-based switch control
-    uint32_t reserved[11];// 0x44 ~ 0x6F, Reserved
-    uint32_t vendor[4]; // 0x70 ~ 0x7F, vendor specific
-} __attribute__ ((packed)) hba_port_t;
+#define HBA_PxIS_TFES   (1 << 30)
 
-typedef struct hba_mem
-{
-    uint32_t cap;       // Host capability
-    uint32_t ghc;       // 0x04, Global host control
-    uint32_t is;        // 0x08, Interrupt status
-    uint32_t pi;        // 0x0C, Port implemented
-    uint32_t vs;        // 0x10, Version
-    uint32_t ccc_ctl;   // 0x14, Command completion coalescing control
-    uint32_t ccc_pts;   // 0x18, Command completion coalescing ports
-    uint32_t em_loc;    // 0x1C, Enclosure management location
-    uint32_t em_ctl;    // 0x20, Enclosure management control
-    uint32_t cap2;      // 0x24, Host capabilities extended
-    uint32_t bohc;      // 0x28, BIOS/OS handoff control and status
- 
-    uint8_t reserved[0x74];
-    uint8_t vendor[0x60];
- 
-    hba_port_t ports[];    // 1 ~ 32
-} __attribute__ ((packed)) hba_mem_t;
-
-typedef struct hba_device
-{
-    hba_port_t* port;
-    hba_cmd_header_t* cmd_header;
-    uint8_t* fis;
-} hba_device_t;
+#define ATA_CMD_READ_DMA_EX 0x25
+#define ATA_CMD_WRITE_DMA_EX 0x35
 
 static hba_device_t devices[MAX_DEVICES];
 static size_t registered_devices;
@@ -200,12 +132,99 @@ void sata_register_pci_device(pci_device_t* device)
     }
 }
 
-void sata_read(size_t device, uint64_t lba, uint8_t count, void* address)
+static int find_cmdslot(hba_port_t* port)
 {
-
+    // If not set in SACT and CI, the slot is free
+    uint32_t slots = (port->sact | port->ci);
+    for (int i = 0; i < 32; i++, slots >>= 1)
+        if ((slots & 1) == 0)
+            return i;
+    return -1;
 }
 
-void sata_write(size_t device, uint64_t lba, uint8_t count, void* address)
+bool sata_read(size_t device, uint64_t lba, uint8_t count, void* address)
+{
+    if(device >= registered_devices)
+        return false;
+
+    hba_device_t* hba_device = &(devices[device]);
+    
+    hba_device->port->is = -1; // Clear pending interrupt bits
+    int slot = find_cmdslot(hba_device->port);
+
+    if(slot == -1)
+        return false;
+
+    hba_cmd_header_t* cmd = &(hba_device->cmd_header[slot]);
+    cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    cmd->w = 0;
+    cmd->prdtl = (uint16_t)((count - 1) >> 4) + 1;  // PRDT entries count
+
+    hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)cmd->ctba;
+    memset(cmdtable, 0, sizeof(hba_cmd_table_t) + (cmd->prdtl - 1) * sizeof(hba_prdt_entry_t));
+
+    // 8K bytes (16 sectors) per PRDT
+    for (int i = 0; i < cmd->prdtl - 1; i++)
+    {
+        cmdtable->prdt_entry[i].dba = (uint32_t)address;
+        cmdtable->prdt_entry[i].dbc = 8*1024-1; // 8K bytes (this value should always be set to 1 less than the actual value)
+        cmdtable->prdt_entry[i].i = 1;
+        address += 4 * 1024;    // 4K words
+        count -= 16;            // 16 sectors
+    }
+    // Last entry
+    cmdtable->prdt_entry[cmd->prdtl - 1].dba = (uint32_t) address;
+    cmdtable->prdt_entry[cmd->prdtl - 1].dbc = (count << 9) - 1; // 512 bytes per sector
+    cmdtable->prdt_entry[cmd->prdtl - 1].i = 1;
+
+    fis_reg_h2d_t* cmdfis = (fis_reg_h2d_t*)&(cmdtable->cfis);
+
+    cmdfis->fis_type = FIS_TYPE_REG_H2D;
+    cmdfis->c = 1;  // Command
+    cmdfis->command = ATA_CMD_READ_DMA_EX;
+
+    uint32_t lba_low = lba & 0xFFFFFFFFLL;
+    uint32_t lba_high = (lba >> 32) & 0xFFFFFFFFLL;
+
+    cmdfis->lba0 = (uint8_t)lba_low;
+    cmdfis->lba1 = (uint8_t)(lba_low >> 8);
+    cmdfis->lba2 = (uint8_t)(lba_low >> 16);
+    cmdfis->device = 1 << 6;    // LBA mode
+ 
+    cmdfis->lba3 = (uint8_t)(lba_low >> 24);
+    cmdfis->lba4 = (uint8_t)lba_high;
+    cmdfis->lba5 = (uint8_t)(lba_high >> 8);
+ 
+    cmdfis->countl = count & 0xFF;
+    cmdfis->counth = (count >> 8) & 0xFF;
+
+    int spin = 0; // Spin lock timeout counter
+    while ((hba_device->port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
+        spin++;
+    if (spin == 1000000)
+        return false;
+
+    hba_device->port->ci = 1 << slot;
+
+    // Wait for completion
+    while (1)
+    {
+        // In some longer duration reads, it may be helpful to spin on the DPS bit 
+        // in the PxIS port field as well (1 << 5)
+        if (!(hba_device->port->ci & (1 << slot))) 
+            break;
+        if (hba_device->port->is & HBA_PxIS_TFES)   // Task file error
+            return false;
+    }
+
+    // Check again
+    if (hba_device->port->is & HBA_PxIS_TFES)
+        return false;
+
+    return true;
+}
+
+bool sata_write(size_t device, uint64_t lba, uint8_t count, void* address)
 {
 
 }
