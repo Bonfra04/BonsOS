@@ -33,7 +33,7 @@ static void isr_pit(const interrupt_context_t* context)
 
 static void send_data(uint16_t data, uint8_t counter)
 {
-	uint8_t port =
+    uint8_t port =
         counter == PIT_OCW_COUNTER_0
         ? PIT_REG_COUNTER0
         : (
@@ -42,31 +42,31 @@ static void send_data(uint16_t data, uint8_t counter)
             : PIT_REG_COUNTER2
         );
 
-	outportb(port, (uint8_t)data);
+    outportb(port, (uint8_t)data);
 }
 
 void pit_reset_counter(uint32_t freq, uint8_t counter, uint8_t mode)
 {
-	if (freq == 0)
-		return;
+    if (freq == 0)
+        return;
 
-	uint16_t divisor = (uint16_t)(1193181 / freq);
+    uint16_t divisor = (uint16_t)(1193181 / freq);
 
-	uint8_t ocw = 0;
-	ocw = (ocw & ~PIT_OCW_MASK_MODE) | mode;
-	ocw = (ocw & ~PIT_OCW_MASK_RL) | PIT_OCW_RL_DATA;
-	ocw = (ocw & ~PIT_OCW_MASK_COUNTER) | counter;
+    uint8_t ocw = 0;
+    ocw = (ocw & ~PIT_OCW_MASK_MODE) | mode;
+    ocw = (ocw & ~PIT_OCW_MASK_RL) | PIT_OCW_RL_DATA;
+    ocw = (ocw & ~PIT_OCW_MASK_COUNTER) | counter;
     outportb(PIT_REG_COMMAND, ocw);
 
-	send_data(divisor & 0xff, 0);
-	send_data((divisor >> 8) & 0xff, 0);
+    send_data(divisor & 0xff, 0);
+    send_data((divisor >> 8) & 0xff, 0);
 
-	ticks = 0;
+    ticks = 0;
 }
 
 uint8_t i86_pit_read_data (uint16_t counter)
 {
-	uint8_t port =
+    uint8_t port =
         counter == PIT_OCW_COUNTER_0
         ? PIT_REG_COUNTER0
         : (
@@ -75,7 +75,7 @@ uint8_t i86_pit_read_data (uint16_t counter)
             : PIT_REG_COUNTER2
         );
 
-	return inportb(port);
+    return inportb(port);
 }
 
 uint64_t pit_get_ticks()

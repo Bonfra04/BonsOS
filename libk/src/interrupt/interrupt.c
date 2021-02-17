@@ -18,9 +18,9 @@
 typedef struct idt_entry
 {
     uint16_t offset_low;
-	uint16_t segment;
+    uint16_t segment;
     uint16_t flags;
-	uint16_t offset_mid;
+    uint16_t offset_mid;
     uint32_t offset_high;
     uint32_t reserved;
 } __attribute__ ((packed)) idt_entry_t;
@@ -51,7 +51,7 @@ extern void isr_dispatcher_special();
 static void remap_pic()
 {
     // int PICs
-	outportb(PIC_CMD_MASTER, ICW1_INIT | ICW1_ICW4);
+    outportb(PIC_CMD_MASTER, ICW1_INIT | ICW1_ICW4);
     outportb(PIC_CMD_SLAVE, ICW1_INIT | ICW1_ICW4);
 
     // set PICs offsets

@@ -25,6 +25,6 @@ void ata_register_device(pci_device_t* device)
     switch (device->sub_class)
     {
         case PCI_ATA_SUB_SATA:
-            sata_register_device(device);
+            sata_register_pci_device(device);
     }
 }

@@ -28,7 +28,7 @@ Mem.BIOS                            equ 0x000C0000
 
 Mem.Kernel.Image                    equ 0x00100000
 Mem.Kernel.Code                     equ 0x00101000
-Mem.Kernel.Stack.Bottom             equ 0x0E000000
-Mem.Kernel.Stack.Top                equ 0x01000000
+Mem.Kernel.Stack.Bottom             equ 0x00C00000
+Mem.Kernel.Stack.Top                equ 0x00D00000
 
 %endif ; __MEMORY_LAYOUT_INC__
