@@ -128,7 +128,7 @@ void sata_register_pci_device(pci_device_t* device)
         pfa_deinit_region(device->base5, device_size);
 
         for(int i = starting_device; i < registered_devices; i++)
-            configure_device(devices[i].port);
+            configure_device(&(devices[i]));
     }
 }
 
