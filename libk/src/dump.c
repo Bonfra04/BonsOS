@@ -8,11 +8,11 @@ int dump_registers(char* buf, size_t bufsize, const registers_t* regs)
     return snprintf
     (
         buf, bufsize,
-        "RAX: %016lx    RSI: %016lx    R11: %016lx\n"
-        "RBX: %016lx    RDI: %016lx    R12: %016lx\n"
-        "RCX: %016lx     R8: %016lx    R13: %016lx\n"
-        "RDX: %016lx     R9: %016lx    R14: %016lx\n"
-        "RBP: %016lx    R10: %016lx    R15: %016lx\n",
+        "RAX: %x    RSI: %x    R11: %x\n"
+        "RBX: %x    RDI: %x    R12: %x\n"
+        "RCX: %x     R8: %x    R13: %x\n"
+        "RDX: %x     R9: %x    R14: %x\n"
+        "RBP: %x    R10: %x    R15: %x\n",
         regs->rax, regs->rsi, regs->r11,
         regs->rbx, regs->rdi, regs->r12,
         regs->rcx, regs->r8, regs->r13,

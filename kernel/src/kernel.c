@@ -59,7 +59,6 @@ void main(bootinfo_t* bootinfo)
     /*
     uint8_t disk[512];
     bool success = sata_read(0, 0, 1, (void*)&disk);
-
     tty_printf("%d\n", success);
     for(int i = 0; i < 512; i++)
         tty_printf("%X", disk[i]);

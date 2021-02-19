@@ -33,7 +33,8 @@ static uint64_t bitmap_first_free()
             for(uint8_t j = 0; j < 32; j++)
                 if(!(bitmap[i] & (1 << j)))
                     return i * 32 + j;
-    return -1;}
+    return -1;
+}
 
 static uint64_t bitmap_first_frees(size_t size)
 {
@@ -67,8 +68,9 @@ static uint64_t bitmap_first_frees(size_t size)
 
 void pfa_init_region(uint64_t base_address, uint64_t region_length)
 {
+    // todo page roundings
     uint64_t align = base_address / PFA_PAGE_SIZE;
-    uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
+    uint64_t pages = region_length / PFA_PAGE_SIZE;
 
     while(pages--)
     {
@@ -79,8 +81,9 @@ void pfa_init_region(uint64_t base_address, uint64_t region_length)
 
 void pfa_deinit_region(uint64_t base_address, uint64_t region_length)
 {
+    // todo page roundings
     uint64_t align = base_address / PFA_PAGE_SIZE;
-    uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
+    uint64_t pages = region_length / PFA_PAGE_SIZE;
 
     while(pages--)
     {
