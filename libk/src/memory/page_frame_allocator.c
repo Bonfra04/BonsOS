@@ -33,8 +33,7 @@ static uint64_t bitmap_first_free()
             for(uint8_t j = 0; j < 32; j++)
                 if(!(bitmap[i] & (1 << j)))
                     return i * 32 + j;
-    return -1;
-}
+    return -1;}
 
 static uint64_t bitmap_first_frees(size_t size)
 {
@@ -69,7 +68,7 @@ static uint64_t bitmap_first_frees(size_t size)
 void pfa_init_region(uint64_t base_address, uint64_t region_length)
 {
     uint64_t align = base_address / PFA_PAGE_SIZE;
-    uint64_t pages = region_length / PFA_PAGE_SIZE;
+    uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
 
     while(pages--)
     {
@@ -81,7 +80,7 @@ void pfa_init_region(uint64_t base_address, uint64_t region_length)
 void pfa_deinit_region(uint64_t base_address, uint64_t region_length)
 {
     uint64_t align = base_address / PFA_PAGE_SIZE;
-    uint64_t pages = region_length / PFA_PAGE_SIZE;
+    uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
 
     while(pages--)
     {
@@ -100,13 +99,12 @@ void pfa_init(void* bitmap_addr)
     // By default all memory is in use
     memset(bitmap, 0xFF, max_pages / PFA_PAGES_PER_BYTE);
 
-    //first page is always set. This insures allocs cant be 0
-    bitmap_set(0);
-
     for(uint32_t i = 0; i < memory_map.num_entries; i++)
         if(memory_map.entries[i].region_type == MEM_USABLE)
             pfa_init_region(memory_map.entries[i].base_address, memory_map.entries[i].region_length);
 
+    //first page is always set. This insures allocs cant be 0
+    bitmap_set(0);
 }
 
 uint64_t pfa_get_bitmap_size()

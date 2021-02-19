@@ -40,7 +40,8 @@ void init(bootinfo_t* bootinfo)
     // After the stack
     pfa_init((void*)0x00D00001);
     // Deinit the region the kernel/stack is in as its in use
-    pfa_deinit_region(0, 0x00D00000);
+    uint64_t size = pfa_get_bitmap_size();
+    pfa_deinit_region(0, 0x00D00000 + size);
     
     kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     heap_activate(&kernel_heap);
@@ -55,6 +56,7 @@ void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
 
+    /*
     uint8_t disk[512];
     bool success = sata_read(0, 0, 1, (void*)&disk);
 
@@ -62,6 +64,7 @@ void main(bootinfo_t* bootinfo)
     for(int i = 0; i < 512; i++)
         tty_printf("%X", disk[i]);
     tty_printf("\n");
+    */
 
     while(true)
     {
