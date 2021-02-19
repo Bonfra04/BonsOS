@@ -74,7 +74,7 @@ static void configure_device(hba_device_t* device)
     hba_cmd_header_t* cmdheader = (hba_cmd_header_t*)cmd_address;
     for (int i = 0; i < 32; i++)
     {
-        cmdheader[i].prdtl = 8; // 8 prdt entries per command table
+        cmdheader[i].prdtl = 1;
 
         uint64_t cmd_addr = i < 16 ? page1 : page2;
         cmd_addr += 256 * (i % 16);
@@ -158,24 +158,14 @@ bool sata_read(size_t device, uint64_t lba, uint8_t count, void* address)
     hba_cmd_header_t* cmd = &(hba_device->cmd_header[slot]);
     cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
     cmd->w = 0;
-    cmd->prdtl = (uint16_t)((count - 1) >> 4) + 1;  // PRDT entries count
 
     hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)cmd->ctba;
     memset(cmdtable, 0, sizeof(hba_cmd_table_t) + (cmd->prdtl - 1) * sizeof(hba_prdt_entry_t));
 
-    // 8K bytes (16 sectors) per PRDT
-    for (int i = 0; i < cmd->prdtl - 1; i++)
-    {
-        cmdtable->prdt_entry[i].dba = (uint32_t)address;
-        cmdtable->prdt_entry[i].dbc = 8*1024-1; // 8K bytes (this value should always be set to 1 less than the actual value)
-        cmdtable->prdt_entry[i].i = 1;
-        address += 4 * 1024;    // 4K words
-        count -= 16;            // 16 sectors
-    }
-    // Last entry
-    cmdtable->prdt_entry[cmd->prdtl - 1].dba = (uint32_t) address;
-    cmdtable->prdt_entry[cmd->prdtl - 1].dbc = (count << 9) - 1; // 512 bytes per sector
-    cmdtable->prdt_entry[cmd->prdtl - 1].i = 1;
+    cmdtable->prdt_entry[0].dba = (uint32_t)address;
+    cmdtable->prdt_entry[0].dbau = ((uint64_t)address >> 32);
+    cmdtable->prdt_entry[0].dbc = (count * 512) - 1;
+    cmdtable->prdt_entry[0].i = 1;
 
     fis_reg_h2d_t* cmdfis = (fis_reg_h2d_t*)&(cmdtable->cfis);
 
