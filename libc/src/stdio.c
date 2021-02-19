@@ -57,11 +57,117 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
             ch = *fptr++;
             switch(ch)
             {
+                case 'l':
+                {
+                    ch = *fptr++;
+                    switch(ch)
+                    {
+                        case 'l':
+                        {
+                            ch = *fptr++;
+                            switch(ch)
+                            {
+                                case 'i':
+                                case 'd':
+                                {
+                                    long long arg = va_arg(args, long long);
+                                    char buff[32];
+                                    lltoa(arg, buff, 10);
+                                    addstring(buf, n, &result, buff);
+                                    break;
+                                }
+
+                                case 'u':
+                                {
+                                    unsigned long long arg = va_arg(args, unsigned long long);
+                                    char buff[32];
+                                    ulltoa(arg, buff, 10);
+                                    addstring(buf, n, &result, buff);
+                                    break;
+                                }
+
+                                case 'x':
+                                {
+                                    unsigned long long arg = va_arg(args, unsigned long long);
+                                    char buff[32];
+                                    ulltoa(arg, buff, 16);
+                                    addstring(buf, n, &result, buff);
+                                    break;
+                                }
+
+                                case 'X':
+                                {
+                                    unsigned long long arg = va_arg(args, unsigned long long);
+                                    char buff[32];
+                                    ulltoa(arg, buff, 16);
+                                    strtoupper(buff);
+                                    addstring(buf, n, &result, buff);
+                                    break;
+                                }
+
+                                case 'n':
+                                {
+                                    long long* arg = va_arg(args, long long*);
+                                    *arg = result;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+
+                        case 'i':
+                        case 'd':
+                        {
+                            long arg = va_arg(args, long);
+                            char buff[32];
+                            ltoa(arg, buff, 10);
+                            addstring(buf, n, &result, buff);
+                            break;
+                        }
+
+                        case 'u':
+                        {
+                            unsigned long arg = va_arg(args, unsigned long);
+                            char buff[32];
+                            ultoa(arg, buff, 10);
+                            addstring(buf, n, &result, buff);
+                            break;
+                        }
+
+                        case 'x':
+                        {
+                            unsigned long arg = va_arg(args, unsigned long);
+                            char buff[32];
+                            ultoa(arg, buff, 16);
+                            addstring(buf, n, &result, buff);
+                            break;
+                        }
+
+                        case 'X':
+                        {
+                            unsigned long arg = va_arg(args, unsigned long);
+                            char buff[32];
+                            ultoa(arg, buff, 16);
+                            strtoupper(buff);
+                            addstring(buf, n, &result, buff);
+                            break;
+                        }
+
+                        case 'n':
+                        {
+                            long* arg = va_arg(args, long*);
+                            *arg = result;
+                            break;
+                        }
+                    }
+                    break;
+                }
+
                 case 'i':
                 case 'd':
                 {
-                    int arg = va_arg(args, unsigned);
-                    char buff[12];
+                    int arg = va_arg(args, int);
+                    char buff[16];
                     itoa(arg, buff, 10);
                     addstring(buf, n, &result, buff);
                     break;
@@ -70,7 +176,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 case 'u':
                 {
                     unsigned int arg = va_arg(args, unsigned int);
-                    char buff[12];
+                    char buff[16];
                     uitoa(arg, buff, 10);
                     addstring(buf, n, &result, buff);
                     break;
@@ -79,7 +185,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 case 'o':
                 {
                     unsigned int arg = va_arg(args, unsigned int);
-                    char buff[12];
+                    char buff[16];
                     uitoa(arg, buff, 8);
                     addstring(buf, n, &result, buff);
                     break;
@@ -88,7 +194,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 case 'x':
                 {
                     unsigned int arg = va_arg(args, unsigned int);
-                    char buff[12];
+                    char buff[16];
                     uitoa(arg, buff, 16);
                     addstring(buf, n, &result, buff);
                     break;
@@ -97,7 +203,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 case 'X':
                 {
                     unsigned int arg = va_arg(args, unsigned int);
-                    char buff[12];
+                    char buff[16];
                     uitoa(arg, buff, 16);
                     strtoupper(buff);
                     addstring(buf, n, &result, buff);
@@ -108,7 +214,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 case 'F':
                 {
                     float arg = (float)va_arg(args, double);
-                    char buff[12 + 7];
+                    char buff[32];
                     ftoa(arg, buff, 7);
                     addstring(buf, n, &result, buff);
                     break;
@@ -116,7 +222,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
 
                 case 'c':
                 {
-                    char arg = (char)va_arg(args, int);
+                    char arg = (char)va_arg(args, unsigned int);
                     addchar(buf, n, &result, arg);
                     break;
                 }
@@ -131,7 +237,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 case 'p':
                 {
                     void* arg = va_arg(args, void*);
-                    char buff[12];
+                    char buff[16];
                     ultoa((unsigned long)arg, buff, 16);
                     addstring(buf, n, &result, buff);
                     break;

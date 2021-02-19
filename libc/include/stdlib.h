@@ -41,7 +41,11 @@ unsigned long long strtoull(const char* str, char** endptr, int base);
 
 char* itoa(int value, char* str, int base);
 char* uitoa(unsigned int value, char* str, int base);
+char* ltoa(long value, char* str, int base);
 char* ultoa(unsigned long value, char* str, int base);
+char* lltoa(long long value, char* str, int base);
+char* ulltoa(unsigned long long value, char* str, int base);
+
 char* ftoa(float value, char* str, int precision);
 
 int rand(void);

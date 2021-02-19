@@ -505,10 +505,44 @@ char* uitoa(unsigned int value, char* str, int base)
 
     while (value != 0) 
     { 
-        int rem = value % base; 
+        unsigned int rem = value % base; 
         str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0'; 
         value = value / base; 
     }
+  
+    str[i] = '\0';
+  
+    strrev(str); 
+    return str; 
+}
+
+char* ltoa(long value, char* str, int base)
+{
+    int i = 0; 
+    bool isNegative = false; 
+  
+    if (value == 0) 
+    { 
+        str[i++] = '0'; 
+        str[i] = '\0'; 
+        return str; 
+    } 
+
+    if (value < 0 && base == 10) 
+    { 
+        isNegative = true; 
+        value = -value; 
+    } 
+
+    while (value != 0) 
+    { 
+        long rem = value % base; 
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0'; 
+        value = value / base; 
+    } 
+  
+    if (isNegative) 
+        str[i++] = '-'; 
   
     str[i] = '\0';
   
@@ -529,7 +563,65 @@ char* ultoa(unsigned long value, char* str, int base)
 
     while (value != 0) 
     { 
-        int rem = value % base; 
+        unsigned long rem = value % base; 
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0'; 
+        value = value / base; 
+    }
+  
+    str[i] = '\0';
+  
+    strrev(str); 
+    return str; 
+}
+
+char* lltoa(long long value, char* str, int base)
+{
+    int i = 0; 
+    bool isNegative = false; 
+  
+    if (value == 0) 
+    { 
+        str[i++] = '0'; 
+        str[i] = '\0'; 
+        return str; 
+    } 
+
+    if (value < 0 && base == 10) 
+    { 
+        isNegative = true; 
+        value = -value; 
+    } 
+
+    while (value != 0) 
+    { 
+        long long rem = value % base; 
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0'; 
+        value = value / base; 
+    } 
+  
+    if (isNegative) 
+        str[i++] = '-'; 
+  
+    str[i] = '\0';
+  
+    strrev(str); 
+    return str; 
+}
+
+char* ulltoa(unsigned long long value, char* str, int base)
+{
+    int i = 0; 
+  
+    if (value == 0) 
+    { 
+        str[i++] = '0'; 
+        str[i] = '\0'; 
+        return str; 
+    } 
+
+    while (value != 0) 
+    { 
+        unsigned long long rem = value % base; 
         str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0'; 
         value = value / base; 
     }

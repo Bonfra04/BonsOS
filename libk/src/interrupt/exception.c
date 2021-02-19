@@ -31,8 +31,8 @@ static const char *exceptionstr[] =
 
 static void dump_context(const interrupt_context_t* context)
 {
-    tty_printf("INT: 0x%x   Error: 0x%x\n\n", context->interrupt, context->error);
-    tty_printf("CS:RIP: %x:%x             SS:RSP: %x:%x\n\n", context->cs, context->retaddr, context->ss, context->rsp);
+    tty_printf("INT: 0x%llX   Error: 0x%llX\n\n", context->interrupt, context->error);
+    tty_printf("CS:RIP: %x:%llX   SS:RSP: %x:%llX\n\n", context->cs, context->retaddr, context->ss, context->rsp);
 
     char buf[640];
 
@@ -41,6 +41,11 @@ static void dump_context(const interrupt_context_t* context)
 
     dump_cpuflags(buf, sizeof(buf), context->rflags);
     tty_printf("%s\n", buf);
+
+    uint64_t cr2;
+    asm("mov rax, cr2");
+    asm("mov %0, rax" :: "m"(cr2));
+    tty_printf("CR2: %llX\n", cr2);
 
     tty_printf("Stack:\n");
     void* stack = (void*)context->rsp;
