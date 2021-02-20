@@ -41,12 +41,12 @@ isr_dispatcher:
         push rax
 
         ; Preserve the MXCSR register.
-        sub rsp, 8
+        sub rsp, 16
         stmxcsr [rsp]
 
     .lookup:
         ; Look up the kernel-defined ISR in the table.
-        mov rax, [rsp + 8 * 17]             ; rax=interrupt number
+        mov rax, [rsp + 8 * 18]             ; rax=interrupt number
         mov rax, [isr_handlers + 8 * rax]   ; rax=ISR address
 
         ; If there is no ISR, then we're done.
@@ -60,7 +60,7 @@ isr_dispatcher:
 
         ; The interrupt context is on the stack, so pass the ISR a pointer to
         ; the stack as the first parameter.
-        lea rdi, [rsp + 8]   ; skip the MXCSR register.
+        lea rdi, [rsp + 16]   ; skip the MXCSR register.
 
         ; Call the ISR.
         call rax
@@ -68,8 +68,8 @@ isr_dispatcher:
     .done:
         ; Restore the MXCSR register.
         ldmxcsr [rsp]
-        add rsp, 8
-
+        add rsp, 16
+    
         ; Restore general-purpose registers.
         pop rax
         pop rbx

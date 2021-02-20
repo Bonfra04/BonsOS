@@ -43,8 +43,7 @@ static void dump_context(const interrupt_context_t* context)
     tty_printf("%s\n", buf);
 
     uint64_t cr2;
-    asm("mov rax, cr2");
-    asm("mov %0, rax" :: "m"(cr2));
+    asm("mov %0, cr2" : "=r"(cr2));
     tty_printf("CR2: %llX\n", cr2);
 
     tty_printf("Stack:\n");
