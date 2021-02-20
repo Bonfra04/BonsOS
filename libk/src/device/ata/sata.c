@@ -104,7 +104,7 @@ void sata_register_pci_device(pci_device_t* device)
 {
     uint32_t starting_device = registered_devices;
 
-    hba_mem_t* hba_mem = (void*)device->base5;
+    hba_mem_t* hba_mem = (hba_mem_t*)device->base5;
     
     for(int bit = 0; bit < 32; bit++)
         if(hba_mem->pi & (1 << bit)) // bit is set: device exists
@@ -159,10 +159,10 @@ bool sata_read(size_t device, uint64_t lba, uint8_t count, void* address)
     cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
     cmd->w = 0;
 
-    hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)cmd->ctba;
+    hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)(((uint64_t)cmd->ctbau >> 32) | (uint64_t)cmd->ctba);
     memset(cmdtable, 0, sizeof(hba_cmd_table_t) + (cmd->prdtl - 1) * sizeof(hba_prdt_entry_t));
 
-    cmdtable->prdt_entry[0].dba = (uint32_t)address;
+    cmdtable->prdt_entry[0].dba = (uint32_t)(uint64_t)address;
     cmdtable->prdt_entry[0].dbau = ((uint64_t)address >> 32);
     cmdtable->prdt_entry[0].dbc = (count * 512) - 1;
     cmdtable->prdt_entry[0].i = 1;
