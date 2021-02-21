@@ -10,38 +10,34 @@
 #include <device/pit.h>
 #include <device/ata/sata.h>
 #include <x86/cpu.h>
-#include <memory/paging_test.h>
-
 #include <string.h>
 #include <stdlib.h>
 
-
+#include "paging_tmp.h"
 #include "bootinfo.h"
 
 heap_data_t kernel_heap;
 
 void init(bootinfo_t* bootinfo)
 {
+    identity_map_everything();
+
     tty_init();
     
     interrupts_init();
     exceptions_init();
 
     kb_init();
-    //pit_initialize();
-    //pit_reset_counter(100, PIT_OCW_COUNTER_0, PIT_OCW_MODE_SQUAREWAVEGEN);
 
     enable_interrupts();
 
-    identity_map_everything();
-
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
-    memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull);
+    uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64u;
+    memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
     // After the stack
     pfa_init((void*)0x00D00001);
-    // Deinit the region the kernel/stack is in as its in use
-    uint64_t size = pfa_get_bitmap_size();
-    pfa_deinit_region(0, 0x00D00000 + size);
+    // Deinit the region the kernel/stack/bitmap is in as its in use
+    pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
     
     kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     heap_activate(&kernel_heap);
@@ -55,15 +51,6 @@ void init(bootinfo_t* bootinfo)
 void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
-
-    /*
-    uint8_t disk[512];
-    bool success = sata_read(0, 0, 1, (void*)&disk);
-    tty_printf("%d\n", success);
-    for(int i = 0; i < 512; i++)
-        tty_printf("%X", disk[i]);
-    tty_printf("\n");
-    */
 
     while(true)
     {

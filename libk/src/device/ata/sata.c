@@ -71,10 +71,10 @@ static void configure_device(hba_device_t* device)
     device->port->fbu = fis_high;
     memset((void*)fis_address, 0, 256);
 
-    hba_cmd_header_t* cmdheader = (hba_cmd_header_t*)cmd_address;
+    device->cmd_header = (hba_cmd_header_t*)cmd_address;
     for (int i = 0; i < 32; i++)
     {
-        cmdheader[i].prdtl = 1;
+        device->cmd_header[i].prdtl = 1;
 
         uint64_t cmd_addr = i < 16 ? page1 : page2;
         cmd_addr += 256 * (i % 16);
@@ -82,8 +82,8 @@ static void configure_device(hba_device_t* device)
         uint32_t cmd_addr_low = cmd_addr & 0xFFFFFFFFLL;
         uint32_t cmd_addr_high = (cmd_addr >> 32) & 0xFFFFFFFFLL;
 
-        cmdheader[i].ctba = cmd_addr_low;
-        cmdheader[i].ctbau = cmd_addr_high;
+        device->cmd_header[i].ctba = cmd_addr_low;
+        device->cmd_header[i].ctbau = cmd_addr_high;
         memset((void*)cmd_addr, 0, 256);
     }
 
