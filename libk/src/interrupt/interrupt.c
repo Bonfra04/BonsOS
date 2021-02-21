@@ -83,15 +83,15 @@ void interrupts_init()
         thunks[i].interrupt = i;
         thunks[i].jmp = 0xE9;
 
-        thunks[i].dispatcher = (uint32_t)(uint64_t)isr_dispatcher;
-
-        if(i <= 14)
+        switch (i)
         {
-            int mask = (1 << i);
-            int pushesError = (1 << EX_DF) | (1 << EX_TS) | (1 << EX_NP) | (1 << EX_SS) | (1 << EX_GP) | (1 << EX_PF);
-            if(mask & pushesError != 0)
+            case EX_DF: case EX_TS: case EX_NP:
+            case EX_SS: case EX_GP: case EX_PF:
                 thunks[i].dispatcher = (uint32_t)(uint64_t)isr_dispatcher_special;
-        }            
+                break;
+            default:
+                thunks[i].dispatcher = (uint32_t)(uint64_t)isr_dispatcher;
+        }          
 
         thunks[i].dispatcher -= (uint32_t)(uint64_t)&(thunks[i]) + sizeof(thunk_t);
 
