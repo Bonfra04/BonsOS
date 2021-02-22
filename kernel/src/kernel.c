@@ -16,7 +16,7 @@
 #include "paging_tmp.h"
 #include "bootinfo.h"
 
-heap_data_t kernel_heap;
+static heap_data_t kernel_heap;
 
 void init(bootinfo_t* bootinfo)
 {
@@ -51,6 +51,13 @@ void init(bootinfo_t* bootinfo)
 void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
+
+    uint8_t disk[512];
+    bool success = sata_read(0, 0, 1, (void*)&disk);
+    tty_printf("%d\n", success);
+    for(int i = 0; i < 512; i++)
+        tty_printf("%X", disk[i]);
+    tty_printf("\n");
 
     while(true)
     {

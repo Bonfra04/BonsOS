@@ -68,7 +68,6 @@ static uint64_t bitmap_first_frees(size_t size)
 
 void pfa_init_region(uint64_t base_address, uint64_t region_length)
 {
-    // todo page roundings
     uint64_t align = base_address / PFA_PAGE_SIZE;
     uint64_t pages = region_length / PFA_PAGE_SIZE;
 
@@ -81,7 +80,6 @@ void pfa_init_region(uint64_t base_address, uint64_t region_length)
 
 void pfa_deinit_region(uint64_t base_address, uint64_t region_length)
 {
-    // todo page roundings
     uint64_t align = base_address / PFA_PAGE_SIZE;
     uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
 

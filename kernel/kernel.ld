@@ -26,4 +26,7 @@ SECTIONS
         *(COMMON)
         *(.bss)
     }
+
+    /* extern uint32_t endkernel; printf("%p", &endkernel); // (use address) */
+    endkernel = .;
 }
