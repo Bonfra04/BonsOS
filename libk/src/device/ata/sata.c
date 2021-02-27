@@ -104,7 +104,7 @@ void sata_register_pci_device(pci_device_t* device)
 {
     uint32_t starting_device = registered_devices;
 
-    hba_mem_t* hba_mem = (hba_mem_t*)device->base5;
+    hba_mem_t* hba_mem = (hba_mem_t*)(uint64_t)device->base5;
     
     for(int bit = 0; bit < 32; bit++)
         if(hba_mem->pi & (1 << bit)) // bit is set: device exists
@@ -216,5 +216,72 @@ bool sata_read(size_t device, uint64_t lba, uint8_t count, void* address)
 
 bool sata_write(size_t device, uint64_t lba, uint8_t count, void* address)
 {
+    if(device >= registered_devices)
+        return false;
 
+    hba_device_t* hba_device = &(devices[device]);
+    
+    hba_device->port->is = -1; // Clear pending interrupt bits
+    int slot = find_cmdslot(hba_device->port);
+
+    if(slot == -1)
+        return false;
+
+    hba_cmd_header_t* cmd = &(hba_device->cmd_header[slot]);
+    cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    cmd->w = 1;
+
+    hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)(((uint64_t)cmd->ctbau >> 32) | (uint64_t)cmd->ctba);
+    memset(cmdtable, 0, sizeof(hba_cmd_table_t) + (cmd->prdtl - 1) * sizeof(hba_prdt_entry_t));
+
+    cmdtable->prdt_entry[0].dba = (uint32_t)(uint64_t)address;
+    cmdtable->prdt_entry[0].dbau = ((uint64_t)address >> 32);
+    cmdtable->prdt_entry[0].dbc = (count * 512) - 1;
+    cmdtable->prdt_entry[0].i = 1;
+
+    fis_reg_h2d_t* cmdfis = (fis_reg_h2d_t*)&(cmdtable->cfis);
+
+    cmdfis->fis_type = FIS_TYPE_REG_H2D;
+    cmdfis->c = 1;  // Command
+    cmdfis->command = ATA_CMD_WRITE_DMA_EX;
+
+    uint32_t lba_low = lba & 0xFFFFFFFFLL;
+    uint32_t lba_high = (lba >> 32) & 0xFFFFFFFFLL;
+
+    cmdfis->lba0 = (uint8_t)lba_low;
+    cmdfis->lba1 = (uint8_t)(lba_low >> 8);
+    cmdfis->lba2 = (uint8_t)(lba_low >> 16);
+    cmdfis->device = 1 << 6;    // LBA mode
+ 
+    cmdfis->lba3 = (uint8_t)(lba_low >> 24);
+    cmdfis->lba4 = (uint8_t)lba_high;
+    cmdfis->lba5 = (uint8_t)(lba_high >> 8);
+ 
+    cmdfis->countl = count & 0xFF;
+    cmdfis->counth = (count >> 8) & 0xFF;
+
+    int spin = 0; // Spin lock timeout counter
+    while ((hba_device->port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
+        spin++;
+    if (spin == 1000000)
+        return false;
+
+    hba_device->port->ci = 1 << slot;
+
+    // Wait for completion
+    while (1)
+    {
+        // In some longer duration reads, it may be helpful to spin on the DPS bit 
+        // in the PxIS port field as well (1 << 5)
+        if (!(hba_device->port->ci & (1 << slot))) 
+            break;
+        if (hba_device->port->is & HBA_PxIS_TFES)   // Task file error
+            return false;
+    }
+
+    // Check again
+    if (hba_device->port->is & HBA_PxIS_TFES)
+        return false;
+
+    return true;
 }
