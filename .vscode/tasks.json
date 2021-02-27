@@ -16,7 +16,7 @@
             "label": "exit",
             "type": "shell",
             "windows":{
-                "command": "taskkill /F /IM qemu-system-x86_64.exe /T",
+                "command": "taskkill /F /IM qemu-system-x86_64.exe /T > nul",
             },
         }
     ]
