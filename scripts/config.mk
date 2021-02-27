@@ -16,7 +16,7 @@ CC		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
 CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -Qn -g \
 			-m64 -mno-red-zone -mno-mmx -mfpmath=sse -masm=intel \
 			-ffreestanding -fno-asynchronous-unwind-tables \
-			-Wall -Wextra -Wpedantic \
+			-Wall -Wextra \
 			-Wno-misleading-indentation -Wno-parentheses -Wno-implicit-fallthrough -Wno-sign-compare -Wno-address-of-packed-member -Wno-int-in-bool-context
 
 AS		:= nasm
