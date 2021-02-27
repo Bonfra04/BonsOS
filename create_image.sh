@@ -10,6 +10,9 @@ mkfs.vfat -F 16 -n "BonsOS" ./bin/img/partition.dd
 mcopy -i ./bin/img/partition.dd ./bin/boot/loader.bin ::/
 mcopy -i ./bin/img/partition.dd ./bin/kernel/kernel.sys ::/
 
+#mmd -i ./bin/img/partition.dd ::/folder
+#mcopy -i ./bin/img/partition.dd ./test.txt ::/
+
 #Add the bootloader to the partition
 dd if=bin/boot/boot.bin of=./bin/img/partition.dd seek=0 count=1 conv=notrunc bs=3
 dd if=bin/boot/boot.bin of=./bin/img/partition.dd seek=90 skip=90 count=$[512-90] conv=notrunc bs=1
