@@ -81,6 +81,8 @@ int strcmp(const char* str1, const char* str2)
 {
     while(*str1 && *str1 == *str2)
         str1++, str2++;
+    if(!*str1)
+        return 0;
     return *(const unsigned char*)str1 - *(const unsigned char*)str2;
 }
 
@@ -123,8 +125,11 @@ const void* memchr(const void* ptr, int value, size_t num)
 const char* strchr(const char* str, int character)
 {
     const char* p = str;
-    while(*p++ != (char)character);
-    return --p;
+    char c;
+    while(c = *p++)
+        if(c == character)
+            return --p;
+    return 0;
 }
 
 size_t strcspn(const char* str1, const char* str2)
