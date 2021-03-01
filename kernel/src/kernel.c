@@ -10,8 +10,10 @@
 #include <device/pit.h>
 #include <device/ata/sata.h>
 #include <x86/cpu.h>
+#include <filesystem/fat16.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "paging_tmp.h"
 #include "bootinfo.h"
@@ -44,6 +46,8 @@ void init(bootinfo_t* bootinfo)
 
     pci_init();
 
+    fat16_init('a', 0, 2048, sata_read, sata_write);
+
     int bits = sizeof(void*) * 8;
     tty_printf("Succesfully booted BonsOS %d bit\n", bits);
 }
@@ -52,12 +56,11 @@ void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
 
-    uint8_t disk[512];
-    bool success = sata_read(0, 0, 1, (void*)&disk);
-    tty_printf("%d\n", success);
-    for(int i = 0; i < 512; i++)
-        tty_printf("%X", disk[i]);
-    tty_printf("\n");
+    FILE* pFile = fopen("a:/test.txt", "r");
+    char buff[500];
+    size_t res = fread(buff, sizeof(char), 500, pFile);
+    fclose(pFile);
+    tty_printf("%llu: %s", res, buff);
 
     while(true)
     {
