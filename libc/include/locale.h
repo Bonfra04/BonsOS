@@ -7,6 +7,10 @@
 #define LC_NUMERIC  4
 #define LC_TIME 5
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct lconv
 {
     /* controlled by LC_MONETARY */
@@ -30,10 +34,6 @@ struct lconv
     char* grouping;
     char* thousands_sep;
 };
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct lconv* localeconv(void);
 char* setlocale(int category, const char* locale);

@@ -16,9 +16,7 @@ char* strncat(char* destination, const char* source, size_t num);
 
 int memcmp(const void* ptr1, const void* ptr2, size_t num);
 int strcmp(const char* str1, const char* str2);
-int strcoll(const char* str1, const char* str2);
 int strncmp(const char* str1, const char* str2, size_t num);
-size_t strxfrm(char* destination, const char* source, size_t num);
 
 const void* memchr(const void* ptr, int value, size_t num);
 const char* strchr(const char* str, int character);
@@ -27,10 +25,10 @@ const char* strpbrk(const char* str1, const char* str2);
 const char* strrchr(const char* str, int character);
 size_t strspn(const char* str1, const char* str2);
 const char* strstr(const char* str1, const char* str2);
+char* strtok(char* str, const char* delimiters);
 
 void* memset(void* bufptr, int value, size_t size);
 size_t strlen(const char* str);
-char* strtok(char* str, const char* delimiters);
 
 void* memsetw(void* dst, int w, size_t num);
 char* strrev(char* str);

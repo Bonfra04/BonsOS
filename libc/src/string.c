@@ -86,29 +86,12 @@ int strcmp(const char* str1, const char* str2)
     return *(const unsigned char*)str1 - *(const unsigned char*)str2;
 }
 
-int strcoll(const char* str1, const char* str2)
-{
-    char t1[1 + strxfrm(0, str1, 0)];
-    strxfrm(t1, str1, sizeof(t1));
-    char t2[1 + strxfrm(0, str2, 0)];
-    strxfrm(t2, str2, sizeof(t2));
-    return strcmp(t1, t2);
-}
-
 int strncmp(const char* str1, const char* str2, size_t num)
 {
     while(num--)
         if(*str1++ != *str2++)
             return *(unsigned char*)(str1 - 1) - *(unsigned char*)(str2 - 1);
     return 0;
-}
-
-size_t strxfrm(char* destination, const char* source, size_t num)
-{
-    size_t n2 = strlen(source);
-    if(num > n2)
-        strcpy(destination, source);
-    return n2;
 }
 
 const void* memchr(const void* ptr, int value, size_t num)

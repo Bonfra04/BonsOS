@@ -4,6 +4,10 @@
 
 #define RAND_MAX 0xffffffff
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
     int quot;
@@ -21,10 +25,6 @@ typedef struct
     long long quot;
     long long rem;
 } lldiv_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 double atof(const char* str);
 int atoi(const char* str);
