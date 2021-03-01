@@ -1,7 +1,11 @@
 #----------------------------------------------------------------------------
 #    DIR_ROOT        The root directory of the project
 #    LIB_NAME        The name of the library produced by this makefile
-#    POST_LIB_RULE   The optional rule that runs after the lib is built
+#    POST_BUILD_RULE The optional rule that runs after the lib is built
+#	 LIB_DEPS		 The paths to the dependencies of this project
+#
+#	 RUNNABLE		 The path of the binary file if wanted
+#	 LD_FILE		 The path of the linker file 		(if RUNNABLE)
 #----------------------------------------------------------------------------
 
 include $(DIR_ROOT)/scripts/config.mk
@@ -14,10 +18,8 @@ findfiles	= $(patsubst ./%,%,$(shell find . -name $(1)))
 # param2.
 outputdirs	= $(addprefix $(dir $(1)/), $(sort $(dir $(2))))
 
-# Calculate path of lib file from lib name
-libfile		= $(join $(1:%=$(DIR_OBJ)/%), $(1:%=/%.a))
-
 DIR_LIB_BUILD	:= $(DIR_OBJ)/$(LIB_NAME)
+DIR_LIB_OUTPUT	:= $(DIR_BIN)/$(LIB_NAME)
 
 ASM_FILES		:= $(call findfiles,'*.asm')
 C_FILES			:= $(call findfiles,'*.c')
@@ -31,20 +33,27 @@ LIB_FILE		:= $(DIR_LIB_BUILD)/$(LIB_NAME).a
 
 TAG	:= $(BLUE)[$(LIB_NAME)]$(NORMAL)
 
-.PHONY: all mkdir resolve_deps
+.PHONY: all mkdir link
 
-all: mkdir resolve_deps $(LIB_FILE) $(POST_LIB_RULE)
+all: mkdir link $(POST_BUILD_RULE)
 	@echo "$(TAG) $(SUCCESS)"
 
 mkdir:
 	@mkdir -p $(call outputdirs,$(DIR_LIB_BUILD),$(CODE_FILES))
+ifdef RUNNABLE
+	@mkdir -p $(call outputdirs,$(DIR_LIB_OUTPUT),$(RUNNABLE))
+endif
 
-resolve_deps:
-
-$(LIB_FILE): $(OBJ_FILES)
-	@echo "$(TAG) Archiving $(notdir $@)"
-	@rm -f $@
-	@ar cqs $@ $(OBJ_FILES)
+link: $(OBJ_FILES)
+ifdef RUNNABLE
+	@echo "$(TAG) Linking $(notdir $(RUNNABLE))"
+	@$(LD) $(LDFLAGS) -T $(LD_FILE) -o $(RUNNABLE) $(OBJ_FILES) $(LIB_DEPS)
+	@chmod a-x $(RUNNABLE)
+else
+	@echo "$(TAG) Archiving $(notdir $(LIB_FILE))"
+	@rm -f $(LIB_FILE)
+	@ar cqs $(LIB_FILE) $(OBJ_FILES)
+endif
 
 $(OBJ_FILES_ASM): $(DIR_LIB_BUILD)/%_asm.o: %.asm
 	@echo "$(TAG) Assembling $<"

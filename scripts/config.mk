@@ -32,3 +32,6 @@ YELLOW	:= \033[1;33m
 NORMAL	:= \033[0m
 
 SUCCESS	:= $(YELLOW)SUCCESS$(NORMAL)
+
+# Calculate path of lib file from lib name
+libfile = $(join $(1:%=$(DIR_OBJ)/%), $(1:%=/%.a))
