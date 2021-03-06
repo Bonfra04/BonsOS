@@ -7,12 +7,18 @@
 extern "C" {
 #endif
 
+#define BUFSIZ 512
+
 #define FOPEN_MAX 32
 #define EOF -1
 
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
+
+#define _IOFBF 64
+#define _IOLBF 128
+#define _IONBF 192
 
 typedef struct fpos
 {
@@ -24,12 +30,18 @@ typedef struct fpos
 typedef struct _FILE
 {
     void* address;
+    unsigned char flags;
+    void* buffer;
+    size_t buffer_size;
+    size_t buffered;
 } FILE;
 
 FILE* fopen(const char* filename, const char* mode);
 int fclose(FILE* stream);
 
-int sprintf(char* buf, const char* format, ... );
+void setbuf(FILE* stream, char* buffer);
+
+int sprintf(char* buf, const char* format, ...);
 int vsprintf(char* buf, const char* format, va_list args);
 int snprintf(char* buf, size_t n, const char* format, ...);
 int vsnprintf(char* buf, size_t n, const char* format, va_list arg);
