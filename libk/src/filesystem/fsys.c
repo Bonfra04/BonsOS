@@ -65,12 +65,11 @@ size_t fsys_get_position(file_t* file)
     return 0;
 }
 
-bool fsys_set_position(file_t* file, size_t offset)
+void fsys_set_position(file_t* file, size_t offset)
 {
     if (file && file->flags != FS_INVALID)
         if (file_systems[file->device_letter - 'a'])
-            return file_systems[file->device_letter - 'a']->set_position(file, offset);
-    return false;
+            file_systems[file->device_letter - 'a']->set_position(file, offset);
 }
 
 void fsys_register_file_system(file_system_t* file_system, char device_letter)

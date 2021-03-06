@@ -106,6 +106,7 @@ void fat16_init(char device_letter, size_t device_id, size_t offset, fsys_intera
     fsys_fat.read_file = fat16_read_file;
     fsys_fat.write_file = fat16_write_file;
     fsys_fat.get_position = fat16_get_position;
+    fsys_fat.set_position = fat16_set_position;
 
     fsys_register_file_system(&fsys_fat, device_letter);
 
@@ -307,16 +308,24 @@ size_t fat16_write_file(file_t* file, void* buffer, size_t length)
 size_t fat16_get_position(file_t* file)
 {
     size_t sectors = file->cluster * mount_info.sectors_per_cluster + file->sector;
-    return sectors * mount_info.bytes_per_sector + file->position;
+    size_t res = sectors * mount_info.bytes_per_sector + file->position;
+    return res;
 }
 
-bool fat16_set_position(file_t* file, size_t position)
+void fat16_set_position(file_t* file, size_t position)
 {
     position = position > file->length ? file->length : position;
     
-    file->sector = position % mount_info.bytes_per_sector;
+    file->position = position % mount_info.bytes_per_sector;
     position /= mount_info.bytes_per_sector;
     file->sector = position % mount_info.sectors_per_cluster;
     position /= mount_info.sectors_per_cluster;
     file->cluster = position;
+
+    file->eof = false;
+    while(fat16_get_position(file) >= file->length)
+    {
+        file->eof = true;
+        file->position--;
+    }
 }

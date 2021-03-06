@@ -11,4 +11,4 @@ void fat16_close_file(file_t* file);
 size_t fat16_read_file(file_t* file, void* buffer, size_t length);
 size_t fat16_write_file(file_t* file, void* buffer, size_t length);
 size_t fat16_get_position(file_t* file);
-bool fat16_set_position(file_t* file, size_t position);
+void fat16_set_position(file_t* file, size_t position);
