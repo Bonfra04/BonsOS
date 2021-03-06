@@ -18,6 +18,8 @@
 #include "paging_tmp.h"
 #include "bootinfo.h"
 
+#include "unit_tests/unit_test.h"
+
 static heap_data_t kernel_heap;
 
 void init(bootinfo_t* bootinfo)
@@ -56,11 +58,7 @@ void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
 
-    FILE* pFile = fopen("a:/test.txt", "r");
-    char buff[500];
-    size_t res = fread(buff, sizeof(char), 500, pFile);
-    fclose(pFile);
-    tty_printf("%llu: %s", res, buff);
+    execute_tests();
 
     while(true)
     {
