@@ -58,7 +58,8 @@ void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
 
-    execute_tests();
+    if(!execute_tests())
+        return;
 
     while(true)
     {

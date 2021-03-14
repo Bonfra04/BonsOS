@@ -122,11 +122,6 @@ int test_string()
         tty_printf("'strncpy' test went wrong.\n");
         return 0;
     }
-    if(!test_strcat())
-    {
-        tty_printf("'strcat' test went wrong.\n");
-        return 0;
-    }
     
     return 1;
 }

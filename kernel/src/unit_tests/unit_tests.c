@@ -16,12 +16,4 @@ int execute_tests()
     }
 
     return 1;
-    /*
-    FILE* pFile = fopen("a:/test.txt", "r");
-    char buff[530];
-    memset(buff, 0, 530);
-    fread(buff, sizeof(char), 530, pFile);
-    tty_printf("%s", buff);
-    fclose(pFile);
-    */
 }
