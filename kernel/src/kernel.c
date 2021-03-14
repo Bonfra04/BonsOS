@@ -51,7 +51,7 @@ void init(bootinfo_t* bootinfo)
     fat16_init('a', 0, 2048, sata_read, sata_write);
 
     int bits = sizeof(void*) * 8;
-    tty_printf("Succesfully booted BonsOS %d bit\n", bits);
+    tty_printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
 
 void main(bootinfo_t* bootinfo)
