@@ -16,7 +16,7 @@ file_t fsys_open_file(const char* filename)
         if (filename[1] == ':')
         {
             device = filename[0];
-            fname += 3;
+            fname += 2;
         }
 
         //call filesystem

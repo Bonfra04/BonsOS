@@ -87,9 +87,49 @@ static file_t serch_sub_dir(file_t dir, const char* filename)
     dos_filename(filename, dos_fname);
     dos_fname[11] = '\0';
 
-    file_t invalid;
-    invalid.flags = FS_INVALID;
-    return invalid;
+    while(!dir.eof)
+    {
+        uint8_t buff[mount_info.bytes_per_cluster];
+        if(!read_disk(device, lba_offset + mount_info.first_cluster_sector + (dir.first_cluster - 2) * mount_info.sectors_per_cluster, mount_info.sectors_per_cluster, (void*)&buff))
+            break;
+
+        dir_entry_t* subdir = (dir_entry_t*)buff;
+        for(size_t i = 0; i < mount_info.bytes_per_cluster / sizeof(dir_entry_t); i++)
+        {
+            char name[12];
+			memcpy(name, subdir->name, 11);
+			name[11] = 0;
+            if(!name[0])
+                goto invalid;
+
+            if(!strcmp(dos_fname, name))
+            {
+                file_t file;
+                strcpy(file.name, filename);
+                file.first_cluster = subdir->cluster_number;
+                file.length = subdir->file_size;
+                file.position = 0;
+                file.sector = 0;
+                file.cluster = 0;
+                file.eof = false;
+                file.error = false,
+
+                file.flags = subdir->flags == 0x10 ? FS_DIRECTORY : FS_FILE;
+
+                return file;
+            }
+
+            subdir++;
+        }
+
+    }
+
+    invalid:
+    {
+        file_t invalid;
+        invalid.flags = FS_INVALID;
+        return invalid;
+    }
 }
 
 void fat16_init(char device_letter, size_t device_id, size_t offset, fsys_interact_function read_function, fsys_interact_function write_function)
@@ -131,6 +171,7 @@ bool fat16_mount()
     mount_info.sectors_per_cluster = bootsector.bpb.sectors_per_cluster;
     mount_info.sectors_per_fat = bootsector.bpb.sectors_per_fat;
     mount_info.first_cluster_sector = mount_info.root_offset + mount_info.root_size;
+    mount_info.bytes_per_cluster = mount_info.bytes_per_sector * mount_info.sectors_per_cluster;
 
     return true;
 }

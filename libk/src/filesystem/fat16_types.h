@@ -48,6 +48,7 @@ typedef struct mount_info
     uint32_t fat_size;
     uint32_t fat_entry_size;
     uint32_t bytes_per_sector;
+    uint32_t bytes_per_cluster;
     uint32_t sectors_per_cluster;
     uint32_t sectors_per_fat;
     uint32_t first_cluster_sector;
@@ -69,3 +70,4 @@ typedef struct dir_entry
     uint16_t cluster_number;
     uint32_t file_size;
 } __attribute__((packed)) dir_entry_t;
+
