@@ -1,4 +1,6 @@
-org 0x7e00
+;org 0x7e00
+section .text
+    global load
 bits 16
 
 %macro BiosPrintMacro 1
@@ -153,7 +155,7 @@ bits 64
 
     ; Do a jump to the kernel's entry point.
     push dword boot_info
-    jmp Mem.Kernel.Code
+    jmp Mem.Kernel.Code + (load - 0x7E00) ; wierd elf bug
 
 bits 16
 

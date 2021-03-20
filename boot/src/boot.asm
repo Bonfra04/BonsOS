@@ -1,4 +1,5 @@
 org 0x7C00
+section .text
 bits 16
 
 %include "include/memory_layout.inc"

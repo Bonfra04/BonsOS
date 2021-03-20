@@ -4,9 +4,11 @@ org 0x0500
 start:
     cli                             ; Disable interrupts
     xor ax, ax                      ; 0 AX
+    mov ss, ax                      ; Set Stack Segment to 0
     mov ds, ax                      ; Set Data Segment to 0
     mov es, ax                      ; Set Extra Segment to 0
-    mov ss, ax                      ; Set Stack Segment to 0
+    mov fs, ax                      ; Set More Extra Segment to 0
+    mov gs, ax                      ; Set Still More Extra Segment to 0
     mov sp, ax                      ; Set Stack Pointer to 0
 
     .copyLower:

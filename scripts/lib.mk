@@ -41,7 +41,7 @@ all: mkdir link $(POST_BUILD_RULE)
 mkdir:
 	@mkdir -p $(call outputdirs,$(DIR_LIB_BUILD),$(CODE_FILES))
 ifdef RUNNABLE
-	@mkdir -p $(call outputdirs,$(DIR_LIB_OUTPUT),$(RUNNABLE))
+	@mkdir -p $(DIR_LIB_OUTPUT)
 endif
 
 link: $(OBJ_FILES)
