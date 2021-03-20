@@ -1,6 +1,8 @@
 bits 16
 org 0x0500
  
+%include "include/memory_layout.inc"
+
 start:
     cli                             ; Disable interrupts
     xor ax, ax                      ; 0 AX
@@ -9,7 +11,7 @@ start:
     mov es, ax                      ; Set Extra Segment to 0
     mov fs, ax                      ; Set More Extra Segment to 0
     mov gs, ax                      ; Set Still More Extra Segment to 0
-    mov sp, ax                      ; Set Stack Pointer to 0
+    mov sp, Mem.Loader.Stack.Top    ; Set Stack Pointer
 
     .copyLower:
         mov cx, 0x0100              ; 256 WORDs in MBR
