@@ -146,7 +146,7 @@ GDT64.Table.Size equ ($ - GDT64.Table)
 
 ; GDT64 table pointer
 ; This pointer references Mem.GDT, not GDT64.Table, because that's where the
-; 64-bit mode GDT will reside after we copy it.
+; 64-bit mode GDT will reside after copying it.
 GDT64.Table.Pointer:
     dw GDT64.Table.Size - 1    ; Limit = offset of last byte in table
     dq Mem.GDT                 ; Address of table copy

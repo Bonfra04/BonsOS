@@ -139,7 +139,9 @@ FindFile:
 ;**********************************************;
 PrepareFile:
     ; get starting cluster
-    mov ax, word [dword edi + ROOT_OFFSET + 0x001A]   ; retrive cluster from root entry
+    push ROOT_SEG >> 16
+    pop es
+    mov ax, word [es:edi + 0x1A]   ; retrive cluster from root entry
     mov word [cluster], ax
 
     ; get 0th cluster address
