@@ -107,6 +107,9 @@ load:
 .enable64BitMode:
     BiosPrintMacro String.Status.Entering64Bit
 
+    ; Disable interrupts
+    cli
+
     ; Enable 64-bit mode
     mov ecx, 0xc0000080 ; Extended Feature Enable Register (EFER)
     rdmsr
