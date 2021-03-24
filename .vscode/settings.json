@@ -8,6 +8,7 @@
         "bin/": true,
         "bin-int/": true,
         "BonsOS.img": true,
+        "BonsOS.hdd": true,
 
         // Tools
         "tools/": true,
@@ -19,6 +20,7 @@
 
         // Build files and dirs
         "run.cmd": true,
+        "run_vbox.cmd": true,
         "create_image.sh": true,
         "scripts": true,
         "Makefile": true,
@@ -26,6 +28,9 @@
         "libc/Makefile": true,
         "libk/Makefile": true,
         "boot/Makefile": true,
+
+        // Other VMs
+        "vbox": true,
     },
     "git.ignoreLimitWarning": true
 }

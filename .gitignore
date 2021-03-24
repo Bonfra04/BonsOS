@@ -3,5 +3,10 @@ tools/
 bin/
 bin-int/
 BonsOS.img
+BonsOS.hdd
 
 docs/Resources
+
+vbox/BonsOS/Logs
+vbox/BonsOS/Snapshots
+vbox/BonsOS/BonsOS.vbox-prev
