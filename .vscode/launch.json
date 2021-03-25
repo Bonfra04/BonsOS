@@ -10,13 +10,13 @@
             "remote": true,
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
-            "preLaunchTask": "build",
+            "preLaunchTask": "debug qemu",
             "postDebugTask": "exit",
             "windows": {
                 "autorun": [
                     "set substitute-path /mnt/e e:/"
                 ]
-            },
+            }  
         }
     ],
 }

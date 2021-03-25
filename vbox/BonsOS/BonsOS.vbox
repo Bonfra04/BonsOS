@@ -6,15 +6,15 @@
 ** Use VBoxManage or the VirtualBox Manager GUI to make changes.
 -->
 <VirtualBox xmlns="http://www.virtualbox.org/" version="1.15-windows">
-  <Machine uuid="{d5faa6e3-cd3e-4ded-b170-3552187857a5}" name="BonsOS" OSType="Other_64" stateFile="Snapshots/2021-03-24T21-45-28-786378700Z.sav" snapshotFolder="Snapshots" lastStateChange="2021-03-24T21:45:28Z">
+  <Machine uuid="{d5faa6e3-cd3e-4ded-b170-3552187857a5}" name="BonsOS" OSType="Other_64" snapshotFolder="Snapshots" lastStateChange="2021-03-25T20:10:48Z">
     <MediaRegistry>
       <HardDisks>
         <HardDisk uuid="{f6465d16-6d79-42cf-ae38-c1d7407d436a}" location="E:/OS-Dev/BonsOS.hdd" format="Parallels" type="Normal"/>
       </HardDisks>
     </MediaRegistry>
     <ExtraData>
-      <ExtraDataItem name="GUI/LastCloseAction" value="SaveState"/>
-      <ExtraDataItem name="GUI/LastNormalWindowPosition" value="640,259,720,442"/>
+      <ExtraDataItem name="GUI/LastCloseAction" value="PowerOff"/>
+      <ExtraDataItem name="GUI/LastNormalWindowPosition" value="703,237,720,442"/>
     </ExtraData>
     <Hardware>
       <CPU>
@@ -25,7 +25,7 @@
       <Memory RAMSize="512"/>
       <Paravirt provider="Default"/>
       <Display VRAMSize="9"/>
-      <VideoCapture file="." fps="25"/>
+      <VideoCapture screens="1" file="." fps="25"/>
       <RemoteDisplay enabled="false"/>
       <BIOS>
         <IOAPIC enabled="true"/>
@@ -44,10 +44,7 @@
       <AudioAdapter driver="DirectSound" enabled="true" enabledIn="false"/>
       <Clipboard/>
       <GuestProperties>
-        <GuestProperty name="/VirtualBox/HostInfo/GUI/LanguageID" value="it_IT" timestamp="1616622329412922100" flags=""/>
-        <GuestProperty name="/VirtualBox/HostInfo/VBoxRev" value="142142" timestamp="1616622321032747302" flags="TRANSIENT, RDONLYGUEST"/>
-        <GuestProperty name="/VirtualBox/HostInfo/VBoxVer" value="6.1.18" timestamp="1616622321032747300" flags="TRANSIENT, RDONLYGUEST"/>
-        <GuestProperty name="/VirtualBox/HostInfo/VBoxVerExt" value="6.1.18" timestamp="1616622321032747301" flags="TRANSIENT, RDONLYGUEST"/>
+        <GuestProperty name="/VirtualBox/HostInfo/GUI/LanguageID" value="it_IT" timestamp="1616698681905530800" flags="RDONLYGUEST"/>
       </GuestProperties>
     </Hardware>
     <StorageControllers>

@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
+            "label": "debug qemu",
             "type": "shell",
             "group": {
                 "kind": "build",
@@ -25,6 +25,15 @@
             "group": "build",
             "windows": {
                 "command": ".\\run_vbox.cmd"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "run vmware",
+            "type": "shell",
+            "group": "build",
+            "windows": {
+                "command": ".\\run_vmware.cmd"
             },
             "problemMatcher": []
         }
