@@ -14,8 +14,8 @@ mmd -i ./bin/img/partition.dd ::/folder
 mcopy -i ./bin/img/partition.dd ./test.txt ::/folder
 
 #Add the bootloader to the partition
-dd if=bin/boot/boot.bin of=./bin/img/partition.dd seek=0 count=1 conv=notrunc bs=3
-dd if=bin/boot/boot.bin of=./bin/img/partition.dd seek=90 skip=90 count=$[512-90] conv=notrunc bs=1
+dd if=bin/boot/vbr.bin of=./bin/img/partition.dd seek=0 count=1 conv=notrunc bs=3
+dd if=bin/boot/vbr.bin of=./bin/img/partition.dd seek=90 skip=90 count=$[512-90] conv=notrunc bs=1
 
 #Create the Disk image
 dd if=/dev/zero of=BonsOS.img bs=512 count=$[2048+65536]

@@ -261,6 +261,7 @@ LoadKernel:
     ret
 
 bpb_Loader1 equ Mem.Loader1 + 3 ; + 3 to skip the jump instruction
+
 RetriveBPB:
     mov eax, dword [bpb_Loader1 + 00 + 0]
     mov dword [pbp_OEM + 0], eax
