@@ -19,7 +19,7 @@
         "docs/": true,
 
         // Build files and dirs
-        "run.cmd": true,
+        "run_qemu.cmd": true,
         "run_vbox.cmd": true,
         "run_vmware.cmd": true,
         "create_image.sh": true,

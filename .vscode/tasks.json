@@ -9,7 +9,7 @@
                 "isDefault": true
             },
             "windows": {
-                "command": ".\\run.cmd"
+                "command": ".\\run_qemu.cmd"
             }
         },
         {
