@@ -8,7 +8,8 @@ Mem.BIOS.Data                       equ 0x00000400
 Mem.MemoryMap                       equ 0x00000500
 Mem.GDT                             equ 0x00004500
 Mem.Loader.Stack.Bottom             equ 0x00004600
-Mem.Loader.Stack.Top                equ 0x00007C00
+Mem.Loader.Stack.Top                equ 0x00007A00
+Mem.MBR                             equ 0x00007A00
 Mem.Loader1                         equ 0x00007C00
 Mem.Loader2                         equ 0x00007E00
 
