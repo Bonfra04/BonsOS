@@ -6,6 +6,48 @@
 
 bits 16
 
+;************************************;
+; Load file                          ;
+; Parameters:                        ;
+;   es:si => File name               ;
+;   ebx => Buffer to load file to    ;
+; Returns:                           ;
+;   ax => -1 on error, 0 on success  ;
+;************************************;
+LoadFileExt:
+.findFile:
+    ; find file using name in es:si
+    call FindFile
+    cmp ax, -1
+    je .done ; file not found
+
+.loadFilePre:
+    call PrepareFile
+
+.nextCluster:
+    push ebx
+    mov ebx, BUFFER_SEG
+    call LoadNextCluster
+    pop ebx
+
+    call CopyCluster
+
+    call FileReadCompleated
+    jc .success
+
+    ; increase address
+    xor eax, eax
+    mov al, byte [bpb_SectorsPerCluster]
+    mul word [bpb_BytesPerSector]
+    add ebx, eax
+
+    jmp .nextCluster
+
+.success:
+    xor ax, ax
+.done
+    ret
+
 ;******************************************************;
 ; Copy a cluster from the buffer to a specific address ;
 ; Parameters:                                          ;
@@ -78,48 +120,6 @@ bits 16
     mov ss, ax
 
     popad
-    ret
-
-;************************************;
-; Load file                          ;
-; Parameters:                        ;
-;   es:si => File name               ;
-;   ebx => Buffer to load file to    ;
-; Returns:                           ;
-;   ax => -1 on error, 0 on success  ;
-;************************************;
-LoadFileExt:
-.findFile:
-    ; find file using name in es:si
-    call FindFile
-    cmp ax, -1
-    je .done ; file not found
-
-.loadFilePre:
-    call PrepareFile
-
-.nextCluster:
-    push ebx
-    mov ebx, BUFFER_SEG
-    call LoadNextCluster
-    pop ebx
-
-    call CopyCluster
-
-    call FileReadCompleated
-    jc .success
-
-    ; increase address
-    xor eax, eax
-    mov al, byte [bpb_SectorsPerCluster]
-    mul word [bpb_BytesPerSector]
-    add ebx, eax
-
-    jmp .nextCluster
-
-.success:
-    xor ax, ax
-.done
     ret
 
 %endif ; __FAT12_EXT_INC__

@@ -61,7 +61,7 @@ LoadFAT:
 
     ; clear registers
     xor ax, ax
-    xor ecx, ecx
+    xor cx, cx
 
     ; compute size of FAT and store in "ax" 
     mov al, byte [bpb_NumberOfFATs]     ; number of FATs
@@ -159,7 +159,7 @@ PrepareFile:
 ;*********************************************;
 LoadNextCluster:
     ; zero out registers for calculations
-    xor ecx, ecx
+    xor cx, cx
     xor dx, dx
 
     ; convert the cluster in lba
@@ -176,7 +176,7 @@ LoadNextCluster:
     call ReadSectorsLBA
 
     ; get next cluster from fat table
-    xor eax, eax
+    xor ax, ax
     mov ax, word [cluster]
     mov dx, 2
     mul dx ; since fat table is an array of words (2 byte)
@@ -232,6 +232,7 @@ LoadFile:
     jc .success
 
     ; increase address
+    ;xor eax, eax
     mov ax, word [bpb_SectorsPerCluster]
     mul word [bpb_BytesPerSector]
     mov ecx, eax

@@ -6,9 +6,6 @@ bits 16
 
 boot:
 .init:
-    ;mov ax, 0xFA
-    ;jmp $
-
     mov word [partition_offset], si ; Save partition table offset
     mov byte [bpb_DriveNumber], dl  ; Save drive number
 
