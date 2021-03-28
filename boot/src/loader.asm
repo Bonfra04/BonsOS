@@ -38,7 +38,7 @@ load:
     mov sp, Mem.Loader.Stack.Top
 
     BiosPrintMacro String.Loading
-    
+
 .enableA20:
     call EnableA20
     jnc error.a20line
@@ -68,7 +68,7 @@ load:
 .loadGDT32:
     lgdt [GDT32.Table.Pointer]
 
-.detectMemory:    
+.detectMemory:
     call BiosGetMemorySize
     cmp ax, -1
     je error.undetectedMemory

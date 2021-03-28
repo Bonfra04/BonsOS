@@ -47,7 +47,7 @@ lowStart:
 .CKPTFound:
     mov word [PToff], bx    ; Save Offset
     add bx, 0x08            ; Increment Base to LBA Address
-           
+
 .ReadVBR:
     mov dl, byte [bootDrive]    ; Bootdrive
     mov ax, 1                   ; Sectors to read

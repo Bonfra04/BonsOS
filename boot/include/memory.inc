@@ -85,10 +85,10 @@ BiosGetMemorySize:
     ; clear registers
     xor ecx, ecx
     xor edx, edx
-    
+
     ; call bios function
     mov ax, 0xE801
-    int 0x15    
+    int 0x15
     jc .error
 
     ; error handling

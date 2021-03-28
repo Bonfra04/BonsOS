@@ -25,7 +25,7 @@ GetRootInfo:
     ; clear registers
     xor eax, eax
     xor ecx, ecx
-    
+
     ; compute location of root directory in sectors and store in "ecx" 
     mov al, byte [bpb_NumberOfFATs]     ; number of FATs
     mul word [bpb_SectorsPerFAT]        ; sectors used by FATs
@@ -64,8 +64,7 @@ LoadFAT:
     xor cx, cx
 
     ; compute size of FAT and store in "ax" 
-    mov al, byte [bpb_NumberOfFATs]     ; number of FATs
-    mul word [bpb_SectorsPerFAT]        ; sectors used by FAT
+    mov ax, word [bpb_SectorsPerFAT]    ; number of FATs
 
     ; compute location of FAT and store in "ecx"
     mov cx, word [partition_offset]
@@ -139,7 +138,7 @@ FindFile:
 ;**********************************************;
 PrepareFile:
     ; get starting cluster
-    push ROOT_SEG >> 16
+    push word ROOT_SEG >> 16
     pop es
     mov ax, word [es:edi + 0x1A]   ; retrive cluster from root entry
     mov word [cluster], ax
@@ -169,18 +168,18 @@ LoadNextCluster:
     mul dx
     xchg cx, ax
     add ecx, dword [first_cluster_sector]
-    
+
     ; sets the others parameters and read the disk
     mov dl, byte [bpb_DriveNumber]
     mov al, byte [bpb_SectorsPerCluster]
     call ReadSectorsLBA
 
     ; get next cluster from fat table
-    xor ax, ax
+    xor eax, eax
     mov ax, word [cluster]
     mov dx, 2
     mul dx ; since fat table is an array of words (2 byte)
-    
+
     push word FAT_SEG >> 16
     pop es
     mov dx, word [dword es:eax]
