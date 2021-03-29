@@ -231,7 +231,7 @@ LoadFile:
     jc .success
 
     ; increase address
-    ;xor eax, eax
+    xor eax, eax
     mov ax, word [bpb_SectorsPerCluster]
     mul word [bpb_BytesPerSector]
     mov ecx, eax

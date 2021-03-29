@@ -36,6 +36,15 @@
                 "command": ".\\run_vmware.cmd"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "run bochs",
+            "type": "shell",
+            "group": "build",
+            "windows": {
+                "command": ".\\run_bochs.cmd"
+            },
+            "problemMatcher": []
         }
     ]
 }

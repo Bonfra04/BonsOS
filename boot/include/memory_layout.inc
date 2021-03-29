@@ -20,8 +20,8 @@ Mem.PageTable.PDT                   equ 0x00012000  ; maps first 10MiB
 Mem.PageTable.PT                    equ 0x00013000  ; maps first 2MiB
 Mem.PageTable.End                   equ 0x00020000
 
-Mem.Loader.FAT16.Data               equ 0x00020000
-Mem.Loader.FAT16EXT.LoadBuffer      equ 0x00050000
+Mem.Loader.FAT16.Data               equ 0x00010800
+Mem.Loader.FAT16EXT.LoadBuffer      equ 0x00010000
 
 Mem.BIOS.ExtendedData               equ 0x0009FC00
 Mem.Video                           equ 0x000A0000
