@@ -4,6 +4,7 @@ bin/
 bin-int/
 BonsOS.img
 BonsOS.hdd
+BonsOS.vhd
 
 docs/Resources
 

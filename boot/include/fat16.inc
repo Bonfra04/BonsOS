@@ -88,6 +88,9 @@ LoadFAT:
 ;   di => Location of the file root entry       ;
 ;***********************************************;
 FindFile:
+    ; clear registers
+    xor edi, edi
+    
     ; store registers   
     push cx
     push bx

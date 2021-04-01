@@ -30,6 +30,5 @@ bpb_FileSystem:         resb 8  ; +51
 
 times 0x5A-($-$$) db 0          ; Pad for compatibility
 bpb_end:
-nop
 
 %endif

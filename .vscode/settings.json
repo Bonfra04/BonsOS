@@ -9,6 +9,7 @@
         "bin-int/": true,
         "BonsOS.img": true,
         "BonsOS.hdd": true,
+        "BonsOS.vhd": true,
 
         // Tools
         "tools/": true,
@@ -22,6 +23,8 @@
         "run_qemu.cmd": true,
         "run_vbox.cmd": true,
         "run_vmware.cmd": true,
+        "run_bochs.cmd": true,
+        "run_hyperv.ps1": true,
         "create_image.sh": true,
         "scripts": true,
         "Makefile": true,
@@ -33,6 +36,7 @@
         // Other VMs
         "vbox": true,
         "vmware": true,
+        "bochsrc.bxrc": true,
     },
     "git.ignoreLimitWarning": true
 }

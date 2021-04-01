@@ -14,12 +14,14 @@ bits 16
 ;   cf => set if error              ;
 ;***********************************;
 ReadSectorsLBA:
+    push ebx
     mov word [LBA_Packet.block_cout], ax
     mov dword [LBA_Packet.transfer_buffer], ebx
     mov dword [LBA_Packet.lba_value], ecx
     mov si, LBA_Packet
     mov ah, 0x42    ; Read sectors function
     int 0x13
+    pop ebx
     ret
 
 align 4
