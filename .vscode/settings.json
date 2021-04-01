@@ -37,6 +37,7 @@
         "vbox": true,
         "vmware": true,
         "bochsrc.bxrc": true,
+        "BonsOS.img.lock": true,
     },
     "git.ignoreLimitWarning": true
 }

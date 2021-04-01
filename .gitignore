@@ -11,3 +11,5 @@ docs/Resources
 vbox/BonsOS/Logs
 vbox/BonsOS/Snapshots
 vbox/BonsOS/BonsOS.vbox-prev
+
+BonsOS.img.lock
