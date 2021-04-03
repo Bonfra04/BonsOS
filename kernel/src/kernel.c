@@ -61,17 +61,6 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    FILE* pFile = fopen("a:/folder/test.txt", "r");
-    fseek(pFile, 0, SEEK_END);
-    long length = ftell(pFile) + 1;
-    fseek(pFile, 0, SEEK_SET);
-    char buffer[length];
-    fread(buffer, 1, length, pFile);
-    fclose(pFile);
-    for(int i = 0; i < length; i++)
-        tty_printf("%c", buffer[i]);
-    tty_printf("\n");
-
     while(true)
     {
         char buff[32];
