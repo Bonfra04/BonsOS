@@ -3,13 +3,9 @@
 #include <ctype.h>
 #include "fat16_types.h"
 
-#define SECTOR_SIZE 512
-
 static file_system_t fsys_fat;
 static fsys_interact_function read_disk;
 static fsys_interact_function write_disk;
-static size_t device;
-static size_t lba_offset;
 
 static mount_info_t mount_info;
 
@@ -36,7 +32,7 @@ static void dos_filename(const char* filename, char* dos_fname)
         }
 }
 
-static file_t search_root(const char* filename)
+static fat16_file_t search_root(const char* filename)
 {
     char dos_fname[12];
     dos_filename(filename, dos_fname);
@@ -44,11 +40,11 @@ static file_t search_root(const char* filename)
 
     dir_entry_t entries[mount_info.num_root_entries];
 
-    bool success = read_disk(device, lba_offset + mount_info.root_offset, mount_info.root_size, (void*)&entries);
+    bool success = read_disk(mount_info.root_offset, mount_info.root_size, (void*)&entries);
     if(!success)
     {
-        file_t invalid;
-        invalid.flags = FS_INVALID;
+        fat16_file_t invalid;
+        invalid.file.flags = FS_INVALID;
         return invalid;
     }
 
@@ -72,25 +68,30 @@ static file_t search_root(const char* filename)
 
             file.flags = entries[i].flags == 0x10 ? FS_DIRECTORY : FS_FILE;
             
-            return file;
+            fat16_file_t fat16_file;
+            fat16_file.file = file;
+            fat16_file.dir_lba = mount_info.root_offset;
+            fat16_file.dir_index = i;
+
+            return fat16_file;
         }
     }
 
-    file_t invalid;
-    invalid.flags = FS_INVALID;
+    fat16_file_t invalid;
+    invalid.file.flags = FS_INVALID;
     return invalid;
 }
 
-static file_t serch_sub_dir(file_t dir, const char* filename)
+static fat16_file_t serch_sub_dir(fat16_file_t dir, const char* filename)
 {
     char dos_fname[12];
     dos_filename(filename, dos_fname);
     dos_fname[11] = '\0';
 
-    while(!dir.eof)
+    while(!dir.file.eof)
     {
         uint8_t buff[mount_info.bytes_per_cluster];
-        if(!read_disk(device, lba_offset + mount_info.first_cluster_sector + (dir.first_cluster - 2) * mount_info.sectors_per_cluster, mount_info.sectors_per_cluster, (void*)&buff))
+        if(!read_disk(mount_info.first_cluster_sector + (dir.file.first_cluster - 2) * mount_info.sectors_per_cluster, mount_info.sectors_per_cluster, (void*)&buff))
             break;
 
         dir_entry_t* subdir = (dir_entry_t*)buff;
@@ -105,6 +106,7 @@ static file_t serch_sub_dir(file_t dir, const char* filename)
             if(!strcmp(dos_fname, name))
             {
                 file_t file;
+
                 strcpy(file.name, filename);
                 file.first_cluster = subdir->cluster_number;
                 file.length = subdir->file_size;
@@ -116,7 +118,12 @@ static file_t serch_sub_dir(file_t dir, const char* filename)
 
                 file.flags = subdir->flags == 0x10 ? FS_DIRECTORY : FS_FILE;
 
-                return file;
+                fat16_file_t fat16_file;
+                fat16_file.file = file;
+                fat16_file.dir_lba = mount_info.first_cluster_sector + (dir.file.first_cluster - 2) * mount_info.sectors_per_cluster;
+                fat16_file.dir_index = i;
+
+                return fat16_file;
             }
 
             subdir++;
@@ -126,18 +133,16 @@ static file_t serch_sub_dir(file_t dir, const char* filename)
 
     invalid:
     {
-        file_t invalid;
-        invalid.flags = FS_INVALID;
+        fat16_file_t invalid;
+        invalid.file.flags = FS_INVALID;
         return invalid;
     }
 }
 
-void fat16_init(char device_letter, size_t device_id, size_t offset, fsys_interact_function read_function, fsys_interact_function write_function)
+void fat16_init(char device_letter, fsys_interact_function read_function, fsys_interact_function write_function)
 {
     read_disk = read_function;
     write_disk = write_function;
-    device = device_id;
-    lba_offset = offset;
 
     strcpy(fsys_fat.name, "FAT12");
     fsys_fat.mount = fat16_mount;
@@ -147,6 +152,7 @@ void fat16_init(char device_letter, size_t device_id, size_t offset, fsys_intera
     fsys_fat.write_file = fat16_write_file;
     fsys_fat.get_position = fat16_get_position;
     fsys_fat.set_position = fat16_set_position;
+    fsys_fat.remove = fat16_remove;
 
     fsys_register_file_system(&fsys_fat, device_letter);
 
@@ -156,7 +162,7 @@ void fat16_init(char device_letter, size_t device_id, size_t offset, fsys_intera
 bool fat16_mount()
 {
     bootsector_t bootsector;
-    bool success = read_disk(device, lba_offset + 0, 1, (void*)&bootsector);
+    bool success = read_disk(0, 1, (void*)&bootsector);
     if(!success)
         return false;
 
@@ -187,7 +193,7 @@ file_t fat16_open_file(const char* filename)
 
     if(!p) // in root dir
     {
-        file_t file = search_root(path);
+        file_t file = search_root(path).file;
 
         if(file.flags == FS_FILE)
             return file;
@@ -199,7 +205,7 @@ file_t fat16_open_file(const char* filename)
     bool inRoot = true;
     while(p)
     {
-        file_t currentFile;
+        fat16_file_t currentFile;
 
         size_t len = 0;
         while(p[len] != '/' && p[len] != '\0')
@@ -217,11 +223,11 @@ file_t fat16_open_file(const char* filename)
         else
             currentFile = serch_sub_dir(currentFile, pathname);
 
-        if(currentFile.flags == FS_INVALID)
+        if(currentFile.file.flags == FS_INVALID)
             return invalid;
 
-        if(currentFile.flags == FS_FILE)
-            return currentFile;
+        if(currentFile.file.flags == FS_FILE)
+            return currentFile.file;
 
         p = (char*)strchr(p, '/');
         if(p)
@@ -270,7 +276,7 @@ size_t fat16_read_file(file_t* file, void* buffer, size_t length)
         return FS_EOF;
 
     uint16_t FAT[mount_info.fat_size];
-    if(!read_disk(device, lba_offset + mount_info.fat_offset * mount_info.sectors_per_cluster, mount_info.sectors_per_fat, (void*)&FAT))
+    if(!read_disk(mount_info.fat_offset * mount_info.sectors_per_cluster, mount_info.sectors_per_fat, (void*)&FAT))
     {
         file->error = true;
         return 0;
@@ -287,7 +293,7 @@ size_t fat16_read_file(file_t* file, void* buffer, size_t length)
             cluster = FAT[cluster];
 
         size_t lba = (cluster - 2) * mount_info.sectors_per_cluster + file->sector;
-        if(!read_disk(device, lba_offset + mount_info.first_cluster_sector + lba, 1, (void*)&internal_buffer))
+        if(!read_disk(mount_info.first_cluster_sector + lba, 1, (void*)&internal_buffer))
         {
             file->error = true;
             return advance;
@@ -366,4 +372,73 @@ void fat16_set_position(file_t* file, size_t position)
     while(fat16_get_position(file) > file->length)
         file->position--;
     file->eof = fat16_get_position(file) == file->length;
+}
+
+bool fat16_remove(const char* filename)
+{
+    char* path = (char*)filename;
+    char* p = (char*)strchr(path, '/');
+
+    fat16_file_t file;
+
+    if(!p) // in root dir
+    {
+        file = search_root(path);
+        if(file.file.flags != FS_FILE)
+            return -1;
+    }
+    else
+    {
+        p++;
+        bool inRoot = true;
+        while(p)
+        {
+            fat16_file_t currentFile;
+
+            size_t len = 0;
+            while(p[len] != '/' && p[len] != '\0')
+                len++;
+
+            char pathname[len + 1];
+            strncpy(pathname, p, len);
+            pathname[len] = '\0';
+
+            if(inRoot)
+            {
+                currentFile = search_root(pathname);
+                inRoot = false;
+            }
+            else
+                currentFile = serch_sub_dir(currentFile, pathname);
+
+            if(currentFile.file.flags == FS_INVALID)
+                return -1;
+
+            if(currentFile.file.flags == FS_FILE)
+            {
+                file = currentFile;
+                break;
+            }
+
+            p = (char*)strchr(p, '/');
+            if(p)
+                p++;
+        }
+    }
+
+    uint8_t buff[mount_info.bytes_per_cluster];
+    if(!read_disk(file.dir_lba, mount_info.sectors_per_cluster, (void*)&buff))
+        return -1;
+
+    dir_entry_t* entries = (dir_entry_t*)buff;
+    for(size_t i = file.dir_index; i < mount_info.bytes_per_cluster / sizeof(dir_entry_t); i++)
+    {
+        entries[i] = entries[i + 1];
+        if(!entries[i].name[0])
+            break;
+    }
+    if(!write_disk(file.dir_lba, mount_info.sectors_per_cluster, (void*)&buff))
+        return -1;
+
+    return 0;
 }

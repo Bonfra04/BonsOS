@@ -72,6 +72,29 @@ void fsys_set_position(file_t* file, size_t offset)
             file_systems[file->device_letter - 'a']->set_position(file, offset);
 }
 
+bool fsys_remove(const char* filename)
+{
+    if(filename)
+    {
+        char* fname = (char*)filename;
+
+        //default to device 'a'
+        char device = 'a';    
+
+        if (filename[1] == ':')
+        {
+            device = filename[0];
+            fname += 2;
+        }
+
+        //call filesystem
+        if (file_systems[device - 'a'])
+            return file_systems[device - 'a']->remove(fname);
+    }
+
+    return -1;
+}
+
 void fsys_register_file_system(file_system_t* file_system, char device_letter)
 {
     static uint8_t registered_devices = 0;

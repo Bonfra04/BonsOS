@@ -36,6 +36,8 @@ typedef struct _FILE
     size_t buffered;
 } FILE;
 
+int remove(const char* filename);
+
 FILE* fopen(const char* filename, const char* mode);
 int fclose(FILE* stream);
 

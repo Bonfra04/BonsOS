@@ -71,3 +71,9 @@ typedef struct dir_entry
     uint32_t file_size;
 } __attribute__((packed)) dir_entry_t;
 
+typedef struct fat16_file
+{
+    file_t file;
+    size_t dir_lba;
+    size_t dir_index;
+} fat16_file_t;

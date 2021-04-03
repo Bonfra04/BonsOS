@@ -114,6 +114,11 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     return advance;
 }
 
+int remove(const char* filename)
+{
+    return fsys_remove(filename);
+}
+
 FILE* fopen(const char* filename, const char* mode)
 {
     int index = -1;

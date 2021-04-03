@@ -11,7 +11,7 @@
 
 #define FS_EOF -1
 
-typedef bool (*fsys_interact_function)(size_t device, uint64_t lba, uint8_t count, void* address); 
+typedef bool (*fsys_interact_function)(uint64_t lba, uint8_t count, void* address); 
 
 typedef struct file
 {
@@ -37,6 +37,7 @@ typedef struct file_system
     size_t (*write_file)(file_t* file, void* buffer, size_t length);
     size_t (*get_position)(file_t* file);
     void (*set_position)(file_t* file, size_t offset);
+    bool (*remove)(const char* filename);
 } file_system_t;
 
 file_t fsys_open_file(const char* filename);
@@ -45,6 +46,7 @@ size_t fsys_read_file(file_t* file, void* buffer, size_t length);
 size_t fsys_write_file(file_t* file, void* buffer, size_t length);
 size_t fsys_get_position(file_t* file);
 void fsys_set_position(file_t* file, size_t offset);
+bool fsys_remove(const char* filename);
 
 void fsys_register_file_system(file_system_t* file_system, char device_letter);
 void fsys_unregister_file_system(file_system_t* file_system);
