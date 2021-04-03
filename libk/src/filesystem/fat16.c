@@ -363,10 +363,7 @@ void fat16_set_position(file_t* file, size_t position)
     position /= mount_info.sectors_per_cluster;
     file->cluster = position;
 
-    file->eof = false;
-    while(fat16_get_position(file) >= file->length)
-    {
-        file->eof = true;
+    while(fat16_get_position(file) > file->length)
         file->position--;
-    }
+    file->eof = fat16_get_position(file) == file->length;
 }
