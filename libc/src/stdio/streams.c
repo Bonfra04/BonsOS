@@ -50,6 +50,7 @@ static size_t fread_unbuffered(void* ptr, size_t length, FILE* stream)
 static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
 {
     get_file(stream)->error = true;
+    asm("int 15");
     return 0;
 }
 

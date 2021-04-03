@@ -11,28 +11,28 @@
 #define TAB_SIZE 4
 
 // CRTC ports
-#define CRTC_PORT_CMD           0x03d4   ///< Command port for CRT controller.
-#define CRTC_PORT_DATA          0x03d5   ///< Data port for CRT controller.
+#define CRTC_PORT_CMD           0x03d4   // Command port for CRT controller.
+#define CRTC_PORT_DATA          0x03d5   // Data port for CRT controller.
 
 // CRTC commands
-#define CRTC_CMD_STARTADDR_HI   0x0c   ///< Hi-byte of buffer start address.
-#define CRTC_CMD_STARTADDR_LO   0x0d   ///< Lo-byte of buffer start address.
-#define CRTC_CMD_CURSORADDR_HI  0x0e   ///< Hi-byte of cursor start address.
-#define CRTC_CMD_CURSORADDR_LO  0x0f   ///< Lo-byte of cursor start address.
+#define CRTC_CMD_STARTADDR_HI   0x0c   // Hi-byte of buffer start address.
+#define CRTC_CMD_STARTADDR_LO   0x0d   // Lo-byte of buffer start address.
+#define CRTC_CMD_CURSORADDR_HI  0x0e   // Hi-byte of cursor start address.
+#define CRTC_CMD_CURSORADDR_LO  0x0f   // Lo-byte of cursor start address.
 
 typedef struct tty_state
 {
-    uint16_t    textcolor;       ///< Current fg/bg color (shifted).
-    uint16_t    textcolor_orig;  ///< Original, non-override text color.
-    screenpos_t pos;             ///< Current screen position.
-    uint8_t     ybuf;            ///< Virtual buffer y position.
-    uint16_t*   screen;          ///< Virtual screen buffer for 50 rows.
-    uint16_t*   tlcorner;        ///< Points to char in top-left corner.
+    uint16_t    textcolor;       // Current fg/bg color (shifted).
+    uint16_t    textcolor_orig;  // Original, non-override text color.
+    screenpos_t pos;             // Current screen position.
+    uint8_t     ybuf;            // Virtual buffer y position.
+    uint16_t*   screen;          // Virtual screen buffer for 50 rows.
+    uint16_t*   tlcorner;        // Points to char in top-left corner.
 } tty_state_t;
 
-static tty_state_t tty[MAX_TTYS];      ///< All virtual consoles.
-static tty_state_t* active_tty;        ///< The currently visible console.
-static uint8_t active_tty_index;       ///< The currently visible console index.
+static tty_state_t tty[MAX_TTYS];
+static tty_state_t* active_tty;
+static uint8_t active_tty_index;
 
 static void update_buffer_offset()
 {
@@ -127,12 +127,12 @@ static void tty_printchar(tty_state_t *cons, char ch)
                cons->screen + cons->ybuf * VGA_SCREEN_COLS,
                VGA_SCREEN_COLS * sizeof(uint16_t));
 
-        ++cons->pos.y;
-        ++cons->ybuf;
+        cons->pos.y++;
+        cons->ybuf++;
 
         if (cons->pos.y == VGA_SCREEN_ROWS)
         {
-            --cons->pos.y;
+            cons->pos.y--;
 
             if (cons->ybuf == VGA_SCREEN_ROWS * 2)
                 cons->ybuf -= VGA_SCREEN_ROWS;
@@ -165,6 +165,7 @@ static int tty_va_printf(int id, const char* format, va_list args)
 {
     if (id < 0 || id >= MAX_TTYS)
         id = 0;
+
     char buffer[8 * 1024];
     int result = vsnprintf(buffer, sizeof(buffer), format, args);
 
@@ -223,9 +224,7 @@ static int tty_va_scanf(int id, const char* format, va_list args)
     } while(ch != '\n' && p < 8 * 1024 - 1);
     buffer[p] = '\0';
 
-    int result = vsscanf(buffer, format, args);
-
-    return result;
+    return vsscanf(buffer, format, args);
 }
 
 void tty_activate(int id)
@@ -346,7 +345,6 @@ int tty_id_scanf(int id, const char* format, ...)
 
     return result;
 }
-
 
 // Implicit routines
 
