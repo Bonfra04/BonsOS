@@ -90,7 +90,7 @@ LoadFAT:
 FindFile:
     ; clear registers
     xor edi, edi
-    
+
     ; store registers   
     push cx
     push bx

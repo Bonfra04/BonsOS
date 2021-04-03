@@ -8,8 +8,8 @@
 
 #define MAX_DEVICES 32
 
-#define HBA_PI_ACTIVE (1 << 0)
-#define HBA_PI_PRESENT (3 << 8)
+#define HBA_PI_ACTIVE   (1 << 0)
+#define HBA_PI_PRESENT  (3 << 8)
  
 #define HBA_PxCMD_ST    (1 << 0)
 #define HBA_PxCMD_FRE   (1 << 4)
@@ -37,7 +37,7 @@ static void stop_cmd(hba_port_t* port)
     while((port->cmd & HBA_PxCMD_FR) || (port->cmd & HBA_PxCMD_CR));
 }
 
-void start_cmd(hba_port_t* port)
+static void start_cmd(hba_port_t* port)
 {
     // Wait until CR (bit15) is cleared
     while (port->cmd & HBA_PxCMD_CR);
@@ -56,12 +56,12 @@ static void configure_device(hba_device_t* device)
     uint64_t cmd_address = page0;
     uint32_t cmd_low = cmd_address & 0xFFFFFFFFLL;
     uint32_t cmd_high = (cmd_address >> 32) & 0xFFFFFFFFLL;
-    
+
     uint64_t fis_address = page0 + 1024;
     uint32_t fis_low = fis_address & 0xFFFFFFFFLL;
     uint32_t fis_high = (fis_address >> 32) & 0xFFFFFFFFLL;
 
-    stop_cmd(device->port); // Stop command engine
+    stop_cmd(device->port);
 
     device->port->clb = cmd_low;
     device->port->clbu = cmd_high;
@@ -87,7 +87,7 @@ static void configure_device(hba_device_t* device)
         memset((void*)cmd_addr, 0, 256);
     }
 
-    start_cmd(device->port);    // Start command engine
+    start_cmd(device->port);
 }
 
 void sata_init()
@@ -105,7 +105,7 @@ void sata_register_pci_device(pci_device_t* device)
     uint32_t starting_device = registered_devices;
 
     hba_mem_t* hba_mem = (hba_mem_t*)(uint64_t)device->base5;
-    
+
     for(int bit = 0; bit < 32; bit++)
         if(hba_mem->pi & (1 << bit)) // bit is set: device exists
         {
@@ -121,7 +121,7 @@ void sata_register_pci_device(pci_device_t* device)
                 devices[registered_devices++] = hba_device;
             }
         }
-    
+
     if(starting_device != registered_devices)
     {
         uint64_t device_size = sizeof(hba_mem_t) + (registered_devices - starting_device) * sizeof(hba_port_t);
@@ -148,7 +148,7 @@ bool sata_read(size_t device, uint64_t lba, uint8_t count, void* address)
         return false;
 
     hba_device_t* hba_device = &(devices[device]);
-    
+
     hba_device->port->is = -1; // Clear pending interrupt bits
     int slot = find_cmdslot(hba_device->port);
 
@@ -220,7 +220,7 @@ bool sata_write(size_t device, uint64_t lba, uint8_t count, void* address)
         return false;
 
     hba_device_t* hba_device = &(devices[device]);
-    
+
     hba_device->port->is = -1; // Clear pending interrupt bits
     int slot = find_cmdslot(hba_device->port);
 

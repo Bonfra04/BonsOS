@@ -62,9 +62,9 @@ static void isr_keyboard(const interrupt_context_t* context)
             break;
         }
     }
-    
+
     isMultiByte = scancode == 0xE0;
-    
+
     ISR_DONE();
 }
 
@@ -212,7 +212,7 @@ char vk_to_char(uint8_t vk)
     case VK_LESS: ret = '<'; break;
     case VK_GREATER: ret = '>'; break;
     case VK_QUESTION_MARK: ret = '?'; break;
-    
+
     default:
         ret = 0; break;
     }

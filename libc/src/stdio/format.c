@@ -433,6 +433,6 @@ int vsscanf(const char* s, const char *format, va_list args)
         stop:
         continue;
     }
-    
+
     return res;
 }

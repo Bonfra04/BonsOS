@@ -27,7 +27,7 @@ void init(bootinfo_t* bootinfo)
     identity_map_everything();
 
     tty_init();
-    
+
     interrupts_init();
     exceptions_init();
 
@@ -42,7 +42,7 @@ void init(bootinfo_t* bootinfo)
     pfa_init((void*)0x00D00001);
     // Deinit the region the kernel/stack/bitmap is in as its in use
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
-    
+
     kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     heap_activate(&kernel_heap);
 
@@ -60,6 +60,17 @@ void main(bootinfo_t* bootinfo)
 
     if(!execute_tests())
         return;
+
+    FILE* pFile = fopen("a:/folder/test.txt", "r");
+    fseek(pFile, 0, SEEK_END);
+    long length = ftell(pFile) + 1;
+    fseek(pFile, 0, SEEK_SET);
+    char buffer[length];
+    fread(buffer, 1, length, pFile);
+    fclose(pFile);
+    for(int i = 0; i < length; i++)
+        tty_printf("%c", buffer[i]);
+    tty_printf("\n");
 
     while(true)
     {

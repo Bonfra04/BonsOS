@@ -75,13 +75,13 @@ void identity_map_everything()
     memset(pdp_table,0,sizeof(pdpt_entry)*512);
     memset(page_dir,0,sizeof(page_dir_entry)*512*4);
     memset(page_table,0,sizeof(page_dir_entry)*512*512*4);
-    
+
     pml4_table[0].present = 1;
     pml4_table[0].readwrite = 1;
     pml4_table[0].user = 0; // 1 if using usermode
     pml4_table[0].execdisable = 0;
     pml4_table[0].address = ((intptr_t)&pdp_table[0])>>12;
-    
+
     for (int i = 0; i < 4; i++) {
         pdp_table[i].present = 1;
         pdp_table[i].readwrite = 1;

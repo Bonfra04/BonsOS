@@ -69,7 +69,7 @@ isr_dispatcher:
         ; Restore the MXCSR register.
         ldmxcsr [rsp]
         add rsp, 16
-    
+
         ; Restore general-purpose registers.
         pop rax
         pop rbx

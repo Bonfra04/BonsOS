@@ -65,7 +65,7 @@ static void remap_pic()
     // set PICs in 8086 mode
     outportb(PIC_DATA_MASTER, ICW4_8086);
     outportb(PIC_DATA_SLAVE, ICW4_8086);
-    
+
     // diable all ISRs
     outportb(PIC_DATA_MASTER, 0xFF);
     outportb(PIC_DATA_SLAVE, 0xFF);

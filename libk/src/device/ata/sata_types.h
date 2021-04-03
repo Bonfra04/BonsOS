@@ -64,7 +64,7 @@ typedef struct hba_port
 
 typedef struct hba_mem
 {
-    uint32_t cap;       // Host capability
+    uint32_t cap;       // 0x00, Host capability
     uint32_t ghc;       // 0x04, Global host control
     uint32_t is;        // 0x08, Interrupt status
     uint32_t pi;        // 0x0C, Port implemented
@@ -86,7 +86,6 @@ typedef struct hba_device
 {
     hba_port_t* port;
     hba_cmd_header_t* cmd_header;
-    uint8_t* fis;
 } hba_device_t;
 
 typedef struct fis_reg_h2d
@@ -140,6 +139,6 @@ typedef struct hba_cmd_table
     uint8_t cfis[64];   // Command FIS
     uint8_t acmd[16];   // ATAPI command, 12 or 16 bytes
     uint8_t rsv[48];    // Reserved
-    
+
     hba_prdt_entry_t prdt_entry[];  // Physical region descriptor table entries, 0 ~ 65535
 } hba_cmd_table_t;

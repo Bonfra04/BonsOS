@@ -21,6 +21,6 @@ void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*
             n -= pivot + 1;
         }
     }
-    
+
     return (NULL);
 }

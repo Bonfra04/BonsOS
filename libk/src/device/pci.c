@@ -13,6 +13,11 @@
 
 #define PCI_CLASS_ATA 0x01
 
+static void init_intefaces()
+{
+    ata_init();
+}
+
 uint8_t pci_read_byte(uint8_t bus, uint8_t device, uint8_t function, uint8_t port)
 {
     outportb(PCI_ADDR, 0x80000000 | (bus << 16) | (device << 11) | (function << 8) | (port & 0xFC));
@@ -73,7 +78,7 @@ void pci_write_dword(uint8_t bus, uint8_t device, uint8_t function, uint8_t port
 
 void pci_init()
 {   
-    ata_init();
+    init_intefaces();
 
     // register devices
     for(int bus = 0; bus < PCI_MAX_BUS; bus++)
@@ -87,10 +92,6 @@ void pci_init()
                     // read in the 256 bytes (64 dwords)
                     for(int i = 0; i < 64; i++)
                         dataptr[i] = pci_read_dword(bus, dev, func, i << 2);
-
-                    data.position.bus = bus;
-                    data.position.device = dev;
-                    data.position.function = func;
 
                     switch (data.class)
                     {

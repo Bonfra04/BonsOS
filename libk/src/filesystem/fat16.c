@@ -43,7 +43,7 @@ static file_t search_root(const char* filename)
     dos_fname[11] = '\0';
 
     dir_entry_t entries[mount_info.num_root_entries];
-    
+
     bool success = read_disk(device, lba_offset + mount_info.root_offset, mount_info.root_size, (void*)&entries);
     if(!success)
     {
@@ -265,7 +265,7 @@ size_t fat16_read_file(file_t* file, void* buffer, size_t length)
 
     if(fat16_get_position(file) >= file->length)
         file->eof = true;
-    
+
     if(file->eof)
         return FS_EOF;
 
@@ -356,7 +356,7 @@ size_t fat16_get_position(file_t* file)
 void fat16_set_position(file_t* file, size_t position)
 {
     position = position > file->length ? file->length : position;
-    
+
     file->position = position % mount_info.bytes_per_sector;
     position /= mount_info.bytes_per_sector;
     file->sector = position % mount_info.sectors_per_cluster;

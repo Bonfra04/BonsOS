@@ -218,7 +218,7 @@ long strtol(const char* str, char** endptr, int base)
     }
     if ((result == 0) && (endptr != 0) && (*endptr == p))
         *endptr = (char*) str;
-    
+
     return result;
 }
 
@@ -354,7 +354,7 @@ long long strtoll(const char* str, char** endptr, int base)
     }
     if ((result == 0) && (endptr != 0) && (*endptr == p))
         *endptr = (char*) str;
-    
+
     return result;
 }
 
@@ -371,7 +371,7 @@ unsigned long strtoul(const char* str, char** endptr, int base)
     }
     if (base == 0)
         base = c == '0' ? 8 : 10;
-    
+
     unsigned long cutoff = (unsigned long)ULONG_MAX / (unsigned long)base;
     int cutlim = (unsigned long)ULONG_MAX % (unsigned long)base;
 
@@ -421,7 +421,7 @@ unsigned long long strtoull(const char* str, char** endptr, int base)
     }
     if (base == 0)
         base = c == '0' ? 8 : 10;
-    
+
     unsigned long long cutoff = (unsigned long long)ULLONG_MAX / (unsigned long long)base;
     int cutlim = (unsigned long long)ULLONG_MAX % (unsigned long long)base;
 

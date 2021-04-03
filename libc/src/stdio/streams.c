@@ -90,7 +90,7 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
         ptr = (uint8_t*)ptr + size;
         fsys_set_position(file, stream->buffered + size);
     }
-    
+
     size_t advance = 0;
     while (length > 0)
     {
@@ -175,10 +175,10 @@ size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
 {
     if(!stream)
         return 0;
-    
+
     if(size == 0 || count == 0)
         return 0;
-    
+
     if(stream->flags & STATUS_WRITING)
         return 0;
     stream->flags |= STATUS_READING;

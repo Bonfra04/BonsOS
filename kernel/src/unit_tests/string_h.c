@@ -24,7 +24,7 @@ int test_memcpy()
 int test_memmove()
 {
     char mem0[] = "this is a test stirng - other stuffs";
-    
+
     char* dest = (char*)memmove(mem0 + 21, mem0, 15);
 
     if(dest != mem0 + 21)
@@ -96,7 +96,7 @@ int test_strncpy()
             else if(mem1[i] != 0)
                 return 0;
     }
-    
+
     return 1;
 }
 
@@ -122,6 +122,6 @@ int test_string()
         tty_printf("'strncpy' test went wrong.\n");
         return 0;
     }
-    
+
     return 1;
 }

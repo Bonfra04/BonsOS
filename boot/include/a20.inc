@@ -65,17 +65,17 @@ EnableA20:
 
         jmp .attempt3
 
-        .attempt2.wait1:
-            in al, 0x64
-            test al, 2
-            jnz .attempt2.wait1
-            ret
+    .attempt2.wait1:
+        in al, 0x64
+        test al, 2
+        jnz .attempt2.wait1
+        ret
 
-        .attempt2.wait2:
-            in al, 0x64
-            test al, 1
-            jz .attempt2.wait2
-            ret
+    .attempt2.wait2:
+        in al, 0x64
+        test al, 1
+        jz .attempt2.wait2
+        ret
 
     .attempt3:
         ; Attempt enabling with the FAST A20 feature.

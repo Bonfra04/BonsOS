@@ -89,7 +89,7 @@ key_state_t physical_to_virtual_key(uint16_t physical)
     case KEY_PRESSED_KEYPAD_PERIOD:          return (key_state_t){ VK_KEYPAD_PERIOD, true };
     case KEY_PRESSED_F11:                    return (key_state_t){ VK_F11, true };
     case KEY_PRESSED_F12:                    return (key_state_t){ VK_F12, true };
-    
+
     case KEY_RELEASED_ESCAPE:                return (key_state_t){ VK_ESCAPE, false };
     case KEY_RELEASED_1:                     return (key_state_t){ VK_1, false };
     case KEY_RELEASED_2:                     return (key_state_t){ VK_2, false };

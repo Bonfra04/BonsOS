@@ -177,7 +177,7 @@ static int tty_va_scanf(int id, const char* format, va_list args)
 {
     if (id < 0 || id >= MAX_TTYS)
         id = 0;
-    
+
     tty_state_t* cons = &tty[id];
 
     char buffer[8 * 1024];
@@ -396,7 +396,7 @@ int tty_printf(const char *format, ...)
     va_start(args, format);
     int result = tty_va_printf(active_tty_index, format, args);
     va_end(args);
-    
+
     return result;
 }
 

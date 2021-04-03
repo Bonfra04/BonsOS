@@ -3,13 +3,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct pci_position
-{
-    uint8_t bus;
-    uint8_t device;
-    uint8_t function;
-} pci_position_t;
-
 typedef struct pci_device
 {
     uint16_t vendor_id;
@@ -42,8 +35,6 @@ typedef struct pci_device
     uint8_t min_time;
     uint8_t max_time;
     uint8_t varies[192];
-
-    pci_position_t position;
 } pci_device_t;
 
 uint8_t pci_read_byte(uint8_t bus, uint8_t device, uint8_t function, uint8_t port);
