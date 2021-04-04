@@ -3,13 +3,13 @@
 #include <stdint.h>
 #include <filesystem/fsys.h>
 
-void fat16_init(char device_letter, fsys_interact_function read_function, fsys_interact_function write_function);
-bool fat16_mount();
+file_system_t fat16_generate(size_t device, size_t offset, size_t size, fsys_interact_function disk_read, fsys_interact_function disk_write);
 
-file_t fat16_open_file(const char* filename);
-void fat16_close_file(file_t* file);
-size_t fat16_read_file(file_t* file, void* buffer, size_t length);
-size_t fat16_write_file(file_t* file, void* buffer, size_t length);
-size_t fat16_get_position(file_t* file);
-void fat16_set_position(file_t* file, size_t position);
-bool fat16_remove(const char* filename);
+bool fat16_mount(fs_data_t* fs);
+file_t fat16_open_file(fs_data_t* fs, const char* filename);
+void fat16_close_file(fs_data_t* fs, file_t* file);
+size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length);
+size_t fat16_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length);
+size_t fat16_get_position(fs_data_t* fs, file_t* file);
+void fat16_set_position(fs_data_t* fs, file_t* file, size_t position);
+bool fat16_delete_file(fs_data_t* fs, const char* filename);

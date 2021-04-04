@@ -1,6 +1,6 @@
 #include <device/ata.h>
 #include <device/pci.h>
-#include <device/ata/sata.h>
+#include <device/ata/ahci.h>
 #include <stdlib.h>
 #include <stddef.h>
 
@@ -17,7 +17,7 @@
 
 void ata_init()
 {
-    sata_init();
+    ahci_init();
 }
 
 void ata_register_device(pci_device_t* device)
@@ -25,6 +25,6 @@ void ata_register_device(pci_device_t* device)
     switch (device->sub_class)
     {
         case PCI_ATA_SUB_SATA:
-            sata_register_pci_device(device);
+            ahci_register_pci_device(device);
     }
 }

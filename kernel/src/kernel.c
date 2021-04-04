@@ -8,9 +8,10 @@
 #include <device/pci.h>
 #include <device/ata.h>
 #include <device/pit.h>
-#include <device/ata/sata.h>
+#include <device/ata/ahci.h>
 #include <x86/cpu.h>
 #include <filesystem/fat16.h>
+#include <storage/disk_manager.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -48,7 +49,7 @@ void init(bootinfo_t* bootinfo)
 
     pci_init();
 
-    fat16_init('a', 0, 2048, sata_read, sata_write);
+    disk_manager_init();
 
     int bits = sizeof(void*) * 8;
     tty_printf("Succesfully booted BonsOS %d bit.\n", bits);
