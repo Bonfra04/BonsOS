@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <inheritance.h>
 
 typedef struct bios_parameter_block
 {

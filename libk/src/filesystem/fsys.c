@@ -136,34 +136,74 @@ file_t fsys_create_file(const char* filename)
 
 bool fsys_copy_file(const char* oldpos, const char* newpos)
 {
-    if(!oldpos || !newpos)
-        return;
-
-    char* oldname = (char*)oldpos;
-    char olddevice = 'a';
-    if (oldpos[1] == ':')
+    if(oldpos)
     {
-        olddevice = oldpos[0];
-        oldname += 2;
-    }
+        char* fname = (char*)oldpos;
 
-    char* newname = (char*)newpos;
-    char newdevice = 'a';
-    if (oldpos[1] == ':')
+        //default to device 'a'
+        char device = 'a';    
+
+        if (oldpos[1] == ':')
+        {
+            device = oldpos[0];
+            fname += 2;
+        }
+
+        //call filesystem
+        if (file_systems[device - 'a'])
+            return file_systems[device - 'a']->copy_file(&(file_systems[device - 'a']->data), fname, newpos);
+    }
+    
+    return false;
+}
+
+bool fsys_move_file(const char* oldpos, const char* newpos)
+{
+    if(oldpos)
     {
-        newdevice = newpos[0];
-        newname += 2;
-    }
+        char* fname = (char*)oldpos;
 
-    //call filesystem
-    //if (file_systems[olddevice - 'a'] && file_systems[newdevice - 'a'])
-        //return file_systems[olddevice - 'a']->copy_file(fname);
+        //default to device 'a'
+        char device = 'a';    
+
+        if (oldpos[1] == ':')
+        {
+            device = oldpos[0];
+            fname += 2;
+        }
+
+        //call filesystem
+        if (file_systems[device - 'a'])
+            return file_systems[device - 'a']->move_file(&(file_systems[device - 'a']->data), fname, newpos);
+    }
     
     return false;
 }
 
 bool fsys_move_file(const char* oldpos, const char* newpos);
-bool fsys_exists_file(const char* filename);
+
+bool fsys_exists_file(const char* filename)
+{
+    if(filename)
+    {
+        char* fname = (char*)filename;
+
+        //default to device 'a'
+        char device = 'a';    
+
+        if (filename[1] == ':')
+        {
+            device = filename[0];
+            fname += 2;
+        }
+
+        //call filesystem
+        if (file_systems[device - 'a'])
+            return file_systems[device - 'a']->exists_file(&(file_systems[device - 'a']->data), fname);
+    }
+
+    return false;
+}
 
 void fsys_register_file_system(file_system_t* file_system, char device_letter)
 {
@@ -182,4 +222,9 @@ void fsys_unregister_file_system(file_system_t* file_system)
     for (uint8_t i = 0; i < DEVICE_MAX; i++)
         if (file_systems[i] == file_system)
             file_systems[i] = 0;
+}
+
+file_system_t* fsys_get_filesystem(char letter)
+{
+    return file_systems[letter - 'a'];
 }

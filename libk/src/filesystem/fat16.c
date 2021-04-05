@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "fat16_types.h"
+#include <inheritance.h>
 
 static void dos_filename(const char* filename, char* dos_fname)
 {
@@ -30,6 +31,9 @@ static fat16_file_t search_root(fs_data_t* fs, const char* filename)
 {
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
 
+    fat16_file_t invalid;
+    invalid.file.flags = FS_INVALID;
+
     char dos_fname[12];
     dos_filename(filename, dos_fname);
     dos_fname[11] = '\0';
@@ -37,11 +41,7 @@ static fat16_file_t search_root(fs_data_t* fs, const char* filename)
     dir_entry_t entries[mount_info->num_root_entries];
 
     if(!fs->reader(fs->device, fs->offset + mount_info->root_offset, mount_info->root_size, (void*)&entries))
-    {
-        fat16_file_t invalid;
-        invalid.file.flags = FS_INVALID;
         return invalid;
-    }
 
     for(int i = 0; i < mount_info->num_root_entries; i++)
     {
@@ -59,7 +59,7 @@ static fat16_file_t search_root(fs_data_t* fs, const char* filename)
             file.sector = 0;
             file.cluster = 0;
             file.eof = false;
-            file.error = false,
+            file.error = false;
 
             file.flags = entries[i].flags == 0x10 ? FS_DIRECTORY : FS_FILE;
             
@@ -72,14 +72,16 @@ static fat16_file_t search_root(fs_data_t* fs, const char* filename)
         }
     }
 
-    fat16_file_t invalid;
-    invalid.file.flags = FS_INVALID;
     return invalid;
 }
 
 static fat16_file_t serch_sub_dir(fs_data_t* fs, fat16_file_t dir, const char* filename)
 {
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
+
+    fat16_file_t invalid;
+    invalid.file.flags = FS_INVALID;
+
     char dos_fname[12];
     dos_filename(filename, dos_fname);
     dos_fname[11] = '\0';
@@ -94,25 +96,25 @@ static fat16_file_t serch_sub_dir(fs_data_t* fs, fat16_file_t dir, const char* f
         for(size_t i = 0; i < mount_info->bytes_per_cluster / sizeof(dir_entry_t); i++)
         {
             char name[12];
-			memcpy(name, subdir->name, 11);
+			memcpy(name, subdir[i].name, 11);
 			name[11] = 0;
             if(!name[0])
-                goto invalid;
+                return invalid;
 
             if(!strcmp(dos_fname, name))
             {
                 file_t file;
 
                 strcpy(file.name, filename);
-                file.first_cluster = subdir->cluster_number;
-                file.length = subdir->file_size;
+                file.first_cluster = subdir[i].cluster_number;
+                file.length = subdir[i].file_size;
                 file.position = 0;
                 file.sector = 0;
                 file.cluster = 0;
                 file.eof = false;
                 file.error = false,
 
-                file.flags = subdir->flags == 0x10 ? FS_DIRECTORY : FS_FILE;
+                file.flags = subdir[i].flags == 0x10 ? FS_DIRECTORY : FS_FILE;
 
                 fat16_file_t fat16_file;
                 fat16_file.file = file;
@@ -121,17 +123,80 @@ static fat16_file_t serch_sub_dir(fs_data_t* fs, fat16_file_t dir, const char* f
 
                 return fat16_file;
             }
-
-            subdir++;
         }
 
     }
+    
+    return invalid;
+}
 
-    invalid:
+static fat16_file_t search(fs_data_t* fs, const char* filename)
+{
+    char* path = (char*)filename;
+    char* p = (char*)strchr(path, '/');
+
+    fat16_file_t invalid;
+    invalid.file.flags = FS_INVALID;
+
+    if(!p) // in root dir
+        return search_root(fs, path);
+    
+    p++;
+    bool inRoot = true;
+    while(p)
     {
-        fat16_file_t invalid;
-        invalid.file.flags = FS_INVALID;
-        return invalid;
+        fat16_file_t currentFile;
+
+        size_t len = 0;
+        while(p[len] != '/' && p[len] != '\0')
+            len++;
+
+        char pathname[len + 1];
+        strncpy(pathname, p, len);
+        pathname[len] = '\0';
+
+        if(inRoot)
+        {
+            currentFile = search_root(fs, pathname);
+            inRoot = false;
+        }
+        else
+            currentFile = serch_sub_dir(fs, currentFile, pathname);
+
+        if(currentFile.file.flags == FS_INVALID)
+            return invalid;
+
+        if(!p[0]) // end of path
+            return currentFile;
+
+        p = (char*)strchr(p, '/');
+        if(p)
+            p++;
+    }
+
+    return invalid;
+}
+
+static void advance_file(fs_data_t* fs, file_t* file, size_t amount)
+{
+    mount_info_t* mount_info = &(fs->fs_specific);
+
+    file->position += amount;
+    if(file->position >= mount_info->bytes_per_sector)
+    {
+        file->sector += file->position / mount_info->bytes_per_sector;
+        file->position %= mount_info->bytes_per_sector;
+        if(file->sector >= mount_info->sectors_per_cluster)
+        {
+            file->cluster += file->sector / mount_info->sectors_per_cluster;
+            file->sector %= mount_info->sectors_per_cluster;
+        }
+    }
+
+    while(fat16_get_position(fs, file) >= file->length)
+    {
+        file->eof = true;
+        file->position--;
     }
 }
 
@@ -149,10 +214,11 @@ file_system_t fat16_generate(size_t device, size_t offset, size_t size, fsys_int
     fs.open_file = fat16_open_file;
     fs.close_file = fat16_close_file;
     fs.read_file = fat16_read_file;
-    fs.write_file = fat16_write_file;
     fs.get_position = fat16_get_position;
     fs.set_position = fat16_set_position;
     fs.delete_file = fat16_delete_file;
+    fs.exists_file = fat16_exists_file;
+    // create write copy move
 
     fs.mount(&(fs.data));
 
@@ -186,86 +252,19 @@ bool fat16_mount(fs_data_t* fs)
 
 file_t fat16_open_file(fs_data_t* fs, const char* filename)
 {
-    char* path = (char*)filename;
-
     file_t invalid;
     invalid.flags = FS_INVALID;
 
-    char* p = (char*)strchr(path, '/');
-
-    if(!p) // in root dir
-    {
-        file_t file = search_root(fs, path).file;
-
-        if(file.flags == FS_FILE)
-            return file;
-
+    file_t file = search(fs, filename).file;
+    if(file.flags != FS_FILE)
         return invalid;
-    }
-
-    p++;
-    bool inRoot = true;
-    while(p)
-    {
-        fat16_file_t currentFile;
-
-        size_t len = 0;
-        while(p[len] != '/' && p[len] != '\0')
-            len++;
-
-        char pathname[len + 1];
-        strncpy(pathname, p, len);
-        pathname[len] = '\0';
-
-        if(inRoot)
-        {
-            currentFile = search_root(fs, pathname);
-            inRoot = false;
-        }
-        else
-            currentFile = serch_sub_dir(fs, currentFile, pathname);
-
-        if(currentFile.file.flags == FS_INVALID)
-            return invalid;
-
-        if(currentFile.file.flags == FS_FILE)
-            return currentFile.file;
-
-        p = (char*)strchr(p, '/');
-        if(p)
-            p++;
-    }
-
-    return invalid;
+    return file;
 }
 
 void fat16_close_file(fs_data_t* fs, file_t* file)
 {
     if(file)
         file->flags = FS_INVALID;
-}
-
-static void advance_file(fs_data_t* fs, file_t* file, size_t amount)
-{
-    mount_info_t* mount_info = &(fs->fs_specific);
-
-    file->position += amount;
-    if(file->position >= mount_info->bytes_per_sector)
-    {
-        file->sector += file->position / mount_info->bytes_per_sector;
-        file->position %= mount_info->bytes_per_sector;
-        if(file->sector >= mount_info->sectors_per_cluster)
-        {
-            file->cluster += file->sector / mount_info->sectors_per_cluster;
-            file->sector %= mount_info->sectors_per_cluster;
-        }
-    }
-
-    while(fat16_get_position(fs, file) >= file->length)
-    {
-        file->eof = true;
-        file->position--;
-    }
 }
 
 size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
@@ -322,42 +321,6 @@ size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
     return advance;
 }
 
-size_t fat16_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
-{
-    if(!file)
-        return -1;
-
-    return -1;
-    /*
-    uint16_t FAT[mount_info.fat_size];
-    read_disk(device, lba_offset + mount_info.fat_offset * mount_info.sectors_per_cluster, mount_info.sectors_per_fat, (void*)&FAT);
-
-    uint8_t internal_buffer[mount_info.bytes_per_sector];
-    size_t advance = 0;
-
-    while(length > 0)
-    {
-        size_t cluster = file->cluster;
-        size_t bias = file->cluster;
-        while(bias--)
-            cluster = FAT[cluster];
-        size_t lba = (cluster - 2) * mount_info.sectors_per_cluster + file->sector;
-        read_disk(device, lba_offset + mount_info.first_cluster_sector + lba, 1, (void*)&internal_buffer);
-
-        size_t readable = (mount_info.bytes_per_sector - file->position);
-        size_t amount = length > readable ? readable : length;
-        memcpy((uint8_t*)&internal_buffer + file->position, (uint8_t*)buffer + advance, amount);
-        write_disk(device, lba_offset + mount_info.first_cluster_sector + lba, 1, (void*)&internal_buffer);
-        advance += amount;
-        length -= amount;
-
-        advance_file(file, amount);
-    }
-
-    return advance;
-    */
-}
-
 size_t fat16_get_position(fs_data_t* fs, file_t* file)
 {
     mount_info_t* mount_info = &(fs->fs_specific);
@@ -387,55 +350,9 @@ bool fat16_delete_file(fs_data_t* fs, const char* filename)
 {
     mount_info_t* mount_info = &(fs->fs_specific);
 
-    char* path = (char*)filename;
-    char* p = (char*)strchr(path, '/');
-
-    fat16_file_t file;
-
-    if(!p) // in root dir
-    {
-        file = search_root(fs, path);
-        if(file.file.flags != FS_FILE)
-            return false;
-    }
-    else
-    {
-        p++;
-        bool inRoot = true;
-        while(p)
-        {
-            fat16_file_t currentFile;
-
-            size_t len = 0;
-            while(p[len] != '/' && p[len] != '\0')
-                len++;
-
-            char pathname[len + 1];
-            strncpy(pathname, p, len);
-            pathname[len] = '\0';
-
-            if(inRoot)
-            {
-                currentFile = search_root(fs, pathname);
-                inRoot = false;
-            }
-            else
-                currentFile = serch_sub_dir(fs, currentFile, pathname);
-
-            if(currentFile.file.flags == FS_INVALID)
-                return false;
-
-            if(currentFile.file.flags == FS_FILE)
-            {
-                file = currentFile;
-                break;
-            }
-
-            p = (char*)strchr(p, '/');
-            if(p)
-                p++;
-        }
-    }
+    fat16_file_t file = search(fs, filename);
+    if(file.file.flags != FS_FILE)
+        return false;
 
     uint8_t buff[mount_info->bytes_per_cluster];
     if(!fs->reader(fs->device, fs->offset + file.dir_lba, mount_info->sectors_per_cluster, (void*)&buff))
@@ -452,4 +369,9 @@ bool fat16_delete_file(fs_data_t* fs, const char* filename)
         return false;
 
     return true;
+}
+
+bool fat16_exists_file(fs_data_t* fs, const char* filename)
+{
+    return search(fs, filename).file.flags == FS_FILE;
 }

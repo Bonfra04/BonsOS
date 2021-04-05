@@ -59,6 +59,10 @@ typedef struct file_system
     bool (*copy_file)(fs_data_t* fs, const char* oldpos, const char* newpos);
     bool (*move_file)(fs_data_t* fs, const char* oldpos, const char* newpos);
     bool (*exists_file)(fs_data_t* fs, const char* filename);
+
+    bool (*delete_dir)(fs_data_t* fs, const char* dirname);
+    file_t (*create_dir)(fs_data_t* fs, const char* dirname);
+
 } file_system_t;
 
 file_system_t fsys_generate(uint8_t type, size_t device, size_t offset, size_t size, fsys_interact_function disk_read, fsys_interact_function disk_write);
@@ -77,3 +81,4 @@ bool fsys_exists_file(const char* filename);
 
 void fsys_register_file_system(file_system_t* file_system, char device_letter);
 void fsys_unregister_file_system(file_system_t* file_system);
+file_system_t* fsys_get_filesystem(char letter);
