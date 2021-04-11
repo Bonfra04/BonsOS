@@ -61,8 +61,8 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     if(stream->buffered == -1)
     {
         stream->buffered = fsys_get_position(file);
-        size_t res = fsys_read_file(file, stream->buffer, stream->buffer_size);
-        if(res != stream->buffer_size && !file->eof)
+        fsys_read_file(file, stream->buffer, stream->buffer_size);
+        if(file->error)
             return 0;
         fsys_set_position(file, 0);
     }
@@ -153,7 +153,7 @@ FILE* fopen(const char* filename, const char* mode)
         flags &= ~(STATUS_WRITING);
     }
 
-    opened_files[index] = fsys_open_file(filename);
+    opened_files[index] = fsys_open_file(filename, mode);
     if(opened_files[index].flags == FS_INVALID)
         return NULL;
 
@@ -216,9 +216,7 @@ int fgetpos(FILE* stream, fpos_t* pos)
     if(!file)
         return -1;
 
-    pos->current_cluster = file->cluster;
-    pos->current_sector = file->sector;
-    pos->current_position = file->position;
+    *pos = fsys_get_position(file);
 
     return 0;
 }
@@ -247,16 +245,16 @@ int fseek(FILE* stream, long int offset, int origin)
         return -1;
     }
 
-    if(file->flags & MODE_UPDATE)
-        if(file->flags & STATUS_WRITING)
+    if(stream->flags & MODE_UPDATE)
+        if(stream->flags & STATUS_WRITING)
         {
-            file->flags &= ~(STATUS_WRITING);
-            file->flags |= STATUS_READING;
+            stream->flags &= ~(STATUS_WRITING);
+            stream->flags |= STATUS_READING;
         }
         else
         {
-            file->flags &= ~(STATUS_READING);
-            file->flags |= STATUS_WRITING;
+            stream->flags &= ~(STATUS_READING);
+            stream->flags |= STATUS_WRITING;
         }
 
     file->eof = false;
@@ -272,20 +270,18 @@ int fsetpos(FILE* stream, const fpos_t* pos)
     if(!file)
         return -1;
 
-    file->cluster = pos->current_cluster;
-    file->sector = pos->current_sector;
-    file->position = pos->current_position;
+    fsys_set_position(file, *pos);
 
-    if(file->flags & MODE_UPDATE)
-        if(file->flags & STATUS_WRITING)
+    if(stream->flags & MODE_UPDATE)
+        if(stream->flags & STATUS_WRITING)
         {
-            file->flags &= ~(STATUS_WRITING);
-            file->flags |= STATUS_READING;
+            stream->flags &= ~(STATUS_WRITING);
+            stream->flags |= STATUS_READING;
         }
         else
         {
-            file->flags &= ~(STATUS_READING);
-            file->flags |= STATUS_WRITING;
+            stream->flags &= ~(STATUS_READING);
+            stream->flags |= STATUS_WRITING;
         }
 
     file->eof = false;
@@ -313,20 +309,18 @@ void rewind(FILE* stream)
     if(!file)
         return;
 
-    file->position = 0;
-    file->sector = 0;
-    file->cluster = 0;
+    fsys_set_position(file, 0);
 
-    if(file->flags & MODE_UPDATE)
-        if(file->flags & STATUS_WRITING)
+    if(stream->flags & MODE_UPDATE)
+        if(stream->flags & STATUS_WRITING)
         {
-            file->flags &= ~(STATUS_WRITING);
-            file->flags |= STATUS_READING;
+            stream->flags &= ~(STATUS_WRITING);
+            stream->flags |= STATUS_READING;
         }
         else
         {
-            file->flags &= ~(STATUS_READING);
-            file->flags |= STATUS_WRITING;
+            stream->flags &= ~(STATUS_READING);
+            stream->flags |= STATUS_WRITING;
         }
 
     file->eof = false;

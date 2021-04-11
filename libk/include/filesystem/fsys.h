@@ -4,14 +4,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// Flags
-#define FS_FILE       0b00
-#define FS_DIRECTORY  0b01
-#define FS_INVALID    0b10
+#define FS_INVALID     0b00
+#define FS_FILE        0b01
+#define FS_DIRECTORY   0b10
 
 #define FS_EOF -1
-
-typedef bool (*fsys_interact_function)(size_t device, uint64_t lba, uint8_t count, void* address); 
 
 typedef enum fsys_type
 {
@@ -20,24 +17,22 @@ typedef enum fsys_type
 
 typedef struct file
 {
-    char name[32];
-    uint32_t flags;
-    uint32_t length;
-    uint32_t first_cluster;
-    uint64_t position;
-    uint64_t sector;
-    uint64_t cluster;
-    char device_letter;
-    bool eof;
+    char name[30];
+    size_t length;
+    
+    uint8_t flags;
+    char mode;
+    bool update;
+    char device;
     bool error;
+    bool eof;
+    uint8_t data[512];
 } file_t;
 
 typedef struct fs_data
 {
     char name[8];
-    fsys_interact_function reader;
-    fsys_interact_function writer;
-    size_t device;
+    size_t disk_id;
     size_t offset;
     size_t size;
     uint8_t fs_specific[512];
@@ -48,37 +43,55 @@ typedef struct file_system
     fs_data_t data;
  
     bool (*mount)(fs_data_t* fs);
-    file_t (*open_file)(fs_data_t* fs, const char* filename);
-    void (*close_file)(fs_data_t* fs, file_t* file);
+
+    file_t (*open_file)(fs_data_t* fs, const char* filename, const char* mode);
+    bool (*close_file)(fs_data_t* fs, file_t* file);
+
     size_t (*read_file)(fs_data_t* fs, file_t* file, void* buffer, size_t length);
     size_t (*write_file)(fs_data_t* fs, file_t* file, void* buffer, size_t length);
+
+    file_t (*create_file)(fs_data_t* fs, const char* filename);
+    bool (*delete_file)(fs_data_t* fs, const char* filename);
+
+    file_t (*create_dir)(fs_data_t* fs, const char* dirpath);
+    bool (*delete_dir)(fs_data_t* fs, const char* dirpath);
+
     size_t (*get_position)(fs_data_t* fs, file_t* file);
     void (*set_position)(fs_data_t* fs, file_t* file, size_t offset);
-    bool (*delete_file)(fs_data_t* fs, const char* filename);
-    file_t (*create_file)(fs_data_t* fs, const char* filename);
-    bool (*copy_file)(fs_data_t* fs, const char* oldpos, const char* newpos);
-    bool (*move_file)(fs_data_t* fs, const char* oldpos, const char* newpos);
+
+    //bool (*copy_file)(fs_data_t* fs, const char* origin, const char* destination);
+    //bool (*move_file)(fs_data_t* fs, const char* origin, const char* destination);
+
+    bool (*list_dir)(fs_data_t* fs, size_t* index, char* filename, const char* dirpath);
+    
     bool (*exists_file)(fs_data_t* fs, const char* filename);
-
-    bool (*delete_dir)(fs_data_t* fs, const char* dirname);
-    file_t (*create_dir)(fs_data_t* fs, const char* dirname);
-
+    bool (*exists_dir)(fs_data_t* fs, const char* dirpath);
 } file_system_t;
 
-file_system_t fsys_generate(uint8_t type, size_t device, size_t offset, size_t size, fsys_interact_function disk_read, fsys_interact_function disk_write);
-
-file_t fsys_open_file(const char* filename);
-void fsys_close_file(file_t* file);
-size_t fsys_read_file(file_t* file, void* buffer, size_t length);
-size_t fsys_write_file(file_t* file, void* buffer, size_t length);
-size_t fsys_get_position(file_t* file);
-void fsys_set_position(file_t* file, size_t offset);
-bool fsys_delete_file(const char* filename);
-file_t fsys_create_file(const char* filename);
-bool fsys_copy_file(const char* oldpos, const char* newpos);
-bool fsys_move_file(const char* oldpos, const char* newpos);
-bool fsys_exists_file(const char* filename);
+file_system_t fsys_generate(uint8_t type, size_t disk_id, size_t offset, size_t size);
 
 void fsys_register_file_system(file_system_t* file_system, char device_letter);
 void fsys_unregister_file_system(file_system_t* file_system);
-file_system_t* fsys_get_filesystem(char letter);
+
+file_t fsys_open_file(const char* filename, const char* mode);
+bool fsys_close_file(file_t* file);
+
+size_t fsys_read_file(file_t* file, void* buffer, size_t length);
+size_t fsys_write_file(file_t* file, void* buffer, size_t length);
+
+file_t fsys_create_file(const char* filename);
+bool fsys_delete_file(const char* filename);
+
+file_t fsys_create_dir(const char* dirpath);
+bool fsys_delete_dir(const char* dirpath);
+
+size_t fsys_get_position(file_t* file);
+void fsys_set_position(file_t* file, size_t offset);
+
+//bool fsys_copy_file(const char* origin, const char* destination);
+//bool fsys_move_file(const char* origin, const char* destination);
+
+bool fsys_list_dir(size_t* index, char* filename, const char* dirpath);
+
+bool fsys_exists_file(const char* filename);
+bool fsys_exists_dir(const char* dirpath);

@@ -6,215 +6,21 @@
 
 static file_system_t* file_systems[DEVICE_MAX];
 
-file_system_t fsys_generate(uint8_t type, size_t device, size_t offset, size_t size, fsys_interact_function disk_read, fsys_interact_function disk_write)
+file_system_t fsys_generate(uint8_t type, size_t disk_id, size_t offset, size_t size)
 {
     switch (type)
     {
     case FSYS_FAT16:
-        return fat16_generate(device, offset, size, disk_read, disk_write);
+        return fat16_generate(disk_id, offset, size);
     }
     
-    file_system_t invalid;
+    file_system_t invalid = {0};
     return invalid;
-}
-
-file_t fsys_open_file(const char* filename)
-{
-    if(filename)
-    {
-        char* fname = (char*)filename;
-
-        //default to device 'a'
-        char device = 'a';    
-
-        if (filename[1] == ':')
-        {
-            device = filename[0];
-            fname += 2;
-        }
-
-        //call filesystem
-        if (file_systems[device - 'a'])
-        {
-            //set volume specific information and return file
-            file_t file = file_systems[device - 'a']->open_file(&(file_systems[device - 'a']->data), fname);
-            file.device_letter = device;
-            return file;
-        }
-    }
-
-    file_t file;
-    file.flags = FS_INVALID;
-    return file;
-}
-
-void fsys_close_file(file_t* file)
-{
-    if (file && file->flags != FS_INVALID)
-        if (file_systems[file->device_letter - 'a'])
-            file_systems[file->device_letter - 'a']->close_file(&(file_systems[file->device_letter - 'a']->data), file);
-}
-
-size_t fsys_read_file(file_t* file, void* buffer, size_t length)
-{
-    if (file && file->flags != FS_INVALID)
-        if (file_systems[file->device_letter - 'a'])
-            return file_systems[file->device_letter - 'a']->read_file(&(file_systems[file->device_letter - 'a']->data), file, buffer, length);
-    return 0;
-}
-
-size_t fsys_write_file(file_t* file, void* buffer, size_t length)
-{
-    if (file && file->flags != FS_INVALID)
-        if (file_systems[file->device_letter - 'a'])
-            return file_systems[file->device_letter - 'a']->write_file(&(file_systems[file->device_letter - 'a']->data), file, buffer, length);
-    return 0;
-}
-
-size_t fsys_get_position(file_t* file)
-{
-    if (file && file->flags != FS_INVALID)
-        if (file_systems[file->device_letter - 'a'])
-            return file_systems[file->device_letter - 'a']->get_position(&(file_systems[file->device_letter - 'a']->data), file);
-    return 0;
-}
-
-void fsys_set_position(file_t* file, size_t offset)
-{
-    if (file && file->flags != FS_INVALID)
-        if (file_systems[file->device_letter - 'a'])
-            file_systems[file->device_letter - 'a']->set_position(&(file_systems[file->device_letter - 'a']->data), file, offset);
-}
-
-bool fsys_delete_file(const char* filename)
-{
-    if(filename)
-    {
-        char* fname = (char*)filename;
-
-        //default to device 'a'
-        char device = 'a';    
-
-        if (filename[1] == ':')
-        {
-            device = filename[0];
-            fname += 2;
-        }
-
-        //call filesystem
-        if (file_systems[device - 'a'])
-            return file_systems[device - 'a']->delete_file(&(file_systems[device - 'a']->data), fname);
-    }
-
-    return false;
-}
-
-file_t fsys_create_file(const char* filename)
-{
-    if(filename)
-    {
-        char* fname = (char*)filename;
-
-        //default to device 'a'
-        char device = 'a';    
-
-        if (filename[1] == ':')
-        {
-            device = filename[0];
-            fname += 2;
-        }
-
-        //call filesystem
-        if (file_systems[device - 'a'])
-            return file_systems[device - 'a']->create_file(&(file_systems[device - 'a']->data), fname);
-    }
-
-    file_t file;
-    file.flags = FS_INVALID;
-    return file;
-}
-
-bool fsys_copy_file(const char* oldpos, const char* newpos)
-{
-    if(oldpos)
-    {
-        char* fname = (char*)oldpos;
-
-        //default to device 'a'
-        char device = 'a';    
-
-        if (oldpos[1] == ':')
-        {
-            device = oldpos[0];
-            fname += 2;
-        }
-
-        //call filesystem
-        if (file_systems[device - 'a'])
-            return file_systems[device - 'a']->copy_file(&(file_systems[device - 'a']->data), fname, newpos);
-    }
-    
-    return false;
-}
-
-bool fsys_move_file(const char* oldpos, const char* newpos)
-{
-    if(oldpos)
-    {
-        char* fname = (char*)oldpos;
-
-        //default to device 'a'
-        char device = 'a';    
-
-        if (oldpos[1] == ':')
-        {
-            device = oldpos[0];
-            fname += 2;
-        }
-
-        //call filesystem
-        if (file_systems[device - 'a'])
-            return file_systems[device - 'a']->move_file(&(file_systems[device - 'a']->data), fname, newpos);
-    }
-    
-    return false;
-}
-
-bool fsys_move_file(const char* oldpos, const char* newpos);
-
-bool fsys_exists_file(const char* filename)
-{
-    if(filename)
-    {
-        char* fname = (char*)filename;
-
-        //default to device 'a'
-        char device = 'a';    
-
-        if (filename[1] == ':')
-        {
-            device = filename[0];
-            fname += 2;
-        }
-
-        //call filesystem
-        if (file_systems[device - 'a'])
-            return file_systems[device - 'a']->exists_file(&(file_systems[device - 'a']->data), fname);
-    }
-
-    return false;
 }
 
 void fsys_register_file_system(file_system_t* file_system, char device_letter)
 {
-    static uint8_t registered_devices = 0;
-
-    if (registered_devices < DEVICE_MAX)
-        if (file_system) 
-        {
-            file_systems[device_letter - 'a'] = file_system;
-            registered_devices++;
-        }
+    file_systems[device_letter - 'a'] = file_system;
 }
 
 void fsys_unregister_file_system(file_system_t* file_system)
@@ -224,7 +30,253 @@ void fsys_unregister_file_system(file_system_t* file_system)
             file_systems[i] = 0;
 }
 
-file_system_t* fsys_get_filesystem(char letter)
+file_t fsys_open_file(const char* filename, const char* mode)
 {
-    return file_systems[letter - 'a'];
+    file_t invalid;
+    invalid.flags = FS_INVALID;
+    invalid.error = true;
+
+    if(!filename)
+        return invalid;
+
+    char* fname = (char*)filename;
+    char device = 'a';
+    if (filename[1] == ':')
+    {
+        device = filename[0];
+        fname += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return invalid;
+
+    fs_data_t* data = &(fs->data);
+    file_t file = fs->open_file(data, fname, mode);
+    file.device = device;
+    return file;
+}
+
+bool fsys_close_file(file_t* file)
+{
+    if (!file || file->flags != FS_FILE)
+        return false;
+
+    file_system_t* fs = file_systems[file->device - 'a'];
+    if (!fs)
+        return false;
+
+    fs_data_t* data = &(fs->data);
+    return fs->close_file(data, file);
+}
+
+size_t fsys_read_file(file_t* file, void* buffer, size_t length)
+{
+    if (!file || file->flags != FS_FILE)
+        return 0;
+
+    file_system_t* fs = file_systems[file->device - 'a'];
+    if (!fs)
+        return 0;
+
+    fs_data_t* data = &(fs->data);
+    return fs->read_file(data, file, buffer, length);
+}
+
+size_t fsys_write_file(file_t* file, void* buffer, size_t length)
+{
+    if (!file || file->flags != FS_FILE)
+        return 0;
+    
+    file_system_t* fs = file_systems[file->device - 'a'];
+    if (!fs)
+        return 0;
+
+    fs_data_t* data = &(fs->data);
+    return fs->write_file(data, file, buffer, length);
+}
+
+file_t fsys_create_file(const char* filename)
+{
+    file_t invalid;
+    invalid.flags = FS_INVALID;
+    invalid.error = true;
+
+    if(!filename)
+        return invalid;
+
+    char* fname = (char*)filename;
+    char device = 'a';
+    if (filename[1] == ':')
+    {
+        device = filename[0];
+        fname += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return invalid;
+
+    fs_data_t* data = &(fs->data);
+    file_t file = fs->create_file(data, fname);
+    file.device = device;
+    return file;
+}
+
+bool fsys_delete_file(const char* filename)
+{
+    if(!filename)
+        return false;
+
+    char* fname = (char*)filename;
+    char device = 'a';
+    if (filename[1] == ':')
+    {
+        device = filename[0];
+        fname += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return false;
+
+    fs_data_t* data = &(fs->data);
+    return fs->delete_file(data, fname);
+}
+
+file_t fsys_create_dir(const char* dirpath)
+{
+    file_t invalid;
+    invalid.flags = FS_INVALID;
+    invalid.error = true;
+
+    if(!dirpath)
+        return invalid;
+
+    char* dpath = (char*)dirpath;
+    char device = 'a';
+    if (dirpath[1] == ':')
+    {
+        device = dirpath[0];
+        dpath += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return invalid;
+
+    fs_data_t* data = &(fs->data);
+    file_t file = fs->create_dir(data, dpath);
+    file.device = device;
+    return file;
+}
+
+bool fsys_delete_dir(const char* dirpath)
+{
+    if(!dirpath)
+        return false;
+
+    char* dpath = (char*)dirpath;
+    char device = 'a';
+    if (dirpath[1] == ':')
+    {
+        device = dirpath[0];
+        dpath += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return false;
+
+    fs_data_t* data = &(fs->data);
+    return fs->delete_dir(data, dpath);
+}
+
+size_t fsys_get_position(file_t* file)
+{
+    if (!file || file->flags != FS_FILE)
+        return 0;
+
+    file_system_t* fs = file_systems[file->device - 'a'];
+    if (!fs)
+        return 0;
+
+    fs_data_t* data = &(fs->data);
+    return fs->get_position(data, file);
+}
+
+void fsys_set_position(file_t* file, size_t offset)
+{
+    if (!file || file->flags != FS_FILE)
+        return;
+
+    file_system_t* fs = file_systems[file->device - 'a'];
+    if (!fs)
+        return;
+
+    fs_data_t* data = &(fs->data);
+    return fs->set_position(data, file, offset);
+}
+
+bool fsys_list_dir(size_t* index, char* filename, const char* dirpath)
+{
+    if(!dirpath || !filename)
+        return false;
+
+    char* dpath = (char*)dirpath;
+    char device = 'a';
+    if (dirpath[1] == ':')
+    {
+        device = dirpath[0];
+        dpath += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return false;
+
+    fs_data_t* data = &(fs->data);
+    return fs->list_dir(data, index, filename, dpath);
+}
+
+bool fsys_exists_file(const char* filename)
+{
+    if(!filename)
+        return false;
+
+    char* fname = (char*)filename;
+    char device = 'a';
+    if (filename[1] == ':')
+    {
+        device = filename[0];
+        fname += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return false;
+
+    fs_data_t* data = &(fs->data);
+    return fs->exists_file(data, fname);
+}
+
+bool fsys_exists_dir(const char* dirpath)
+{
+    if(!dirpath)
+        return false;
+
+    char* dpath = (char*)dirpath;
+    char device = 'a';
+    if (dirpath[1] == ':')
+    {
+        device = dirpath[0];
+        dpath += 2;
+    }
+
+    file_system_t* fs = file_systems[device - 'a'];
+    if (!fs)
+        return false;
+
+    fs_data_t* data = &(fs->data);
+    return fs->exists_dir(data, dpath);
 }

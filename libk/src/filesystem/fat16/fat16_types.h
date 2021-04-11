@@ -1,7 +1,22 @@
 #pragma once
 
 #include <stdint.h>
-#include <inheritance.h>
+
+#define FIRST_CLUSTER_INDEX_IN_FAT 3
+
+#define VFAT_DIR_ENTRY          0x0F
+
+typedef enum file_attribute
+{
+    READ_ONLY   = 0x01,
+    HIDDEN      = 0x02,
+    SYSTEM      = 0x04,
+    VOLUME      = 0x08,
+    SUBDIR      = 0x10,
+    ARCHIVE     = 0x20,
+    DEVICE      = 0x40,
+    FREE        = 0x80,
+} file_attribute_t;
 
 typedef struct bios_parameter_block
 {
@@ -45,20 +60,32 @@ typedef struct mount_info
     uint32_t fat_offset;
     uint32_t num_root_entries;
     uint32_t root_offset;
-    uint32_t root_size;
-    uint32_t fat_size;
+    uint32_t root_size_in_sectors;
+    size_t root_size_in_bytes;
+    uint32_t fat_size_in_sectors;
+    size_t fat_size_in_bytes;
     uint32_t fat_entry_size;
     uint32_t bytes_per_sector;
     uint32_t bytes_per_cluster;
     uint32_t sectors_per_cluster;
     uint32_t sectors_per_fat;
     uint32_t first_cluster_sector;
+    size_t data_sector_count;
+    size_t data_cluster_count;
+    size_t dir_entry_per_sector;
 } mount_info_t;
 
 typedef struct dir_entry
 {
-    uint8_t name[8];
-    uint8_t ext[3];
+    union
+    {
+        uint8_t fullname[11];
+        struct
+        {
+            uint8_t name[8];
+            uint8_t ext[3];
+        };
+    };
     uint8_t flags;
     uint8_t reserved;
     uint8_t creation_time_ms; // tenths of a second
@@ -68,13 +95,17 @@ typedef struct dir_entry
     uint16_t unused;
     uint16_t last_edit_time;
     uint16_t last_edit_date;
-    uint16_t cluster_number;
+    uint16_t first_cluster;
     uint32_t file_size;
 } __attribute__((packed)) dir_entry_t;
 
-typedef struct fat16_file
+typedef struct file_data
 {
-    file_t file;
-    size_t dir_lba;
+    size_t dir_entry_address;
     size_t dir_index;
-} fat16_file_t;
+
+    size_t first_cluster;
+    size_t cluster;
+    size_t offset;
+    size_t bytes_left;
+} file_data_t;

@@ -20,12 +20,7 @@ extern "C" {
 #define _IOLBF 128
 #define _IONBF 192
 
-typedef struct fpos
-{
-    size_t current_position;
-    size_t current_sector;
-    size_t current_cluster;
-} fpos_t;
+typedef size_t fpos_t;
 
 typedef struct _FILE
 {
