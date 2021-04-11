@@ -56,18 +56,18 @@ bool fat16_mount(fs_data_t* fs)
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
 
     mount_info->num_sectors = bpb->total_sectors != 0 ? bpb->total_sectors : bpb->total_sectors_big;
-    mount_info->fat_offset = bpb->reserved_sectors;
+    mount_info->fat_offset = bpb->reserved_sectors * mount_info->bytes_per_sector;
     mount_info->fat_size_in_sectors = bpb->sectors_per_fat;
     mount_info->fat_size_in_bytes = mount_info->fat_size_in_sectors * bpb->bytes_per_sector;
     mount_info->fat_entry_size = 2;
     mount_info->num_root_entries = bpb->root_entries;
-    mount_info->root_offset = (bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors;
+    mount_info->bytes_per_sector = bpb->bytes_per_sector;
+    mount_info->root_offset = ((bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors) * mount_info->bytes_per_sector;
     mount_info->root_size_in_sectors = (bpb->root_entries * sizeof(dir_entry_t)) / bpb->bytes_per_sector;
     mount_info->root_size_in_bytes = mount_info->root_size_in_sectors * bpb->bytes_per_sector;
-    mount_info->bytes_per_sector = bpb->bytes_per_sector;
     mount_info->sectors_per_cluster = bpb->sectors_per_cluster;
     mount_info->sectors_per_fat = bpb->sectors_per_fat;
-    mount_info->first_cluster_sector = mount_info->root_offset + mount_info->root_size_in_sectors;
+    mount_info->first_cluster_sector = mount_info->root_offset + mount_info->root_size_in_bytes;
     mount_info->bytes_per_cluster = bpb->bytes_per_sector * bpb->sectors_per_cluster;
     mount_info->data_sector_count = mount_info->num_sectors - (bpb->reserved_sectors + (bpb->number_of_fats * bpb->sectors_per_fat) + mount_info->root_size_in_sectors);
     mount_info->data_cluster_count = mount_info->data_sector_count / bpb->sectors_per_cluster;

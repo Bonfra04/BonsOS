@@ -109,7 +109,7 @@ static file_t create_entry(fs_data_t* fs, const char* entryname, uint8_t flags)
     memcpy(file.name, entry.fullname, sizeof(entry.fullname));
 
     file_data_t* data = (file_data_t*)&(file.data);
-    data->dir_entry_address = mount_info->root_offset * mount_info->bytes_per_sector;
+    data->dir_entry_address = mount_info->root_offset;
     data->dir_entry_address += sizeof(dir_entry_t) * entry_index;
 
     return file;
@@ -171,7 +171,7 @@ file_t open_entry(fs_data_t* fs, const char* filename, const char* mode, bool is
     file.update = mode[1] == '+';
     file.length = entry.file_size;
     data->dir_index = entry_index;
-    data->dir_entry_address = mount_info->root_offset * mount_info->bytes_per_sector;
+    data->dir_entry_address = mount_info->root_offset;
     data->dir_entry_address += sizeof(dir_entry_t) * entry_index;
 
     data->cluster = entry.first_cluster;

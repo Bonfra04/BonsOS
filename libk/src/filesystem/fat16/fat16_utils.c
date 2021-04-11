@@ -82,7 +82,7 @@ void seek_to_data_region(fs_data_t* fs, size_t cluster, uint16_t offset)
     tmp *= mount_info->bytes_per_cluster;
 
     size_t pos = fs->offset;
-    pos += mount_info->first_cluster_sector * mount_info->bytes_per_sector;
+    pos += mount_info->first_cluster_sector;
     pos += tmp;
     pos += offset;
     disk_manager_seek(fs->disk_id, pos);
@@ -93,7 +93,7 @@ size_t seek_to_fat_region(fs_data_t* fs, size_t cluster)
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
 
     size_t pos = fs->offset;
-    pos += mount_info->fat_offset * mount_info->bytes_per_sector;
+    pos += mount_info->fat_offset;
     pos += cluster * 2;
     disk_manager_seek(fs->disk_id, pos);
     return pos;
@@ -104,7 +104,7 @@ size_t seek_to_root_region(fs_data_t* fs, size_t entry_index)
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
 
     size_t pos = fs->offset;
-    pos += mount_info->root_offset * mount_info->bytes_per_sector;
+    pos += mount_info->root_offset;
     pos += entry_index * sizeof(dir_entry_t);
     disk_manager_seek(fs->disk_id, pos);
     return pos;
