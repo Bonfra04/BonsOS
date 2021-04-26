@@ -96,14 +96,10 @@ size_t fsys_write_file(file_t* file, void* buffer, size_t length)
     return fs->write_file(data, file, buffer, length);
 }
 
-file_t fsys_create_file(const char* filename)
+bool fsys_create_file(const char* filename)
 {
-    file_t invalid;
-    invalid.flags = FS_INVALID;
-    invalid.error = true;
-
     if(!filename)
-        return invalid;
+        return false;
 
     char* fname = (char*)filename;
     char device = 'a';
@@ -115,12 +111,10 @@ file_t fsys_create_file(const char* filename)
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
-        return invalid;
+        return false;
 
     fs_data_t* data = &(fs->data);
-    file_t file = fs->create_file(data, fname);
-    file.device = device;
-    return file;
+    return fs->create_file(data, fname);
 }
 
 bool fsys_delete_file(const char* filename)
@@ -144,14 +138,10 @@ bool fsys_delete_file(const char* filename)
     return fs->delete_file(data, fname);
 }
 
-file_t fsys_create_dir(const char* dirpath)
+bool fsys_create_dir(const char* dirpath)
 {
-    file_t invalid;
-    invalid.flags = FS_INVALID;
-    invalid.error = true;
-
     if(!dirpath)
-        return invalid;
+        return false;
 
     char* dpath = (char*)dirpath;
     char device = 'a';
@@ -163,12 +153,10 @@ file_t fsys_create_dir(const char* dirpath)
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
-        return invalid;
+        return false;
 
     fs_data_t* data = &(fs->data);
-    file_t file = fs->create_dir(data, dpath);
-    file.device = device;
-    return file;
+    return fs->create_dir(data, dpath);
 }
 
 bool fsys_delete_dir(const char* dirpath)

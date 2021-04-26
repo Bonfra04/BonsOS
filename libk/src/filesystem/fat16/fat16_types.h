@@ -102,8 +102,6 @@ typedef struct dir_entry
 typedef struct file_data
 {
     size_t dir_entry_address;
-    size_t dir_index;
-
     size_t first_cluster;
     size_t cluster;
     size_t offset;

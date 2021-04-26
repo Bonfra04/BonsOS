@@ -50,10 +50,10 @@ typedef struct file_system
     size_t (*read_file)(fs_data_t* fs, file_t* file, void* buffer, size_t length);
     size_t (*write_file)(fs_data_t* fs, file_t* file, void* buffer, size_t length);
 
-    file_t (*create_file)(fs_data_t* fs, const char* filename);
+    bool (*create_file)(fs_data_t* fs, const char* filename);
     bool (*delete_file)(fs_data_t* fs, const char* filename);
 
-    file_t (*create_dir)(fs_data_t* fs, const char* dirpath);
+    bool (*create_dir)(fs_data_t* fs, const char* dirpath);
     bool (*delete_dir)(fs_data_t* fs, const char* dirpath);
 
     size_t (*get_position)(fs_data_t* fs, file_t* file);
@@ -79,10 +79,10 @@ bool fsys_close_file(file_t* file);
 size_t fsys_read_file(file_t* file, void* buffer, size_t length);
 size_t fsys_write_file(file_t* file, void* buffer, size_t length);
 
-file_t fsys_create_file(const char* filename);
+bool fsys_create_file(const char* filename);
 bool fsys_delete_file(const char* filename);
 
-file_t fsys_create_dir(const char* dirpath);
+bool fsys_create_dir(const char* dirpath);
 bool fsys_delete_dir(const char* dirpath);
 
 size_t fsys_get_position(file_t* file);

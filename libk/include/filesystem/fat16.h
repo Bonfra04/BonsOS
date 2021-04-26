@@ -13,10 +13,10 @@ bool fat16_close_file(fs_data_t* fs, file_t* file);
 size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length);
 size_t fat16_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length);
 
-file_t fat16_create_file(fs_data_t* fs, const char* filename);
+bool fat16_create_file(fs_data_t* fs, const char* filename);
 bool fat16_delete_file(fs_data_t* fs, const char* filename);
 
-file_t fat16_create_dir(fs_data_t* fs, const char* dirpath);
+bool fat16_create_dir(fs_data_t* fs, const char* dirpath);
 bool fat16_delete_dir(fs_data_t* fs, const char* dirpath);
 
 size_t fat16_get_position(fs_data_t* fs, file_t* file);

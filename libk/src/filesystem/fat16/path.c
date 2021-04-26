@@ -118,3 +118,9 @@ bool is_in_root(const char* path)
 
     return !get_subdir(subdir_name, &index, path);
 }
+
+char* get_filename(const char* filename)
+{
+    char* p = strrchr(filename, '/');
+    return p ? p + 1 : (char *) filename;
+}

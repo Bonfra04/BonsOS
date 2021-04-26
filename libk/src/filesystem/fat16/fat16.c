@@ -6,6 +6,7 @@
 #include "rootdir.h"
 #include "path.h"
 #include "fat16_utils.h"
+#include "subdir.h"
 
 file_system_t fat16_generate(size_t disk_id, size_t offset, size_t size)
 {
@@ -56,12 +57,12 @@ bool fat16_mount(fs_data_t* fs)
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
 
     mount_info->num_sectors = bpb->total_sectors != 0 ? bpb->total_sectors : bpb->total_sectors_big;
+    mount_info->bytes_per_sector = bpb->bytes_per_sector;
     mount_info->fat_offset = bpb->reserved_sectors * mount_info->bytes_per_sector;
     mount_info->fat_size_in_sectors = bpb->sectors_per_fat;
     mount_info->fat_size_in_bytes = mount_info->fat_size_in_sectors * bpb->bytes_per_sector;
     mount_info->fat_entry_size = 2;
     mount_info->num_root_entries = bpb->root_entries;
-    mount_info->bytes_per_sector = bpb->bytes_per_sector;
     mount_info->root_offset = ((bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors) * mount_info->bytes_per_sector;
     mount_info->root_size_in_sectors = (bpb->root_entries * sizeof(dir_entry_t)) / bpb->bytes_per_sector;
     mount_info->root_size_in_bytes = mount_info->root_size_in_sectors * bpb->bytes_per_sector;
@@ -114,8 +115,18 @@ file_t fat16_open_file(fs_data_t* fs, const char* filename, const char* mode)
             return invalid;
         return rootdir_open_file(fs, fname, mode);
     }
+    else
+    {
+        file_t dir = navigate_subdir(fs, filename);
+        if(dir.flags == FS_INVALID || dir.error)
+            return invalid;
 
-    return invalid;
+        char* file = get_filename(filename);
+        if(!to_short_filename(fname, file))
+            return invalid;
+
+        return subdir_open_file(fs, &dir, fname, mode);
+    }
 }
 
 bool fat16_close_file(fs_data_t* fs, file_t* file)
@@ -274,29 +285,34 @@ size_t fat16_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length
     return bytes_written_count;
 }
 
-file_t fat16_create_file(fs_data_t* fs, const char* filename)
+bool fat16_create_file(fs_data_t* fs, const char* filename)
 {
-    file_t invalid;
-    invalid.flags = FS_INVALID;
-    invalid.error = true;
-
     if(!filename)
-        return invalid;
+        return false;
 
     if(fat16_exists_file(fs, filename) || fat16_exists_dir(fs, filename))
-        return invalid;
+        return false;
 
     char fname[11];
 
     if(is_in_root(filename))
     {
         if(!to_short_filename(fname, filename))
-            return invalid;
-        
+            return false;
         return rootdir_create_file(fs, fname);
     }
+    else
+    {
+        file_t dir = navigate_subdir(fs, filename);
+        if(dir.flags == FS_INVALID || dir.error)
+            return false;
 
-    return invalid;
+        char* file = get_filename(filename);
+        if(!to_short_filename(fname, file))
+            return false;
+
+        return subdir_create_file(fs, &dir, fname);
+    }
 }
 
 bool fat16_delete_file(fs_data_t* fs, const char* filename)
@@ -313,36 +329,50 @@ bool fat16_delete_file(fs_data_t* fs, const char* filename)
     {
         if(!to_short_filename(fname, filename))
             return false;
-        
         return rootdir_delete_file(fs, fname);
     }
+    else
+    {
+        file_t dir = navigate_subdir(fs, filename);
+        if(dir.flags == FS_INVALID || dir.error)
+            return false;
 
-    return false;
+        char* file = get_filename(filename);
+        if(!to_short_filename(fname, file))
+            return false;
+
+        return subdir_delete_file(fs, &dir, fname);
+    }
 }
 
-file_t fat16_create_dir(fs_data_t* fs, const char* dirpath)
+bool fat16_create_dir(fs_data_t* fs, const char* dirpath)
 {
-    file_t invalid;
-    invalid.flags = FS_INVALID;
-    invalid.error = true;
-
     if(!dirpath)
-        return invalid;
+        return false;
 
     if(fat16_exists_file(fs, dirpath) || fat16_exists_dir(fs, dirpath))
-        return invalid;
+        return false;
 
     char dname[11];
 
     if(is_in_root(dirpath))
     {
         if(!to_short_filename(dname, dirpath))
-            return invalid;
-        
+            return false;
         return rootdir_create_dir(fs, dname);
     }
+    else
+    {
+        file_t dir = navigate_subdir(fs, dirpath);
+        if(dir.flags == FS_INVALID || dir.error)
+            return false;
 
-    return invalid;   
+        char* file = get_filename(dirpath);
+        if(!to_short_filename(dname, file))
+            return false;
+
+        return subdir_create_dir(fs, &dir, dname);
+    } 
 }
 
 bool fat16_delete_dir(fs_data_t* fs, const char* dirpath)
@@ -359,11 +389,20 @@ bool fat16_delete_dir(fs_data_t* fs, const char* dirpath)
     {
         if(!to_short_filename(dname, dirpath))
             return false;
-        
         return rootdir_delete_dir(fs, dname);
     }
+    else
+    {
+        file_t dir = navigate_subdir(fs, dirpath);
+        if(dir.flags == FS_INVALID || dir.error)
+            return false;
 
-    return false;
+        char* file = get_filename(dirpath);
+        if(!to_short_filename(dname, file))
+            return false;
+
+        return subdir_delete_dir(fs, &dir, dname);
+    }
 }
 
 size_t fat16_get_position(fs_data_t* fs, file_t* file)
@@ -407,11 +446,20 @@ bool fat16_exists_file(fs_data_t* fs, const char* filename)
     {
         if(!to_short_filename(fname, filename))
             return false;
-        
         return rootdir_exists_file(fs, fname);
     }
+    else
+    {
+        file_t dir = navigate_subdir(fs, filename);
+        if(dir.flags == FS_INVALID || dir.error)
+            return false;
 
-    return false;
+        char* file = get_filename(filename);
+        if(!to_short_filename(fname, file))
+            return false;
+
+        return subdir_exists_file(fs, &dir, fname);
+    }
 }
 
 bool fat16_exists_dir(fs_data_t* fs, const char* dirpath)
@@ -425,6 +473,16 @@ bool fat16_exists_dir(fs_data_t* fs, const char* dirpath)
         
         return rootdir_exists_dir(fs, dname);
     }
-    
-    return false;
+    else
+    {
+        file_t dir = navigate_subdir(fs, dirpath);
+        if(dir.flags == FS_INVALID || dir.error)
+            return false;
+
+        char* file = get_filename(dirpath);
+        if(!to_short_filename(dname, file))
+            return false;
+
+        return subdir_exists_dir(fs, &dir, dname);
+    }
 }

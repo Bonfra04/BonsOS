@@ -2,6 +2,7 @@
 #include "fat16_types.h"
 #include "path.h"
 #include "rootdir.h"
+#include "subdir.h"
 #include <storage/disk_manager.h>
 
 bool free_cluster_chain(fs_data_t* fs, uint16_t cluster)
@@ -108,4 +109,43 @@ size_t seek_to_root_region(fs_data_t* fs, size_t entry_index)
     pos += entry_index * sizeof(dir_entry_t);
     disk_manager_seek(fs->disk_id, pos);
     return pos;
+}
+
+file_t navigate_subdir(fs_data_t* fs, const char* dirpath)
+{
+    file_t invalid;
+    invalid.flags = FS_INVALID;
+    invalid.error = true;
+
+    char subdir_name[13];
+    char dos_name[12];
+    size_t index = 0;
+
+    if(!get_subdir(subdir_name, &index, dirpath))
+        return invalid;
+
+    if(!to_short_filename(dos_name, subdir_name))
+        return invalid;
+
+    file_t subdir = rootdir_open_dir(fs, dos_name);
+    if(subdir.flags == FS_INVALID || subdir.error)
+        return invalid;
+
+    while(subdir.flags != FS_INVALID && !subdir.error)
+    {
+        bool ret = get_subdir(subdir_name, &index, dirpath);
+
+        if(!to_short_filename(dos_name, subdir_name))
+            return invalid;
+
+        if(!ret)
+            break;
+
+        subdir = subdir_open_dir(fs, &subdir, dos_name);
+    }
+
+    if(subdir.flags == FS_INVALID || subdir.error)
+        return invalid;
+
+    return subdir;
 }
