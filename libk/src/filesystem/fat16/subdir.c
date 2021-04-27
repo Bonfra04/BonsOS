@@ -2,7 +2,7 @@
 #include "fat16_types.h"
 #include "fat16_utils.h"
 #include <string.h>
-#include <storage/disk_manager.h>>
+#include <storage/disk_manager.h>
 
 static dir_entry_t read_next_entry(fs_data_t* fs, file_t* dir)
 {
@@ -36,7 +36,6 @@ static size_t find_entry(fs_data_t* fs, file_t* dir, const char* entryname)
 {
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
     file_data_t* data = (file_data_t*)&(dir->data);
-    size_t starting_cluster = data->first_cluster;
 
     dir_entry_t entry;
 
@@ -108,10 +107,10 @@ static file_t open_entry(fs_data_t* fs, file_t* dir, const char* filename, const
     if(*mode == 'a')
     {
         data->offset = entry.file_size;
-        size_t next_cluster;
+        uint16_t next_cluster;
         do
         {
-            if(!get_next_cluster(fs, (uint16_t)&next_cluster, data->cluster))
+            if(!get_next_cluster(fs, &next_cluster, data->cluster))
                 return invalid;
             data->cluster = next_cluster;
             data->offset -= mount_info->bytes_per_cluster;
@@ -198,7 +197,6 @@ static size_t find_available_entry(fs_data_t* fs, file_t* dir)
 {
     mount_info_t* mount_info = (mount_info_t*)&(fs->fs_specific);
     file_data_t* data = (file_data_t*)&(dir->data);
-    size_t starting_cluster = data->first_cluster;
 
     dir_entry_t entry;
     size_t res = 0;
@@ -281,8 +279,6 @@ bool subdir_create_file(fs_data_t* fs, file_t* dir, const char* filename)
 
 bool subdir_create_dir(fs_data_t* fs, file_t* dir, const char* dirpath)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     if(!create_entry(fs, dir, dirpath, SUBDIR))
         return false;
 
@@ -350,7 +346,7 @@ bool subdir_delete_dir(fs_data_t* fs, file_t* dir, const char* dirpath)
     return delete_entry(fs, dir, dirpath, false);
 }
 
-bool subdir_exists_file(fs_data_t* fs, file_t* dir, char* filename)
+bool subdir_exists_file(fs_data_t* fs, file_t* dir, const char* filename)
 {
     mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
     file_data_t* dir_data = (file_data_t*)&(dir->data);
@@ -377,7 +373,7 @@ bool subdir_exists_file(fs_data_t* fs, file_t* dir, char* filename)
     return !(entry.flags & SUBDIR);
 }
 
-bool subdir_exists_dir(fs_data_t* fs, file_t* dir, char* dirpath)
+bool subdir_exists_dir(fs_data_t* fs, file_t* dir, const char* dirpath)
 {
     mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
     file_data_t* dir_data = (file_data_t*)&(dir->data);

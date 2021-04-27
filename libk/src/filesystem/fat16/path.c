@@ -121,6 +121,6 @@ bool is_in_root(const char* path)
 
 char* get_filename(const char* filename)
 {
-    char* p = strrchr(filename, '/');
+    char* p = (char*)strrchr(filename, '/');
     return p ? p + 1 : (char *) filename;
 }

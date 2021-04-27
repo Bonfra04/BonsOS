@@ -7,8 +7,6 @@
 
 bool free_cluster_chain(fs_data_t* fs, uint16_t cluster)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     if(cluster == 0)
         return true;
 
@@ -57,7 +55,7 @@ bool allocate_cluster(fs_data_t* fs, uint16_t* new_cluster, uint16_t previous_cl
 
     if(previous_cluster != 0)
     {
-        seek_to_fat_region(fs->disk_id, previous_cluster);
+        seek_to_fat_region(fs, previous_cluster);
         disk_manager_write(fs->disk_id, sizeof(uint16_t), &next_cluster);
     }
 
@@ -67,8 +65,6 @@ bool allocate_cluster(fs_data_t* fs, uint16_t* new_cluster, uint16_t previous_cl
 
 bool get_next_cluster(fs_data_t* fs, uint16_t* next_cluster, uint16_t current_cluster)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     seek_to_fat_region(fs, current_cluster);
     disk_manager_read(fs->disk_id, sizeof(uint16_t), next_cluster);
 

@@ -12,5 +12,5 @@ bool subdir_create_dir(fs_data_t* fs, file_t* dir, const char* dirpath);
 bool subdir_delete_file(fs_data_t* fs, file_t* dir, const char* filename);
 bool subdir_delete_dir(fs_data_t* fs, file_t* dir, const char* dirpath);
 
-bool subdir_exists_file(fs_data_t* fs, file_t* dir, char* filename);
-bool subdir_exists_dir(fs_data_t* fs, file_t* dir, char* dirpath);
+bool subdir_exists_file(fs_data_t* fs, file_t* dir, const char* filename);
+bool subdir_exists_dir(fs_data_t* fs, file_t* dir, const char* dirpath);

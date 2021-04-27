@@ -2,7 +2,7 @@
 #include "fat16_types.h"
 #include <string.h>
 #include "fat16_utils.h"
-#include <storage/disk_manager.h>>
+#include <storage/disk_manager.h>
 
 static bool last_entry(fs_data_t* fs, size_t index)
 {
@@ -19,8 +19,6 @@ static bool last_entry(fs_data_t* fs, size_t index)
 
 static bool mark_entry_as_available(fs_data_t* fs, size_t entry_index)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     dir_entry_t entry;
     memset(&entry, 0, sizeof(dir_entry_t));
 
@@ -65,7 +63,7 @@ static size_t find_available_entry(fs_data_t* fs)
 {
     mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
 
-    size_t pos = seek_to_root_region(fs, 0);
+    seek_to_root_region(fs, 0);
 
     for(uint32_t i = 0; i < mount_info->num_root_entries; i++)
     {
@@ -81,8 +79,6 @@ static size_t find_available_entry(fs_data_t* fs)
 
 static bool create_entry(fs_data_t* fs, const char* entryname, uint8_t flags)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     if(find_entry(fs, entryname) != -1)
         return false;
 
@@ -103,8 +99,6 @@ static bool create_entry(fs_data_t* fs, const char* entryname, uint8_t flags)
 
 static bool delete_entry(fs_data_t* fs, const char* entryname, bool is_file)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     size_t entry_index = find_entry(fs, entryname);
     if(entry_index == -1)
         return false;
@@ -204,8 +198,6 @@ bool rootdir_create_file(fs_data_t* fs, const char* filename)
 
 bool rootdir_create_dir(fs_data_t* fs, const char* dirpath)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     if(!create_entry(fs, dirpath, SUBDIR))
         return false;
     
@@ -273,8 +265,6 @@ bool rootdir_delete_dir(fs_data_t* fs, const char* dirpath)
 
 bool rootdir_exists_file(fs_data_t* fs, const char* filename)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     size_t entry_index = find_entry(fs, filename);
     if(entry_index == -1)
         return false;
@@ -288,8 +278,6 @@ bool rootdir_exists_file(fs_data_t* fs, const char* filename)
 
 bool rootdir_exists_dir(fs_data_t* fs, const char* dirpath)
 {
-    mount_info_t* mount_info = (mount_info_t*)&fs->fs_specific;
-
     size_t entry_index = find_entry(fs, dirpath);
     if(entry_index == -1)
         return false;
