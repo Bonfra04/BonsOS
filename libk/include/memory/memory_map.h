@@ -28,4 +28,10 @@ typedef struct memory_map
 
 extern memory_map_t memory_map;
 
+/**
+ * @brief Initialize the memory map.
+ * @param[in] num_entries Number of entries in the memory map.
+ * @param[in] map_address Address of the memory map loaded by the BIOS.
+ * @param[in] total_memory Size of total memory in KB.
+ */
 void memory_map_init(uint32_t num_entries, void* map_address, uint64_t total_memory);

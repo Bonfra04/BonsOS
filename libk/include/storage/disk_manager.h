@@ -36,33 +36,33 @@ void disk_manager_init();
 
 /**
  * @brief Sets the cursor of a disk to a specific position.
- * @param disk_id ID of the disk to operate on.
- * @param position Address in byte of where to seek.
+ * @param[in] disk_id ID of the disk to operate on.
+ * @param[in] position Address in byte of where to seek.
  * @return Seek success.
  */ 
 bool disk_manager_seek(size_t disk_id, size_t position);
 
 /**
  * @brief Reads bytes from a disk.
- * @param disk_id ID of the disk to operate on.
- * @param amount Amount of bytes to read.
- * @param buffer Address where the byets will be copied.
+ * @param[in] disk_id ID of the disk to operate on.
+ * @param[in] amount Amount of bytes to read.
+ * @param[in] buffer Address where the byets will be copied.
  * @return Amount of bytes read.
  */ 
 size_t disk_manager_read(size_t disk_id, size_t amount, void* buffer);
 
 /**
  * @brief Writes bytes to a disk.
- * @param disk_id ID of the disk to operate on.
- * @param amount Amount of bytes to write.
- * @param buffer Address from where the byets are copied.
+ * @param[in] disk_id ID of the disk to operate on.
+ * @param[in] amount Amount of bytes to write.
+ * @param[in] buffer Address from where the byets are copied.
  * @return Amount of bytes written.
  */ 
 size_t disk_manager_write(size_t disk_id, size_t amount, void* buffer);
 
 /**
  * @brief Flushes the buffer of the disk.
- * @param disk_id ID of the disk to operate on.
+ * @param[in] disk_id ID of the disk to operate on.
  * @return Flush success.
  */
 bool disk_manager_flush(size_t disk_id);
