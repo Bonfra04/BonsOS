@@ -37,6 +37,7 @@ FILE* fopen(const char* filename, const char* mode);
 int fclose(FILE* stream);
 
 void setbuf(FILE* stream, char* buffer);
+int setvbuf(FILE* stream, char* buffer, int mode, size_t size);
 
 int sprintf(char* buf, const char* format, ...);
 int vsprintf(char* buf, const char* format, va_list args);
@@ -44,6 +45,10 @@ int snprintf(char* buf, size_t n, const char* format, ...);
 int vsnprintf(char* buf, size_t n, const char* format, va_list arg);
 int sscanf(const char* s, const char* format, ...);
 int vsscanf(const char* s, const char* format, va_list args);
+
+int fgetc(FILE* stream);
+char* fgets(char* str, int num, FILE* stream);
+#define getc(stream) fgetc(stream)
 
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
 

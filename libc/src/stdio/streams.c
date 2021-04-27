@@ -49,8 +49,91 @@ static size_t fread_unbuffered(void* ptr, size_t length, FILE* stream)
 
 static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
 {
-    get_file(stream)->error = true;
-    asm("int 15");
+    file_t* file = get_file(stream);
+
+    // If nothing is buffered, buffer something
+    if(stream->buffered == -1)
+    {
+        stream->buffered = fsys_get_position(file);
+        char c;
+        size_t adv = 0;
+        do {
+            fsys_read_file(file, &c, 1);
+            ((char*)stream->buffer)[adv++] = c;
+            if(file->error || file->eof)
+                break;
+        } while(adv < stream->buffer_size && c != '\n');
+        if(file->error)
+            return 0;
+        fsys_set_position(file, 0);
+    }
+
+    size_t pos = fsys_get_position(file);
+    size_t bred = stream->buffered;
+    size_t bsiz = stream->buffer_size;
+
+    // amount of data already present in the buffer
+    size_t already_buffred = 0;
+
+    // to-read part is inside the buffer
+    if(pos >= bred && (pos + length) <= (bred + bsiz))
+    {
+        memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), length);
+        fsys_set_position(file, pos + length);
+        return length;
+    }
+    // to-read is below and inside the buffer
+    else if(pos < bred && bred <= (pos + length) && (bred + bsiz) >= (pos + length))
+    {
+        already_buffred = pos + length - bred;
+        size_t offset = length - (bred - pos);
+        memcpy((uint8_t*)ptr + offset, stream->buffer, pos + length - bred);
+        length -= pos + length - bred;
+
+    }
+    // to-read is inside and over the buffer
+    else if(bred <= pos && pos <= (bred + bsiz) && (bred + bsiz) <= (pos + length))
+    {
+        size_t size = bred + bsiz - pos;
+        already_buffred = size;
+        memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), size);
+        length -= size;
+        ptr = (uint8_t*)ptr + size;
+        fsys_set_position(file, stream->buffered + size);
+    }
+
+    // read the data that isn't buffered
+    size_t advance = 0;
+    while (length > 0)
+    {
+        stream->buffered = fsys_get_position(file);
+        size_t res = 0;
+        {
+            char c;
+            do {
+                fsys_read_file(file, &c, 1);
+                ((char*)stream->buffer)[res++] = c;
+                if(file->error || file->eof)
+                    break;
+            } while(res < stream->buffer_size && c != '\n');
+        }
+
+        if(file->error)
+            break;
+        
+        size_t readable = length < stream->buffer_size ? length : stream->buffer_size;
+        readable = res < readable ? res : readable;
+        memcpy((uint8_t*)ptr + advance, stream->buffer, readable);
+        length -= readable;
+        advance += readable;
+        fsys_set_position(file, stream->buffered + readable);
+
+        if(file->eof)
+            break;
+    }
+
+    return advance + already_buffred;
+
     return 0;
 }
 
@@ -58,6 +141,7 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
 {
     file_t* file = get_file(stream);
 
+    // If nothing is buffered, buffer something
     if(stream->buffered == -1)
     {
         stream->buffered = fsys_get_position(file);
@@ -71,27 +155,37 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     size_t bred = stream->buffered;
     size_t bsiz = stream->buffer_size;
 
+    // amount of data already present in the buffer
+    size_t already_buffred = 0;
+
+    // to-read part is inside the buffer
     if(pos >= bred && (pos + length) <= (bred + bsiz))
     {
         memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), length);
         fsys_set_position(file, pos + length);
         return length;
     }
+    // to-read is below and inside the buffer
     else if(pos < bred && bred <= (pos + length) && (bred + bsiz) >= (pos + length))
     {
+        already_buffred = pos + length - bred;
         size_t offset = length - (bred - pos);
         memcpy((uint8_t*)ptr + offset, stream->buffer, pos + length - bred);
         length -= pos + length - bred;
+
     }
+    // to-read is inside and over the buffer
     else if(bred <= pos && pos <= (bred + bsiz) && (bred + bsiz) <= (pos + length))
     {
         size_t size = bred + bsiz - pos;
+        already_buffred = size;
         memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), size);
         length -= size;
         ptr = (uint8_t*)ptr + size;
         fsys_set_position(file, stream->buffered + size);
     }
 
+    // read the data that isn't buffered
     size_t advance = 0;
     while (length > 0)
     {
@@ -111,7 +205,62 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
         if(file->eof)
             break;
     }
-    return advance;
+
+    return advance + already_buffred;
+}
+
+void setbuf(FILE* stream, char* buffer)
+{
+    if(!stream)
+        return;
+
+    if(buffer)
+        setvbuf(stream, buffer, _IOFBF, BUFSIZ);
+    else   
+        setvbuf(stream, 0, _IONBF, 0);
+}
+
+int setvbuf(FILE* stream, char* buffer, int mode, size_t size)
+{
+    if(!stream)
+        return -1;
+
+    if(mode != _IOLBF && mode != _IOFBF && mode != _IONBF)
+        return -1;
+
+    if(buffer && size == 0)
+        return - 1;
+
+    if(stream->flags & _IOLBF)
+        stream->flags &= ~(_IOLBF);
+    if(stream->flags & _IONBF)
+        stream->flags &= ~(_IONBF);
+    if(stream->flags & _IOFBF)
+        stream->flags &= ~(_IOFBF);
+
+    stream->flags |= mode;
+
+    if(mode == _IONBF)
+    {
+        stream->buffer = 0;
+        stream->buffer_size = 0;
+    }
+    else if(buffer)
+    {
+        stream->buffer = buffer;
+        stream->buffer_size = size;
+    }
+    else
+    {
+        size_t index = (ptrdiff_t)&(opened_files) - (ptrdiff_t)stream;
+        index /= sizeof(FILE);
+        stream->buffer = (void*)&(buffers[index]);
+        stream->buffer_size = BUFSIZ;
+    }
+
+    stream->buffered = -1;
+
+    return 0;
 }
 
 int remove(const char* filename)
@@ -175,6 +324,43 @@ int fclose(FILE* stream)
         
     fsys_close_file(file);
     return 0;
+}
+
+int fgetc(FILE* stream)
+{
+    if(!stream)
+        return EOF;
+
+    int c = 0;
+    size_t res = fread(&c, 1, 1, stream);
+
+    file_t* file = get_file(stream);
+    if(res == 0 || file->eof || file->error)
+        return EOF;
+
+    return c;
+}
+
+char* fgets(char* str, int num, FILE* stream)
+{
+    if(!stream)
+        return 0;
+    file_t* file = get_file(stream);
+
+    if(file->error || file->eof)
+        return 0;
+
+    char* ptr = str;
+    do {
+        fread(ptr, 1, 1, stream);
+        if(file->error)
+            return 0;
+        if(*ptr++ == '\n')
+            break;
+    } while(!file->eof && (ptr - str) < (num - 1));
+    *ptr = '\0';
+
+    return str;
 }
 
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
