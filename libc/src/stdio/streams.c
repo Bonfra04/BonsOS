@@ -209,6 +209,90 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     return advance + already_buffred;
 }
 
+static size_t fwrite_unbuffered(void* ptr, size_t length, FILE* stream)
+{
+    return fsys_write_file(get_file(stream), ptr, length);
+}
+
+static size_t fwrite_linebuffered(void* ptr, size_t length, FILE* stream)
+{
+    asm ("int 15");
+    return -1;
+}
+
+static size_t fwrite_fullybuffered(void* ptr, size_t length, FILE* stream)
+{
+    file_t* file = get_file(stream);
+
+    // If nothing is buffered, buffer something
+    if(stream->buffered == -1)
+    {
+        stream->buffered = fsys_get_position(file);
+        memset(stream->buffer, 0, stream->buffer_size);
+    }
+
+    size_t pos = fsys_get_position(file);
+
+    // writes the largest amount of bytes to the buffer
+    size_t bytes_buffered = pos - stream->buffered;
+    size_t free_buffer = (stream->buffer_size - bytes_buffered);
+    size_t writable = length < free_buffer ? length : free_buffer;
+    memcpy((uint8_t*)stream->buffer + bytes_buffered, ptr, writable);
+    fsys_set_position(file, pos + writable);
+    pos += writable;
+    length -= writable;
+
+    size_t writed = writable;
+
+    // if there is still space in the buffer return
+    if(pos - stream->buffered != stream->buffer_size)
+        return writable;
+
+    // flush the buffer and write the rest of the bytes
+    while(length > 0)
+    {
+        // flush
+        size_t res = fsys_write_file(file, stream->buffer, stream->buffer_size);
+        
+        if(res != stream->buffer_size || file->error)
+            break;
+
+        // update buffer
+        stream->buffered = fsys_get_position(file);
+        size_t to_write = stream->buffer_size < length ? stream->buffer_size : length;
+        memcpy(stream->buffer, (uint8_t*)ptr + writed, to_write);
+        fsys_set_position(file, stream->buffered + to_write);
+        length -= to_write;
+        writed += to_write;
+    }
+
+    return writed;
+}
+
+int fflush(FILE* stream)
+{
+    if(!stream)
+        return EOF;
+
+    if(stream->buffered == -1)
+        return 0;
+
+    file_t* file = get_file(stream);
+    if(file->mode == 'r')
+        return 0;
+
+    size_t pos = fsys_get_position(file);
+    fsys_set_position(file, stream->buffered);
+    size_t bytes_buffered = pos - stream->buffered;
+    size_t res = fsys_write_file(file, stream->buffer, bytes_buffered);
+    fsys_set_position(file, pos);
+
+    if(res != bytes_buffered)
+        return EOF;
+
+    return 0;
+}
+
 void setbuf(FILE* stream, char* buffer)
 {
     if(!stream)
@@ -230,6 +314,8 @@ int setvbuf(FILE* stream, char* buffer, int mode, size_t size)
 
     if(buffer && size == 0)
         return - 1;
+
+    fflush(stream);
 
     if(stream->flags & _IOLBF)
         stream->flags &= ~(_IOLBF);
@@ -322,6 +408,8 @@ int fclose(FILE* stream)
     if(!file)
         return EOF;
         
+    fflush(stream);
+
     fsys_close_file(file);
     return 0;
 }
@@ -335,7 +423,7 @@ int fgetc(FILE* stream)
     size_t res = fread(&c, 1, 1, stream);
 
     file_t* file = get_file(stream);
-    if(res == 0 || file->eof || file->error)
+    if(res != 1 || file->eof || file->error)
         return EOF;
 
     return c;
@@ -346,6 +434,12 @@ char* fgets(char* str, int num, FILE* stream)
     if(!stream)
         return 0;
     file_t* file = get_file(stream);
+
+    if(!str)
+    {
+        file->error = true;
+        return 0;
+    }
 
     if(file->error || file->eof)
         return 0;
@@ -361,6 +455,41 @@ char* fgets(char* str, int num, FILE* stream)
     *ptr = '\0';
 
     return str;
+}
+
+int fputc(int character, FILE* stream)
+{
+    if(!stream)
+        return EOF;
+    file_t* file = get_file(stream);
+
+    size_t res = fwrite(&character, 1, 1, stream);
+    if(res != 1 || file->error)
+        return EOF;
+    
+    return character;
+}
+
+int fputs(const char* str, FILE* stream)
+{
+    if(!stream)
+        return EOF;
+    file_t* file = get_file(stream);
+
+    if(!str)
+    {
+        file->error = true;
+        return EOF;
+    }
+
+    size_t len = strlen(str);
+
+    size_t res = fwrite(str, 1, len, stream);
+
+    if(res != len || file->error)
+        return EOF;
+
+    return 0;
 }
 
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
@@ -382,12 +511,39 @@ size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
     if(file->eof)
         return EOF;
 
-    if((stream->flags & _IONBF) >= _IONBF)
+    if(stream->flags & _IONBF)
         return fread_unbuffered(ptr, size * count, stream);
     else if(stream->flags & _IOLBF)
         return fread_linebuffered(ptr, size * count, stream);
     else if(stream->flags & _IOFBF)
         return fread_fullybuffered(ptr, size * count, stream);
+
+    file->error = true;
+    return 0;
+}
+
+size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream)
+{
+    if(!stream)
+        return 0;
+
+    if(size == 0 || count == 0)
+        return 0;
+
+    if(stream->flags & STATUS_READING)
+        return 0;
+    stream->flags |= STATUS_WRITING;
+
+    file_t* file = get_file(stream);
+    if(!file)
+        return 0;
+
+    if(stream->flags & _IONBF >= _IONBF)
+        return fwrite_unbuffered(ptr, size * count, stream);
+    else if(stream->flags & _IOLBF)
+        return fwrite_linebuffered(ptr, size * count, stream);
+    else if(stream->flags & _IOFBF)
+        return fwrite_fullybuffered(ptr, size * count, stream);
 
     file->error = true;
     return 0;
@@ -415,6 +571,8 @@ int fseek(FILE* stream, long int offset, int origin)
     file_t* file = get_file(stream);
     if(!file)
         return -1;
+
+    fflush(stream);
 
     switch (origin)
     {
@@ -456,6 +614,8 @@ int fsetpos(FILE* stream, const fpos_t* pos)
     if(!file)
         return -1;
 
+    fflush(stream);
+
     fsys_set_position(file, *pos);
 
     if(stream->flags & MODE_UPDATE)
@@ -494,6 +654,8 @@ void rewind(FILE* stream)
     file_t* file = get_file(stream);
     if(!file)
         return;
+
+    fflush(stream);
 
     fsys_set_position(file, 0);
 

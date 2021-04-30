@@ -35,6 +35,7 @@ int remove(const char* filename);
 
 FILE* fopen(const char* filename, const char* mode);
 int fclose(FILE* stream);
+int fflush(FILE* stream);
 
 void setbuf(FILE* stream, char* buffer);
 int setvbuf(FILE* stream, char* buffer, int mode, size_t size);
@@ -50,7 +51,12 @@ int fgetc(FILE* stream);
 char* fgets(char* str, int num, FILE* stream);
 #define getc(stream) fgetc(stream)
 
+int fputc(int character, FILE* stream);
+int fputs(const char* str, FILE* stream);
+#define putc(character, stream) fputc(character, stream)
+
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
+size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream);
 
 int fgetpos(FILE* stream, fpos_t* pos);
 int fseek(FILE* stream, long int offset, int origin);
