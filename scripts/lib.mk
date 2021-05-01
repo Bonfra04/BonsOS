@@ -47,7 +47,7 @@ endif
 link: $(OBJ_FILES)
 ifdef RUNNABLE
 	@echo "$(TAG) Linking $(notdir $(RUNNABLE))"
-	@$(LD) $(LDFLAGS) -T $(LD_FILE) -o $(RUNNABLE) $(OBJ_FILES) $(LIB_DEPS)
+	@$(LD) $(LDFLAGS) -T $(LD_FILE) -o $(RUNNABLE) $(OBJ_FILES) --start-group $(LIB_DEPS) --end-group
 	@chmod a-x $(RUNNABLE)
 else
 	@echo "$(TAG) Archiving $(notdir $(LIB_FILE))"
