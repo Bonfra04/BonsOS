@@ -8,7 +8,7 @@
 
 static void addchar(char* buf, size_t n, int* result, char ch)
 {
-    if(n > 0 && *result <= (int)n)
+    if(n > 0 && *result <= n)
         buf[*result] = ch;
     (*result)++;
 }

@@ -151,7 +151,7 @@ static void tty_printchar(tty_state_t *cons, char ch)
         update_cursor();
 }
 
-static void tty_print(int id, const char* str)
+void tty_id_print(int id, const char* str)
 {
     if ((id < 0) || (id >= MAX_TTYS))
         id = 0;
@@ -169,7 +169,7 @@ static int tty_va_printf(int id, const char* format, va_list args)
     char buffer[8 * 1024];
     int result = vsnprintf(buffer, sizeof(buffer), format, args);
 
-    tty_print(id, buffer);
+    tty_id_print(id, buffer);
 
     return result;
 }
@@ -386,6 +386,11 @@ inline void tty_setpos(screenpos_t pos)
 inline void tty_clear()
 {
     tty_id_clear(active_tty_index);
+}
+
+void tty_print(const char* str)
+{
+    tty_id_print(active_tty_index, str);
 }
 
 int tty_printf(const char *format, ...)

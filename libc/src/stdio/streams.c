@@ -1,11 +1,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <filesystem/fsys.h>
+#include <filesystem/ttyfs.h>
+
+FILE* stdout;
+FILE* stderr;
+FILE* stdin;
 
 static file_t opened_files[FOPEN_MAX];
 static FILE object_files[FOPEN_MAX];
 
 static char buffers[FOPEN_MAX][BUFSIZ];
+
+#define STREAM_STDOUT 1
+#define STREAM_STDIN 2
+#define STREAM_STDERR 3
 
 #define MODE_READ       0b000001
 #define MODE_WRITE      0b000010
@@ -23,6 +32,10 @@ void stdio_stream_init()
         object_files[i].buffer_size = BUFSIZ;
         object_files[i].buffered = -1;
     }
+
+    stdout = (FILE*)STREAM_STDOUT;
+    stdin = (FILE*)STREAM_STDIN;
+    stderr = (FILE*)STREAM_STDERR;
 }
 
 static file_t* get_file(FILE* stream)
@@ -39,15 +52,15 @@ static file_t* get_file(FILE* stream)
     return &(opened_files[index]);
 }
 
-static size_t fread_unbuffered(void* ptr, size_t length, FILE* stream)
+static size_t fread_unbuffered(const void* ptr, size_t length, FILE* stream)
 {
-    size_t res = fsys_read_file(get_file(stream), ptr, length);
+    size_t res = fsys_read_file(get_file(stream), (void*)ptr, length);
     if(res == FS_EOF)
         return EOF;
     return res;
 }
 
-static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
+static size_t fread_linebuffered(const void* ptr, size_t length, FILE* stream)
 {
     file_t* file = get_file(stream);
 
@@ -78,7 +91,7 @@ static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
     // to-read part is inside the buffer
     if(pos >= bred && (pos + length) <= (bred + bsiz))
     {
-        memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), length);
+        memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), length);
         fsys_set_position(file, pos + length);
         return length;
     }
@@ -96,7 +109,7 @@ static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
     {
         size_t size = bred + bsiz - pos;
         already_buffred = size;
-        memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), size);
+        memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), size);
         length -= size;
         ptr = (uint8_t*)ptr + size;
         fsys_set_position(file, stream->buffered + size);
@@ -137,7 +150,7 @@ static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
     return 0;
 }
 
-static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
+static size_t fread_fullybuffered(const void* ptr, size_t length, FILE* stream)
 {
     file_t* file = get_file(stream);
 
@@ -161,7 +174,7 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     // to-read part is inside the buffer
     if(pos >= bred && (pos + length) <= (bred + bsiz))
     {
-        memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), length);
+        memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), length);
         fsys_set_position(file, pos + length);
         return length;
     }
@@ -179,7 +192,7 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     {
         size_t size = bred + bsiz - pos;
         already_buffred = size;
-        memcpy(ptr, (uint8_t*)stream->buffer + (pos - bred), size);
+        memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), size);
         length -= size;
         ptr = (uint8_t*)ptr + size;
         fsys_set_position(file, stream->buffered + size);
@@ -209,18 +222,18 @@ static size_t fread_fullybuffered(void* ptr, size_t length, FILE* stream)
     return advance + already_buffred;
 }
 
-static size_t fwrite_unbuffered(void* ptr, size_t length, FILE* stream)
+static size_t fwrite_unbuffered(const void* ptr, size_t length, FILE* stream)
 {
-    return fsys_write_file(get_file(stream), ptr, length);
+    return fsys_write_file(get_file(stream), (void*)ptr, length);
 }
 
-static size_t fwrite_linebuffered(void* ptr, size_t length, FILE* stream)
+static size_t fwrite_linebuffered(const void* ptr, size_t length, FILE* stream)
 {
     asm ("int 15");
     return -1;
 }
 
-static size_t fwrite_fullybuffered(void* ptr, size_t length, FILE* stream)
+static size_t fwrite_fullybuffered(const void* ptr, size_t length, FILE* stream)
 {
     file_t* file = get_file(stream);
 
@@ -530,6 +543,12 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream)
     if(size == 0 || count == 0)
         return 0;
 
+    if(stream == (FILE*)STREAM_STDOUT || stream == (FILE*)STREAM_STDERR)
+    {
+        ttyfs_write_file(0, 0, (void*)ptr, size * count);
+        return count;
+    }
+
     if(stream->flags & STATUS_READING)
         return 0;
     stream->flags |= STATUS_WRITING;
@@ -539,11 +558,11 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream)
         return 0;
 
     if(stream->flags & _IONBF >= _IONBF)
-        return fwrite_unbuffered(ptr, size * count, stream);
+        return fwrite_unbuffered(ptr, size * count, stream) / size;
     else if(stream->flags & _IOLBF)
-        return fwrite_linebuffered(ptr, size * count, stream);
+        return fwrite_linebuffered(ptr, size * count, stream) / size;
     else if(stream->flags & _IOFBF)
-        return fwrite_fullybuffered(ptr, size * count, stream);
+        return fwrite_fullybuffered(ptr, size * count, stream) / size;
 
     file->error = true;
     return 0;

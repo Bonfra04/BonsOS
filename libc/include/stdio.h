@@ -31,6 +31,10 @@ typedef struct _FILE
     size_t buffered;
 } FILE;
 
+extern FILE* stdout;
+extern FILE* stderr;
+extern FILE* stdin;
+
 int remove(const char* filename);
 
 FILE* fopen(const char* filename, const char* mode);
@@ -46,6 +50,11 @@ int snprintf(char* buf, size_t n, const char* format, ...);
 int vsnprintf(char* buf, size_t n, const char* format, va_list arg);
 int sscanf(const char* s, const char* format, ...);
 int vsscanf(const char* s, const char* format, va_list args);
+
+int vfprintf(FILE* stream, const char * format, va_list arg);
+int fprintf(FILE* stream, const char * format, ...);
+int vprintf(const char * format, va_list arg);
+int printf(const char * format, ...);
 
 int fgetc(FILE* stream);
 char* fgets(char* str, int num, FILE* stream);

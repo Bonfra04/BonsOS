@@ -59,9 +59,6 @@ typedef struct file_system
     size_t (*get_position)(fs_data_t* fs, file_t* file);
     void (*set_position)(fs_data_t* fs, file_t* file, size_t offset);
 
-    //bool (*copy_file)(fs_data_t* fs, const char* origin, const char* destination);
-    //bool (*move_file)(fs_data_t* fs, const char* origin, const char* destination);
-
     bool (*list_dir)(fs_data_t* fs, size_t* index, char* filename, const char* dirpath);
     
     bool (*exists_file)(fs_data_t* fs, const char* filename);
@@ -87,9 +84,6 @@ bool fsys_delete_dir(const char* dirpath);
 
 size_t fsys_get_position(file_t* file);
 void fsys_set_position(file_t* file, size_t offset);
-
-//bool fsys_copy_file(const char* origin, const char* destination);
-//bool fsys_move_file(const char* origin, const char* destination);
 
 bool fsys_list_dir(size_t* index, char* filename, const char* dirpath);
 
