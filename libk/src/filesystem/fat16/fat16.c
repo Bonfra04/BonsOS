@@ -244,8 +244,8 @@ size_t fat16_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length
         // Check if a new cluster must be allocated
         if(data->cluster == 0 || bytes_left_in_cluster == 0)
         {
-            size_t new_cluster;
-            if(!allocate_cluster(fs, (uint16_t*)&new_cluster, data->cluster))
+            uint16_t new_cluster;
+            if(!allocate_cluster(fs, &new_cluster, data->cluster))
             {
                 file->error = true;
                 return bytes_written_count;
@@ -256,6 +256,7 @@ size_t fat16_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length
             {
                 disk_manager_seek(fs->disk_id, fs->offset + data->dir_entry_address + offsetof(dir_entry_t, first_cluster));
                 disk_manager_write(fs->disk_id, 2, (void*)&new_cluster);
+                data->first_cluster = new_cluster;
             }
 
             data->cluster = new_cluster;
