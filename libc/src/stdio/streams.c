@@ -2,6 +2,7 @@
 #include <string.h>
 #include <filesystem/fsys.h>
 #include <filesystem/ttyfs.h>
+#include <filesystem/kbfs.h>
 
 FILE* stdout;
 FILE* stderr;
@@ -512,6 +513,12 @@ size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
 
     if(size == 0 || count == 0)
         return 0;
+
+    if(stream == (FILE*)STREAM_STDIN)
+    {
+        kbfs_read_file(0, 0, ptr, size * count);
+        return count;
+    }
 
     if(stream->flags & STATUS_WRITING)
         return 0;

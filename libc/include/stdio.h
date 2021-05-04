@@ -56,6 +56,11 @@ int fprintf(FILE* stream, const char * format, ...);
 int vprintf(const char * format, va_list arg);
 int printf(const char * format, ...);
 
+int vfscanf(FILE* stream, const char* format, va_list arg);
+int fscanf(FILE* stream, const char* format, ...);
+int vscanf(const char* format, va_list arg);
+int scanf(const char* format, ...);
+
 int fgetc(FILE* stream);
 char* fgets(char* str, int num, FILE* stream);
 #define getc(stream) fgetc(stream)
