@@ -1,8 +1,6 @@
 #include <string.h>
 // This tests are based on this [https://www.cplusplus.com/reference/cstring/]
 
-int tty_printf(const char *format, ...);
-
 int test_memcpy()
 {
     char mem0[] = "this is a test stirng";

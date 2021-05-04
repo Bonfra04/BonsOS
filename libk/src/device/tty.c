@@ -161,72 +161,6 @@ void tty_id_print(int id, const char* str)
         tty_printchar(cons, *str);
 }
 
-static int tty_va_printf(int id, const char* format, va_list args)
-{
-    if (id < 0 || id >= MAX_TTYS)
-        id = 0;
-
-    char buffer[8 * 1024];
-    int result = vsnprintf(buffer, sizeof(buffer), format, args);
-
-    tty_id_print(id, buffer);
-
-    return result;
-}
-
-static int tty_va_scanf(int id, const char* format, va_list args)
-{
-    if (id < 0 || id >= MAX_TTYS)
-        id = 0;
-
-    tty_state_t* cons = &tty[id];
-
-    char buffer[8 * 1024];
-    int ch, p = 0;
-    do
-    {
-        ch = kb_getch();
-        if(ch <= 0xFF)
-        {
-            switch (ch)
-            {
-            case '\b':
-                if(p > 0)
-                {
-                    p--;
-                    tty_printchar(cons, ch);
-                }
-                break;
-
-            case '\n':
-                tty_printchar(cons, ch);
-                break;
-            
-            default:
-                buffer[p++] = ch;
-                tty_printchar(cons, ch);
-            }
-        }
-        else
-            switch (ch - 0xFF)
-            {
-            case VK_ARROW_LEFT:
-                tty_id_setpos(id, (screenpos_t){tty[id].pos.x - 1, tty[id].pos.y});             
-                break;
-
-            case VK_ARROW_RIGHT:
-                tty_id_setpos(id, (screenpos_t){tty[id].pos.x + 1, tty[id].pos.y});             
-                break;
-            
-            default:
-                break;
-            }
-    } while(ch != '\n' && p < 8 * 1024 - 1);
-    buffer[p] = '\0';
-
-    return vsscanf(buffer, format, args);
-}
-
 void tty_activate(int id)
 {
     if (id < 0 || id >= MAX_TTYS)
@@ -320,32 +254,6 @@ void tty_id_clear(int id)
     }
 }
 
-int tty_id_printf(int id, const char *format, ...)
-{
-    if (id < 0 || id >= MAX_TTYS)
-        id = 0;
-
-    va_list args;
-    va_start(args, format);
-    int result = tty_va_printf(id, format, args);;
-    va_end(args);
-
-    return result;
-}
-
-int tty_id_scanf(int id, const char* format, ...)
-{
-    if (id < 0 || id >= MAX_TTYS)
-        id = 0;
-
-    va_list args;
-    va_start(args, format);
-    int result = tty_va_scanf(id, format, args);
-    va_end(args);
-
-    return result;
-}
-
 // Implicit routines
 
 inline textcolor_t tty_get_textcolor_fg()
@@ -391,24 +299,4 @@ inline void tty_clear()
 void tty_print(const char* str)
 {
     tty_id_print(active_tty_index, str);
-}
-
-int tty_printf(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = tty_va_printf(active_tty_index, format, args);
-    va_end(args);
-
-    return result;
-}
-
-int tty_scanf(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = tty_va_scanf(active_tty_index, format, args);
-    va_end(args);
-
-    return result;
 }

@@ -7,7 +7,6 @@
 #include <memory/heap.h>
 #include <device/pci.h>
 #include <device/ata.h>
-#include <device/pit.h>
 #include <device/ata/ahci.h>
 #include <x86/cpu.h>
 #include <filesystem/fat16.h>
@@ -15,13 +14,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <filesystem/fsys.h>
+#include <filesystem/ttyfs.h>
 
 #include "paging_tmp.h"
 #include "bootinfo.h"
 
 #include "unit_tests/unit_test.h"
-
-static heap_data_t kernel_heap;
 
 void init(bootinfo_t* bootinfo)
 {
@@ -44,6 +43,7 @@ void init(bootinfo_t* bootinfo)
     // Deinit the region the kernel/stack/bitmap is in as its in use
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
 
+    static heap_data_t kernel_heap;
     kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     heap_activate(&kernel_heap);
 
@@ -61,18 +61,19 @@ void main(bootinfo_t* bootinfo)
 
     if(!execute_tests())
         return;
+    
+    disk_manager_flush(0);
 
     while(true)
     {
         char buff[32];
         tty_set_textcolor_fg(TEXTCOLOR_LTBLUE);
-        tty_printf("BonsOS ");
+        printf("BonsOS ");
         tty_set_textcolor_fg(TEXTCOLOR_YELLOW);
-        tty_printf("$> ");
+        printf("$> ");
         tty_set_textcolor_fg(TEXTCOLOR_WHITE);
-        tty_scanf("%s", buff);
         
-        if(strcmp(buff, "exit") == 0)
+        if(strcmp(buff, "shutdown") == 0)
             break;
     }
 }

@@ -31,25 +31,25 @@ static const char *exceptionstr[] =
 
 static void dump_context(const interrupt_context_t* context)
 {
-    tty_printf("INT: 0x%llX   Error: 0x%llX\n\n", context->interrupt, context->error);
-    tty_printf("CS:RIP: %x:%llX   SS:RSP: %x:%llX\n\n", context->cs, context->retaddr, context->ss, context->rsp);
+    printf("INT: 0x%llX   Error: 0x%llX\n\n", context->interrupt, context->error);
+    printf("CS:RIP: %x:%llX   SS:RSP: %x:%llX\n\n", context->cs, context->retaddr, context->ss, context->rsp);
 
     char buf[640];
 
     dump_registers(buf, sizeof(buf), &context->regs);
-    tty_printf("%s\n", buf);
+    printf("%s\n", buf);
 
     dump_cpuflags(buf, sizeof(buf), context->rflags);
-    tty_printf("%s\n", buf);
+    printf("%s\n", buf);
 
     uint64_t cr2;
     asm("mov %0, cr2" : "=r"(cr2));
-    tty_printf("CR2: %llX\n", cr2);
+    printf("CR2: %llX\n", cr2);
 
-    tty_printf("Stack:\n");
+    printf("Stack:\n");
     void* stack = (void*)context->rsp;
     dump_memory(buf, sizeof(buf), stack, 8 * 16, DUMPSTYLE_ADDR);
-    tty_printf(buf);
+    printf(buf);
 }
 
 static void hang()
@@ -70,7 +70,7 @@ static void isr_fatal(const interrupt_context_t* context)
 
     tty_set_textcolor(TEXTCOLOR_WHITE, TEXTCOLOR_RED);
     tty_clear();
-    tty_printf("%s\n\n", exstr);
+    printf("%s\n\n", exstr);
 
     dump_context(context);
 
@@ -80,7 +80,7 @@ static void isr_fatal(const interrupt_context_t* context)
 static void isr_breakpoint(const interrupt_context_t *context)
 {
     (void)context;
-    tty_printf("Breakpoint hit.\n");
+    printf("Breakpoint hit.\n");
 }
 
 void exceptions_init()
