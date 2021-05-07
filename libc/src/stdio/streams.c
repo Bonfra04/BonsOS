@@ -434,10 +434,7 @@ int fgetc(FILE* stream)
         return EOF;
 
     int c = 0;
-    size_t res = fread(&c, 1, 1, stream);
-
-    file_t* file = get_file(stream);
-    if(res != 1 || file->eof || file->error)
+    if(fread(&c, 1, 1, stream) != 1)
         return EOF;
 
     return c;
@@ -445,27 +442,16 @@ int fgetc(FILE* stream)
 
 char* fgets(char* str, int num, FILE* stream)
 {
-    if(!stream)
-        return 0;
-    file_t* file = get_file(stream);
-
-    if(!str)
-    {
-        file->error = true;
-        return 0;
-    }
-
-    if(file->error || file->eof)
+    if(!stream || !str)
         return 0;
 
     char* ptr = str;
     do {
-        fread(ptr, 1, 1, stream);
-        if(file->error)
+        if(fread(ptr, 1, 1, stream) != 1)
             return 0;
         if(*ptr++ == '\n')
             break;
-    } while(!file->eof && (ptr - str) < (num - 1));
+    } while((ptr - str) < (num - 1));
     *ptr = '\0';
 
     return str;
@@ -475,10 +461,8 @@ int fputc(int character, FILE* stream)
 {
     if(!stream)
         return EOF;
-    file_t* file = get_file(stream);
 
-    size_t res = fwrite(&character, 1, 1, stream);
-    if(res != 1 || file->error)
+    if(fwrite(&character, 1, 1, stream) != 1)
         return EOF;
     
     return character;
@@ -486,24 +470,50 @@ int fputc(int character, FILE* stream)
 
 int fputs(const char* str, FILE* stream)
 {
-    if(!stream)
+    if(!stream || !str)
         return EOF;
-    file_t* file = get_file(stream);
-
-    if(!str)
-    {
-        file->error = true;
-        return EOF;
-    }
 
     size_t len = strlen(str);
 
-    size_t res = fwrite(str, 1, len, stream);
-
-    if(res != len || file->error)
+    if(fwrite(str, 1, len, stream) != len)
         return EOF;
 
     return 0;
+}
+
+int getchar()
+{
+    return fgetc(stdin);
+}
+
+char* gets(char* str)
+{
+    if(!str)
+        return 0;
+
+    char* ptr = str;
+    do {
+        if(fread(ptr, 1, 1, stdin) != 1)
+            return 0;
+        if(*ptr++ == '\n')
+            break;
+    } while(true);
+    *--ptr = '\0';
+
+    return str;
+}
+
+int putchar(int character)
+{
+    return fputc(character, stdout);
+}
+
+int puts(const char* str)
+{
+    static const char* nl = "\n";
+    if(fputs(str, stdout) == EOF)
+        return EOF;
+    return fputs(nl, stdout);
 }
 
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
