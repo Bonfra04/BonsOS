@@ -1,6 +1,7 @@
 #include <filesystem/kbfs.h>
 #include <filesystem/ttyfs.h>
 #include <string.h>
+#include <device/keyboard.h>
 
 file_system_t kbfs_generate(size_t disk_id, size_t offset, size_t size)
 {
@@ -52,7 +53,9 @@ size_t kbfs_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
                 break;
 
             case '\n':
+                *buff = (uint8_t)ch;
                 ttyfs_write_file(0, 0, &ch, 1);
+                buff++;
                 break;
             
             default:
