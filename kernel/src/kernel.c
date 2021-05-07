@@ -52,7 +52,7 @@ void init(bootinfo_t* bootinfo)
     disk_manager_init();
 
     int bits = sizeof(void*) * 8;
-    tty_printf("Succesfully booted BonsOS %d bit.\n", bits);
+    printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
 
 void main(bootinfo_t* bootinfo)
@@ -61,8 +61,6 @@ void main(bootinfo_t* bootinfo)
 
     if(!execute_tests())
         return;
-    
-    disk_manager_flush(0);
 
     while(true)
     {
@@ -72,8 +70,11 @@ void main(bootinfo_t* bootinfo)
         tty_set_textcolor_fg(TEXTCOLOR_YELLOW);
         printf("$> ");
         tty_set_textcolor_fg(TEXTCOLOR_WHITE);
+        gets(buff);
         
-        if(strcmp(buff, "shutdown") == 0)
+        if(*buff && strcmp(buff, "exit") == 0)
             break;
     }
+
+    disk_manager_flush(0);
 }
