@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-int vfprintf(FILE * stream, const char * format, va_list arg)
+int vfprintf(FILE* stream, const char * format, va_list arg)
 {
     char buf[512];
     int res = vsprintf(buf, format, arg);
