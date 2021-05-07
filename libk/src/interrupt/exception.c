@@ -3,6 +3,7 @@
 #include <device/tty.h>
 #include <x86/cpu.h>
 #include <dump.h>
+#include <stdio.h>
 
 static const char *exceptionstr[] =
 {
