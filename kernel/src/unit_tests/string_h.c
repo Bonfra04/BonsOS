@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 // This tests are based on this [https://www.cplusplus.com/reference/cstring/]
 
 int test_memcpy()
@@ -102,22 +103,22 @@ int test_string()
 {
     if(!test_memcpy())
     {
-        tty_printf("'memcpy' test went wrong.\n");
+        printf("'memcpy' test went wrong.\n");
         return 0;
     }
     if(!test_memmove())
     {
-        tty_printf("'memmove' test went wrong.\n");
+        printf("'memmove' test went wrong.\n");
         return 0;
     }
     if(!test_strcpy())
     {
-        tty_printf("'strcpy' test went wrong.\n");
+        printf("'strcpy' test went wrong.\n");
         return 0;
     }
     if(!test_strncpy())
     {
-        tty_printf("'strncpy' test went wrong.\n");
+        printf("'strncpy' test went wrong.\n");
         return 0;
     }
 
