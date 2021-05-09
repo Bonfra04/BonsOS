@@ -1,5 +1,5 @@
-%ifndef __IO_INC__
-%define __IO_INC__
+%ifndef __BIOS_PRINT_INC__
+%define __BIOS_PRINT_INC__
 
 bits 16
 
@@ -20,4 +20,4 @@ BiosPrint:
     popa
     ret
 
-%endif ; __IO_INC__
+%endif ; __BIOS_PRINT_INC__
