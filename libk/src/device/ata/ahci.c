@@ -150,7 +150,7 @@ static int check_type(hba_port_t* port)
         return AHCI_DEV_NULL;
 
     switch (port->sig)
-	{
+    {
         case SATA_SIG_ATAPI:
             return AHCI_DEV_SATAPI;
         case SATA_SIG_SEMB:
@@ -159,7 +159,7 @@ static int check_type(hba_port_t* port)
             return AHCI_DEV_PM;
         case SATA_SIG_ATA:
             return AHCI_DEV_SATA;
-	}
+    }
 
     return AHCI_DEV_NULL;
 }
