@@ -72,7 +72,7 @@ void main(bootinfo_t* bootinfo)
         tty_set_textcolor_fg(TEXTCOLOR_WHITE);
         gets(buff);
         
-        if(*buff && strcmp(buff, "exit") == 0)
+        if(strcmp("exit", buff) == 0)
             break;
     }
 
