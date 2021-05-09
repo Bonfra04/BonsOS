@@ -14,7 +14,7 @@
             "postDebugTask": "exit",
             "windows": {
                 "autorun": [
-                    "set substitute-path /mnt/e e:/"
+                    "set substitute-path /mnt/e e:/" // fixes some path problems, change if needed 
                 ]
             }  
         }

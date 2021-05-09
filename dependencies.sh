@@ -18,6 +18,9 @@ sudo apt-get install --assume-yes curl
 sudo apt-get install --assume-yes nasm
 sudo apt-get install --assume-yes dosfstools
 sudo apt-get install --assume-yes mtools
+sudo apt-get install --assume-yes qemu
+sudo apt-get install --assume-yes qemu-kvm
+sudo apt-get install --assume-yes gdb
 
 mkdir $ROOT_DIR/tmp/
 mkdir $ROOT_DIR/tools/
