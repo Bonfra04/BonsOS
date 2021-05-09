@@ -16,6 +16,6 @@ void kenrel_panic(const char* format, ...)
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
-    tty_printf(buffer);
+    fprintf(stderr, buffer);
     for(;;);
 }

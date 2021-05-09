@@ -35,9 +35,6 @@ void tty_id_clear(int id);
 
 void tty_id_print(int id, const char* str);
 
-int tty_id_printf(int id, const char *format, ...);
-int tty_id_scanf(int id, const char* format, ...);
-
 // Implicit routines
 
 textcolor_t tty_get_textcolor_fg();
@@ -53,9 +50,6 @@ void tty_setpos(screenpos_t pos);
 void tty_clear();
 
 void tty_print(const char* str);
-
-int tty_printf(const char *format, ...);
-int tty_scanf(const char* format, ...);
 
 
 #ifdef __cplusplus

@@ -41,8 +41,9 @@ size_t ttyfs_write_file(fs_data_t* fs, file_t* file, void* buffer, size_t length
 {
     (void)fs; (void)file;
 
-    const char buff[length];
+    char buff[length + 1];
     memcpy((void*)buff, buffer, length);
+    buff[length] = '\0';
     tty_print((const char*)&buff);
 
     return length;

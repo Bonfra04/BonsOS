@@ -309,7 +309,7 @@ int vsscanf(const char* s, const char *format, va_list args)
 
                 case 'd':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 
@@ -322,7 +322,7 @@ int vsscanf(const char* s, const char *format, va_list args)
 
                 case 'u':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 
@@ -335,7 +335,7 @@ int vsscanf(const char* s, const char *format, va_list args)
 
                 case 'o':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 
@@ -348,7 +348,7 @@ int vsscanf(const char* s, const char *format, va_list args)
 
                 case 'x':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 
@@ -364,7 +364,7 @@ int vsscanf(const char* s, const char *format, va_list args)
                 case 'g':
                 case 'a':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 
@@ -386,7 +386,7 @@ int vsscanf(const char* s, const char *format, va_list args)
 
                 case 's':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 
@@ -399,7 +399,7 @@ int vsscanf(const char* s, const char *format, va_list args)
 
                 case 'p':
                     {
-                        while(*buff && *buff != ' ')
+                        while(*buff && !isspace(*buff))
                             buff++;
                         p[buff - p] = 0;
 

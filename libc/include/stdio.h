@@ -56,6 +56,11 @@ int fprintf(FILE* stream, const char * format, ...);
 int vprintf(const char * format, va_list arg);
 int printf(const char * format, ...);
 
+int vfscanf(FILE* stream, const char* format, va_list arg);
+int fscanf(FILE* stream, const char* format, ...);
+int vscanf(const char* format, va_list arg);
+int scanf(const char* format, ...);
+
 int fgetc(FILE* stream);
 char* fgets(char* str, int num, FILE* stream);
 #define getc(stream) fgetc(stream)
@@ -63,6 +68,11 @@ char* fgets(char* str, int num, FILE* stream);
 int fputc(int character, FILE* stream);
 int fputs(const char* str, FILE* stream);
 #define putc(character, stream) fputc(character, stream)
+
+int getchar();
+char* gets(char* str);
+int putchar(int character);
+int puts(const char* str);
 
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
 size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream);
