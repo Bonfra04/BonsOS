@@ -6,8 +6,7 @@
 
 void kenrel_panic(const char* format, ...)
 {
-    tty_set_textcolor_bg(TEXTCOLOR_RED);
-    tty_set_textcolor_fg(TEXTCOLOR_YELLOW);
+    tty_set_textcolor(0xFFFFFF00, 0xFFFF0000); // yellow, red
 
     char buffer[8 * 1024];
 

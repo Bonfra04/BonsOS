@@ -5,7 +5,9 @@
 
 Mem.BIOS.IVT                        equ 0x00000000
 Mem.BIOS.Data                       equ 0x00000400
-Mem.MemoryMap                       equ 0x00000500
+Mem.VESA.Info                       equ 0x00000500
+Mem.VESA.ModeInfo                   equ 0x00000700
+Mem.MemoryMap                       equ 0x00000800
 Mem.GDT                             equ 0x00004500
 Mem.Loader.Stack.Bottom             equ 0x00004600
 Mem.Loader.Stack.Top                equ 0x00007A00

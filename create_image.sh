@@ -10,8 +10,8 @@ sudo mkfs.vfat -F 16 -n "BonsOS" ./bin/img/partition.dd
 mcopy -i ./bin/img/partition.dd ./bin/boot/loader.bin ::/
 mcopy -i ./bin/img/partition.dd ./bin/kernel/kernel.sys ::/
 
-mmd -i ./bin/img/partition.dd ::/folder
-mcopy -i ./bin/img/partition.dd ./test.txt ::/folder/test.txt
+mmd -i ./bin/img/partition.dd ::/fonts
+mcopy -i ./bin/img/partition.dd ./zapvga16.psf ::/fonts/zapvga16.psf
 
 #Add the bootloader to the partition
 dd if=bin/boot/vbr.bin of=./bin/img/partition.dd seek=0 count=1 conv=notrunc bs=3

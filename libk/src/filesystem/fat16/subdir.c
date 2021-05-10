@@ -39,8 +39,10 @@ static size_t find_entry(fs_data_t* fs, file_t* dir, const char* entryname)
 
     dir_entry_t entry;
 
-    while((entry = read_next_entry(fs, dir)).name[0])
+    while(true)
     {
+        entry = read_next_entry(fs, dir);
+        
         if(entry.flags & FREE)
             continue;
 

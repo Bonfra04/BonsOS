@@ -1,4 +1,5 @@
 #include <device/tty.h>
+#include <graphics/screen.h>
 #include <interrupt/interrupt.h>
 #include <interrupt/exception.h>
 #include <device/keyboard.h>
@@ -16,6 +17,7 @@
 #include <stdio.h>
 #include <filesystem/fsys.h>
 #include <filesystem/ttyfs.h>
+#include <graphics/renderer.h>
 
 #include "paging_tmp.h"
 #include "bootinfo.h"
@@ -26,6 +28,7 @@ void init(bootinfo_t* bootinfo)
 {
     identity_map_everything();
 
+    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, bootinfo->framebuffer);
     tty_init();
 
     interrupts_init();
@@ -51,6 +54,8 @@ void init(bootinfo_t* bootinfo)
 
     disk_manager_init();
 
+    renderer_load_font("a:/fonts/zapvga16.psf");
+
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
@@ -62,14 +67,16 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
+    asm("int 0x01");
+
     while(true)
     {
         char buff[32];
-        tty_set_textcolor_fg(TEXTCOLOR_LTBLUE);
+        tty_set_textcolor_fg(0xFF0000FF); // blue
         printf("BonsOS ");
-        tty_set_textcolor_fg(TEXTCOLOR_YELLOW);
+        tty_set_textcolor_fg(0xFFFFFF00); // yellow
         printf("$> ");
-        tty_set_textcolor_fg(TEXTCOLOR_WHITE);
+        tty_set_textcolor_fg(0xFFFFFFFF); // white
         gets(buff);
         
         if(strcmp("exit", buff) == 0)

@@ -68,6 +68,22 @@ load:
 .loadGDT32:
     lgdt [GDT32.Table.Pointer]
 
+.detectGraphicsMode:
+    mov ax, 1280    ; width
+    mov bx, 720     ; height
+    mov cl, 32      ; bpp
+    call DetectVesaMode
+    jc error.vesaNotSupported
+
+    mov [vesa_mode], dx
+
+    mov [boot_info+bootinfo.framebuffer], ecx
+    mov [boot_info+bootinfo.screen_pitch], ax
+    mov dword [boot_info+bootinfo.screen_width], 1280
+    mov dword [boot_info+bootinfo.screen_height], 720
+
+    ; TODO: printf("Found VESA mode (%d x %d x %d)", width, height, bpp);
+
 .detectMemory:
     call BiosGetMemorySize
     cmp ax, -1
@@ -106,6 +122,10 @@ load:
 
 .enable64BitMode:
     BiosPrintMacro String.Status.Entering64Bit
+
+    mov bx, [vesa_mode]
+    call EnableVesaMode
+    jc error.vesaFailed
 
     ; Disable interrupts
     cli
@@ -197,6 +217,14 @@ error:
     BiosPrintMacro String.Error.KernelLoadFailed
     jmp .hang
 
+.vesaNotSupported:
+    BiosPrintMacro String.Error.VesaNotSupprted
+    jmp .hang
+
+.vesaFailed:
+    BiosPrintMacro String.Error.VesaFailed
+    jmp .hang
+
 .hang:
     cli
     hlt
@@ -210,9 +238,14 @@ istruc bootinfo
     at bootinfo.memorySizeLow,      dd 0
     at bootinfo.memorySizeHigh,     dd 0
     at bootinfo.bootDevice,         dd 0
+    at bootinfo.screen_width,       dd 0
+    at bootinfo.screen_height,      dd 0
+    at bootinfo.screen_pitch,        db 0
+    at bootinfo.framebuffer,        dd 0
 iend
 
 partition_offset dw 0x0000
+vesa_mode dw 0x0000
 ImageName db "KERNEL  SYS"
 
 String.Loading  db "Loading...", 13, 10, 0
@@ -229,13 +262,16 @@ String.Error.NoCPUID            db "CPUID not supported", 13, 10, 0
 String.Error.No64BitMode        db "CPU is not 64-bit", 13, 10, 0
 String.Error.NoFXinst           db "No FXSAVE/FXRSTOR", 13, 10, 0
 String.Error.NoSSE              db "No SSE support", 13, 10, 0
-String.Error.UndetectedMemory  db "Error detecting memory", 13, 10, 0
+String.Error.UndetectedMemory   db "Error detecting memory", 13, 10, 0
 String.Error.KernelNotFound     db "Kernel not found", 13, 10, 0
 String.Error.KernelLoadFailed   db "Kernel load failed", 13, 10, 0
+String.Error.VesaNotSupprted    db "VESA not supported", 13, 10, 0
+String.Error.VesaFailed         db "VESA failed to switch mode", 13, 10, 0
 
 %define SECOND_STAGE
 %include "include/memory_layout.inc"
 %include "include/bios_print.inc"
+%include "include/bios_print_hex.inc"
 %include "include/a20.inc"
 %include "include/cpuid.inc"
 %include "include/gdt.inc"
@@ -245,6 +281,7 @@ String.Error.KernelLoadFailed   db "Kernel load failed", 13, 10, 0
 %include "include/fat16.inc"
 %include "include/fat16_ext.inc"
 %include "include/memory.inc"
+%include "include/vesa.inc"
 
 bits 16
 
