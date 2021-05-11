@@ -491,15 +491,14 @@ char* gets(char* str)
     if(!str)
         return 0;
 
-    char* ptr = str;
-    do {
-        if(fread(ptr, 1, 1, stdin) != 1)
-            return 0;
-        if(*ptr++ == '\n')
-            break;
-    } while(true);
-    *--ptr = '\0';
+    char buff[512];
+    char* res = fgets(buff, 512, stdin);
 
+    if(!res)
+        return 0;
+
+    buff[strlen(buff) - 1] = '\0';
+    memcpy(str, buff, strlen(buff) + 1);
     return str;
 }
 
