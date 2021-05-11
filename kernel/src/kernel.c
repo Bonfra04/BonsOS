@@ -67,8 +67,6 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    asm("int 0x01");
-
     while(true)
     {
         char buff[32];
@@ -77,7 +75,7 @@ void main(bootinfo_t* bootinfo)
         tty_set_textcolor_fg(0xFFFFFF00); // yellow
         printf("$> ");
         tty_set_textcolor_fg(0xFFFFFFFF); // white
-        gets(buff);
+        scanf("%s", buff);
         
         if(strcmp("exit", buff) == 0)
             break;

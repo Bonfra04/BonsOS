@@ -47,9 +47,12 @@ size_t kbfs_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
             switch (ch)
             {
             case '\b':
-                buff--;
-                ttyfs_write_file(0, 0, &ch, 1);
-                length++;
+                if(buff > buffer)
+                {
+                    buff--;
+                    ttyfs_write_file(0, 0, &ch, 1);
+                    length++;
+                }
                 break;
 
             case '\n':
