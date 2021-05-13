@@ -50,7 +50,7 @@ static void dump_context(const interrupt_context_t* context)
     printf("Stack:\n");
     void* stack = (void*)context->rsp;
     dump_memory(buf, sizeof(buf), stack, 8 * 16, DUMPSTYLE_ADDR);
-    printf(buf);
+    //printf(buf);
 }
 
 static void hang()

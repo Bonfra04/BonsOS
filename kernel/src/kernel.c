@@ -18,6 +18,7 @@
 #include <filesystem/fsys.h>
 #include <filesystem/ttyfs.h>
 #include <graphics/renderer.h>
+#include <schedule/scheduler.h>
 
 #include "paging_tmp.h"
 #include "bootinfo.h"
@@ -56,8 +57,17 @@ void init(bootinfo_t* bootinfo)
 
     renderer_load_font("a:/fonts/zapvga16.psf");
 
+    scheduler_initialize();
+
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
+}
+
+void task1()
+{
+    for(int i = 0; i < 10; i++)
+        printf("task1");
+    while(1);
 }
 
 void main(bootinfo_t* bootinfo)
@@ -67,6 +77,14 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
+    size_t pid = create_process(task1, PRIVILEGE_KERNEL);
+    execute_process(pid);
+
+    for(int i = 0; i < 10; i++)
+        printf("task0");
+
+
+    /*
     while(true)
     {
         char buff[32];
@@ -80,6 +98,7 @@ void main(bootinfo_t* bootinfo)
         if(strcmp("exit", buff) == 0)
             break;
     }
+    */
 
     disk_manager_flush(0);
 }
