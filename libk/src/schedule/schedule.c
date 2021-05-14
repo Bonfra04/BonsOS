@@ -9,8 +9,6 @@
 
 typedef struct process_context
 {
-    uint64_t rip;
-
     uint64_t rax;
     uint64_t rbx;
     uint64_t rcx;
@@ -27,15 +25,15 @@ typedef struct process_context
     uint64_t r14;
     uint64_t r15;
 
+    uint64_t cr3;
+
     uint64_t ds;
     uint64_t es;
     uint64_t fs;
     uint64_t gs;
-    uint64_t cs;
-    //uint64_t ss;
 
-    //uint64_t rsp;
-    uint64_t cr3;
+    uint64_t rip;
+    uint64_t cs;
 } __attribute__ ((packed)) process_context_t;
 
 static process_t processes[MAX_POCESSES];
@@ -59,7 +57,7 @@ static void* create_stack(uint64_t rip)
 	context->fs = KERNEL_DATA;
 	context->gs = KERNEL_DATA;
 
-    return stack - sizeof(process_context_t);
+    return (uint8_t*)stack - sizeof(process_context_t);
 }
 
 static size_t find_process_slot()
@@ -134,11 +132,9 @@ void execute_process(size_t pid)
 {
     process_t* process = &(processes[pid]);
     
+    // maybe theese two values should be saved in a register and then edited 'cause they are from the stack
     asm("mov ss, %[value]" : : [value]"X"(process->threads[0].ss));
     asm("mov rsp, %[value]" : : [value]"X"(process->threads[0].rsp));
-
-    uint64_t rip;
-    asm("pop %[address]" : [address]"=g"(rip));
 
     asm(        
         "pop rax"   "\n"
@@ -157,19 +153,18 @@ void execute_process(size_t pid)
         "pop r14"   "\n"
         "pop r15"   "\n"
 
+        "pop rax"   "\n"//cr3
+
+        "pop rax"   "\n"
         "mov ds, rax""\n"
         "pop rax"   "\n"
         "mov es, rax""\n"
-        "pop rax"   "\n"
         "pop fs"    "\n"
-        "pop rax"   "\n"
         "pop gs"    "\n"
-        "mov cs, rax""\n"
-
-        "pop rax"   "\n"
-        "xor ax, ax"
-        //"mov cr3, rax""\n"
     );
 
-    asm("jmp %[addr]" : : [addr]"X"(rip));
+    // stack has rip and cs
+    asm("retfq");
+
+    while(1);
 }
