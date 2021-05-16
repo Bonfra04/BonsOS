@@ -22,7 +22,7 @@ CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -Qn -g \
 #-fms-extensions
 
 AS		:= nasm
-ASFLAGS	:= -f elf64
+ASFLAGS	:= -F dwarf -g -f elf64
 
 LD		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-ld
 LDFLAGS	:= -nostdlib -z max-page-size=0x1000
