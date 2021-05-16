@@ -19,6 +19,7 @@
 #include <filesystem/ttyfs.h>
 #include <graphics/renderer.h>
 #include <schedule/scheduler.h>
+#include <device/pit.h>
 
 #include "paging_tmp.h"
 #include "bootinfo.h"
@@ -57,34 +58,17 @@ void init(bootinfo_t* bootinfo)
 
     renderer_load_font("a:/fonts/zapvga16.psf");
 
+    pit_initialize();
+    pit_reset_counter(200, PIT_OCW_COUNTER_0, PIT_OCW_MODE_SQUAREWAVEGEN);
+
     scheduler_initialize();
 
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
 
-void task1()
+void shell()
 {
-    for(int i = 0; i < 10; i++)
-        printf("task1");
-    while(1);
-}
-
-void main(bootinfo_t* bootinfo)
-{
-    init(bootinfo);
-
-    if(!execute_tests())
-        return;
-
-    size_t pid = create_process(task1, PRIVILEGE_KERNEL);
-    execute_process(pid);
-
-    for(int i = 0; i < 10; i++)
-        printf("task0");
-
-
-    /*
     while(true)
     {
         char buff[32];
@@ -94,11 +78,39 @@ void main(bootinfo_t* bootinfo)
         printf("$> ");
         tty_set_textcolor_fg(0xFFFFFFFF); // white
         scanf("%s", buff);
-        
+
         if(strcmp("exit", buff) == 0)
             break;
     }
-    */
 
     disk_manager_flush(0);
+
+    while(1);
+}
+
+void task1()
+{
+    while(1)
+        printf("task1");
+}
+
+void task2()
+{
+    while(1)
+        printf("task2");
+}
+
+void main(bootinfo_t* bootinfo)
+{
+    init(bootinfo);
+
+    if(!execute_tests())
+        return;
+
+    create_process(task1, PRIVILEGE_KERNEL);
+    create_process(task2, PRIVILEGE_KERNEL);
+    schedule();
+
+    while(1)
+        asm("pause");
 }

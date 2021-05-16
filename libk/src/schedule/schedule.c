@@ -1,11 +1,15 @@
 #include <schedule/scheduler.h>
 #include <string.h>
 #include <memory/page_frame_allocator.h>
+#include <device/pit.h>
+#include <memory/heap.h>
 
 #define KERNEL_DATA 0x08
 #define KERNEL_CODE 0x10
 
 #define MAX_POCESSES 32
+
+extern void schedule_isr(const interrupt_context_t* interrupt_context);
 
 typedef struct process_context
 {
@@ -37,6 +41,7 @@ typedef struct process_context
 } __attribute__ ((packed)) process_context_t;
 
 static process_t processes[MAX_POCESSES];
+static volatile size_t current_process;
 
 static void idle_task()
 {
@@ -47,7 +52,7 @@ static void idle_task()
 static void* create_stack(uint64_t rip)
 {
     void* stack = pfa_alloc_page() + pfa_get_page_size();
-    process_context_t* context = (uint8_t*)stack - sizeof(process_context_t);
+    process_context_t* context = (process_context_t*)((uint8_t*)stack - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
     context->rip = rip;
 
@@ -86,6 +91,26 @@ static thread_t create_thread(process_t* parent, entry_point_t entry_point)
     return thread;
 }
 
+// used in schedule_isr.asm
+void set_thread_stack(size_t ss, size_t rsp, size_t thread_id)
+{
+    processes[current_process].threads[thread_id].ss = ss;
+    processes[current_process].threads[thread_id].rsp = rsp;
+}
+
+// used in schedule_isr.asm
+size_t get_next_thread()
+{
+    for(size_t i = current_process + 1; i < MAX_POCESSES; i++)
+        if(processes[i].pid != -1)
+        {
+            current_process = i;
+            return &(processes[i].threads[0]);
+        }
+    current_process = 0;
+    return &(processes[0].threads[0]);
+} 
+
 void scheduler_initialize()
 {
     for(size_t i = 0; i < MAX_POCESSES; i++)
@@ -94,7 +119,12 @@ void scheduler_initialize()
         processes[i].pid = -1;   
     }
 
-    //create_process(idle_task, PRIVILEGE_KERNEL);
+    current_process = create_process(idle_task, PRIVILEGE_KERNEL);
+}
+
+void schedule()
+{
+    pit_register_callback(schedule_isr);
 }
 
 size_t create_process(entry_point_t entry_point, process_privilege_t privilege)
@@ -126,45 +156,4 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
     process->thread_count++;
 
     return true;
-}
-
-void execute_process(size_t pid)
-{
-    process_t* process = &(processes[pid]);
-    
-    // maybe theese two values should be saved in a register and then edited 'cause they are from the stack
-    asm("mov ss, %[value]" : : [value]"X"(process->threads[0].ss));
-    asm("mov rsp, %[value]" : : [value]"X"(process->threads[0].rsp));
-
-    asm(        
-        "pop rax"   "\n"
-        "pop rbx"   "\n"
-        "pop rcx"   "\n"
-        "pop rdx"   "\n"
-        "pop rsi"   "\n"
-        "pop rdi"   "\n"
-        "pop rbp"   "\n"
-        "pop r8"    "\n"
-        "pop r9"    "\n"
-        "pop r10"   "\n"
-        "pop r11"   "\n"
-        "pop r12"   "\n"
-        "pop r13"   "\n"
-        "pop r14"   "\n"
-        "pop r15"   "\n"
-
-        "pop rax"   "\n"//cr3
-
-        "pop rax"   "\n"
-        "mov ds, rax""\n"
-        "pop rax"   "\n"
-        "mov es, rax""\n"
-        "pop fs"    "\n"
-        "pop gs"    "\n"
-    );
-
-    // stack has rip and cs
-    asm("retfq");
-
-    while(1);
 }

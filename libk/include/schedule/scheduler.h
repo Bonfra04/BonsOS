@@ -23,7 +23,7 @@ typedef struct thread
     uint64_t ss;
     heap_data_t heap;
     process_t* parent;
-} thread_t;
+} __attribute__ ((packed))thread_t;
 
 typedef struct process
 {
@@ -31,7 +31,7 @@ typedef struct process
     process_privilege_t privilege;
     size_t thread_count;
     thread_t threads[MAX_THREADS];
-} process_t;
+} __attribute__ ((packed))process_t;
 
 /**
  * @brief initialize the scheduler
@@ -39,7 +39,12 @@ typedef struct process
 void scheduler_initialize();
 
 /**
- * @brief creates and run a process
+ * @brief start scheduling
+ */
+void schedule();
+
+/**
+ * @brief creates a process
  * @param[in] entry_point the entry point of the main thread
  * @param[in] privilege the process privilege
  * @return the process id (-1 on error)
