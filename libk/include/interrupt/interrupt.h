@@ -1,3 +1,5 @@
+#pragma once
+
 #include <x86/cpu.h>
 #include <x86/ports.h>
 
@@ -7,10 +9,14 @@
 #define PIC_DATA_SLAVE  0xA1
 #define PIC_CMD_EOI     0x20
 
-#define ISR_DONE() { outportb(PIC_CMD_MASTER, PIC_CMD_EOI); outportb(PIC_CMD_SLAVE, PIC_CMD_EOI); }
+#define ISR_DONE() { outportb(PIC_CMD_SLAVE, PIC_CMD_EOI); outportb(PIC_CMD_MASTER, PIC_CMD_EOI); }
 
 typedef struct interrupt_context
 {
+    uint64_t ds;
+    uint64_t es;
+    uint64_t fs;
+    uint64_t gs;
     registers_t regs;
     uint64_t error;
     uint64_t interrupt;

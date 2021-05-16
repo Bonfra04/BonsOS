@@ -40,13 +40,22 @@ isr_dispatcher:
         push rbx
         push rax
 
+        mov rax, gs
+        push rax
+        mov rax, fs
+        push rax
+        mov rax, es
+        push rax
+        mov rax, ds
+        push rax
+        
         ; Preserve the MXCSR register.
         sub rsp, 16
         stmxcsr [rsp]
 
     .lookup:
         ; Look up the kernel-defined ISR in the table.
-        mov rax, [rsp + 8 * 18]             ; rax=interrupt number
+        mov rax, [rsp + 8 * 22]             ; rax=interrupt number
         mov rax, [isr_handlers + 8 * rax]   ; rax=ISR address
 
         ; If there is no ISR, then we're done.
@@ -71,6 +80,16 @@ isr_dispatcher:
         add rsp, 16
 
         ; Restore general-purpose registers.
+
+        pop rax
+        mov ds, rax
+        pop rax
+        mov es, rax
+        pop rax
+        mov fs, rax
+        pop rax
+        mov gs, rax
+
         pop rax
         pop rbx
         pop rcx
