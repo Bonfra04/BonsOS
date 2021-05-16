@@ -1,5 +1,6 @@
 #include <device/pit.h>
 #include <interrupt/interrupt.h>
+#include <stddef.h>
 
 #define PIT_REG_COUNTER0 0x40
 #define PIT_REG_COUNTER1 0x41
@@ -23,11 +24,16 @@
 #define PIT_OCW_RL_DATA 0x30
 
 static volatile uint64_t ticks;
+static pit_callback_t pit_callback;
 
 static void isr_pit(const interrupt_context_t* context)
 {
     (void)context;
     ticks++;
+
+    if(pit_callback)
+        pit_callback(context);
+
     ISR_DONE();
 }
 
@@ -64,7 +70,7 @@ void pit_reset_counter(uint32_t freq, uint8_t counter, uint8_t mode)
     ticks = 0;
 }
 
-uint8_t i86_pit_read_data (uint16_t counter)
+uint8_t i86_pit_read_data(uint16_t counter)
 {
     uint8_t port =
         counter == PIT_OCW_COUNTER_0
@@ -85,8 +91,14 @@ uint64_t pit_get_ticks()
 
 void pit_initialize()
 {
+    ticks = 0;
+    pit_callback = 0;
+
     isr_set(TRAP_IRQ_PIT, isr_pit);
     irq_enable(IRQ_PIT);
+}
 
-    ticks = 0;
+void pit_register_callback(pit_callback_t callback)
+{
+    pit_callback = callback;
 }
