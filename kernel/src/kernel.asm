@@ -19,4 +19,4 @@ _start:
     jmp .hang
 
 section .bss
-    bootinfo dq 0
+    bootinfo resq 1
