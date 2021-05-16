@@ -86,12 +86,9 @@ static void tty_printchar(char ch)
         if (pos.y == col_length)
         {
             pos.y--;
-
-            /*
-            memsetw(cons->screen + cons->ybuf * VGA_SCREEN_COLS,
-                    cons->textcolor | ' ',
-                    VGA_SCREEN_COLS * sizeof(uint16_t));
-            */
+            // clear last line
+            for(size_t i = 0; i < row_length; i++)
+                renderer_putchar(i * char_width, (col_length - 1) * char_height, ' ', fg_color, bg_color);
         }
     }
 }
