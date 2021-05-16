@@ -21,6 +21,7 @@ typedef struct thread
 {
     uint64_t rsp;
     uint64_t ss;
+    void* stack_base;
     heap_data_t heap;
     process_t* parent;
 } __attribute__ ((packed))thread_t;
@@ -44,7 +45,7 @@ void scheduler_initialize();
 void schedule();
 
 /**
- * @brief creates a process
+ * @brief creates a process and adds it to the queue
  * @param[in] entry_point the entry point of the main thread
  * @param[in] privilege the process privilege
  * @return the process id (-1 on error)
@@ -52,9 +53,14 @@ void schedule();
 size_t create_process(entry_point_t entry_point, process_privilege_t privilege);
 
 /**
- * @brief attaches thread to a process and runs it
+ * @brief attaches thread to a process
  * @param[in] pid id of the process to attach to
  * @param[in] entry_point the entry point of the thread
  * @return success
  */
 bool attach_thread(size_t pid, entry_point_t entry_point);
+
+/**
+ * @brief stops the execution of the current process
+ */
+void process_terminate();

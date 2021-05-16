@@ -88,27 +88,6 @@ void shell()
     while(1);
 }
 
-void task1()
-{
-    while(1)
-    {
-        tty_set_textcolor(0xFF00FF00, 0xFFFF00FF);
-        printf("task1");
-        for(size_t i = 0; i < UINT16_MAX * UINT8_MAX; i++)
-            (void)i;
-    }
-}
-
-void task2()
-{
-    while(1)
-    {
-        for(size_t i = 0; i < UINT16_MAX * UINT8_MAX; i++)
-            (void)i;   
-        tty_set_textcolor(0xFF0000FF, 0xFFFFFF00);
-        printf("task2");
-    }
-}
 
 void main(bootinfo_t* bootinfo)
 {
@@ -117,8 +96,7 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    create_process(task1, PRIVILEGE_KERNEL);
-    create_process(task2, PRIVILEGE_KERNEL);
+    create_process(shell, PRIVILEGE_KERNEL);
     schedule();
 
     while(1)

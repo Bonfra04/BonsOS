@@ -51,8 +51,8 @@ static void idle_task()
 
 static void* create_stack(uint64_t rip)
 {
-    void* stack = pfa_alloc_page() + pfa_get_page_size();
-    process_context_t* context = (process_context_t*)((uint8_t*)stack - sizeof(process_context_t));
+    void* stack = pfa_alloc_page();
+    process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_get_page_size() - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
     context->rip = rip;
 
@@ -62,7 +62,7 @@ static void* create_stack(uint64_t rip)
 	context->fs = KERNEL_DATA;
 	context->gs = KERNEL_DATA;
 
-    return (uint8_t*)stack - sizeof(process_context_t);
+    return stack;
 }
 
 static size_t find_process_slot()
@@ -86,7 +86,8 @@ static thread_t create_thread(process_t* parent, entry_point_t entry_point)
     thread_t thread;
     thread.parent = parent;
     thread.heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
-    thread.rsp = (uint64_t)create_stack((uint64_t)entry_point);
+    thread.stack_base = create_stack((uint64_t)entry_point);
+    thread.rsp = thread.stack_base + pfa_get_page_size() - sizeof(process_context_t);
     thread.ss = KERNEL_DATA;
     return thread;
 }
@@ -99,15 +100,17 @@ void set_thread_stack(size_t ss, size_t rsp, size_t thread_id)
 }
 
 // used in schedule_isr.asm
-size_t get_next_thread()
+thread_t* get_next_thread()
 {
     for(size_t i = current_process + 1; i < MAX_POCESSES; i++)
         if(processes[i].pid != -1)
         {
             current_process = i;
+            heap_activate(&(processes[i].threads[0].heap));
             return &(processes[i].threads[0]);
         }
     current_process = 0;
+    heap_activate(&(processes[0].threads[0].heap));
     return &(processes[0].threads[0]);
 } 
 
@@ -156,4 +159,19 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
     process->thread_count++;
 
     return true;
+}
+
+void process_terminate()
+{
+    process_t* process = &(processes[current_process]);
+    for(size_t i = 0; i < process->thread_count; i++)
+    {
+        thread_t* thread = &(process->threads[i]);
+        pfa_free_page(thread->heap.base_address); // free heap memory
+        pfa_free_page(thread->stack_base);  // free stack memory;
+    }
+    processes[current_process].pid = -1;
+
+    while(1)
+        asm("pause");
 }
