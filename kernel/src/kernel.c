@@ -59,7 +59,7 @@ void init(bootinfo_t* bootinfo)
     renderer_load_font("a:/fonts/zapvga16.psf");
 
     pit_initialize();
-    pit_reset_counter(200, PIT_OCW_COUNTER_0, PIT_OCW_MODE_SQUAREWAVEGEN);
+    pit_reset_counter(1, PIT_OCW_COUNTER_0, PIT_OCW_MODE_SQUAREWAVEGEN);
 
     scheduler_initialize();
 
@@ -91,13 +91,23 @@ void shell()
 void task1()
 {
     while(1)
+    {
+        tty_set_textcolor(0xFF00FF00, 0xFFFF00FF);
         printf("task1");
+        for(size_t i = 0; i < UINT16_MAX * UINT8_MAX; i++)
+            (void)i;
+    }
 }
 
 void task2()
 {
     while(1)
+    {
+        for(size_t i = 0; i < UINT16_MAX * UINT8_MAX; i++)
+            (void)i;   
+        tty_set_textcolor(0xFF0000FF, 0xFFFFFF00);
         printf("task2");
+    }
 }
 
 void main(bootinfo_t* bootinfo)

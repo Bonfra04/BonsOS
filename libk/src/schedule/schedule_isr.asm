@@ -108,7 +108,6 @@ schedule_isr:
     push qword [.r_r15]
     push qword [.r_r14]
     push qword [.r_r13]
-    push qword [.r_r13]
     push qword [.r_r12]
     push qword [.r_r11]
     push qword [.r_r10]
@@ -165,16 +164,16 @@ schedule_isr:
     mov rax, [.r_rax] ; restore rax
 
 .interrupt_done:
-    push rax
-
+    push rax    ; save rax
+    
     ; slave
     mov al, 0x20    ; PIC_CMD_EOI
     out 0xA0, al    ; PIC_CMD_SLAVE
     ; master
     mov al, 0x20    ; PIC_CMD_EOI
     out 0x20, al    ; PIC_CMD_MASTER
-
-    pop rax
+    
+    pop rax     ; restore rax
 
 .done:
     ; stack has cs and rip
