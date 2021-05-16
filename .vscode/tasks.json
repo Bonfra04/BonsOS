@@ -13,6 +13,9 @@
             },
             "linux": {
                 "command": "./run_qemu.sh"
+            },
+            "presentation": {
+                "clear": true
             }
         },
         {

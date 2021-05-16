@@ -12,11 +12,11 @@
             "gdbpath": "gdb",
             "preLaunchTask": "debug qemu",
             "postDebugTask": "exit",
-            "windows": {
-                "autorun": [
-                    "set substitute-path /mnt/e e:/" // fixes some path problems, change if needed 
-                ]
-            }  
+            "autorun": [    // path issues
+                "directory libk",
+                "directory libc",
+                "directory kernel"
+            ]
         }
     ],
 }
