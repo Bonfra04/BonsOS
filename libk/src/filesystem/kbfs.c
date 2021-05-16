@@ -47,7 +47,7 @@ size_t kbfs_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
             switch (ch)
             {
             case '\b':
-                if(buff > buffer)
+                if(buff > (uint8_t*)buffer)
                 {
                     buff--;
                     ttyfs_write_file(0, 0, &ch, 1);
