@@ -1,6 +1,17 @@
+function add_dir() # params 1: dir_path
+{
+    for file in $1/*; do
+        if [ -d $file ]; then
+            mmd -i ./bin/img/partition.dd ::/$(echo $file | cut -d "/" -f3-)
+            add_dir $file
+        else
+            mcopy -i ./bin/img/partition.dd $file ::/$(echo $file | cut -d "/" -f3-)
+        fi
+    done
+}
+
 #mkdir
 mkdir -p bin/img
-rm -f BonsOS.img
 
 #Create the partition
 dd if=/dev/zero of=./bin/img/partition.dd bs=512 count=65536 # count = [ K = megabyte; K*(1024)^2/512 ]
@@ -10,8 +21,10 @@ sudo mkfs.vfat -F 16 -n "BonsOS" ./bin/img/partition.dd
 mcopy -i ./bin/img/partition.dd ./bin/boot/loader.bin ::/
 mcopy -i ./bin/img/partition.dd ./bin/kernel/kernel.sys ::/
 
-mmd -i ./bin/img/partition.dd ::/fonts
-mcopy -i ./bin/img/partition.dd ./zapvga16.psf ::/fonts/zapvga16.psf
+add_dir ./img-content
+
+#mmd -i ./bin/img/partition.dd ::/fonts
+#mcopy -i ./bin/img/partition.dd ./zapvga16.psf ::/fonts/zapvga16.psf
 
 #Add the bootloader to the partition
 dd if=bin/boot/vbr.bin of=./bin/img/partition.dd seek=0 count=1 conv=notrunc bs=3

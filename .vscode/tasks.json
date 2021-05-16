@@ -8,47 +8,32 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "windows": {
-                "command": ".\\run_qemu.cmd"
-            },
-            "linux": {
-                "command": "./run_qemu.sh"
-            },
             "presentation": {
                 "clear": true
+            },
+            "windows": {
+                "command": ".\\scripts\\run_qemu.cmd"
+            },
+            "linux": {
+                "command": "./scripts/run_qemu.sh"
             }
         },
         {
-            "label": "exit",
+            "label": "kill qemu",
             "type": "shell",
             "windows": {
                 "command": "taskkill /F /IM qemu-system-x86_64.exe /T > nul"
             }
         },
         {
-            "label": "run vbox",
-            "type": "shell",
-            "group": "build",
-            "windows": {
-                "command": ".\\run_vbox.cmd"
-            },
-            "problemMatcher": []
-        },
-        {
             "label": "run vmware",
             "type": "shell",
             "group": "build",
             "windows": {
-                "command": ".\\run_vmware.cmd"
+                "command": ".\\scripts\\run_vmware.cmd"
             },
-            "problemMatcher": []
-        },
-        {
-            "label": "run bochs",
-            "type": "shell",
-            "group": "build",
-            "windows": {
-                "command": ".\\run_bochs.cmd"
+            "presentation": {
+                "clear": true
             },
             "problemMatcher": []
         }

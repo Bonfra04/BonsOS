@@ -11,8 +11,9 @@
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
             "preLaunchTask": "debug qemu",
-            "postDebugTask": "exit",
+            "postDebugTask": "kill qemu",
             "autorun": [    // path issues
+                "set remotetimeout 15",
                 "directory libk",
                 "directory libc",
                 "directory kernel"
