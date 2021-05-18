@@ -174,7 +174,7 @@ typedef struct hba_cmd_table
     uint8_t  rsv[48];    // Reserved
 
     hba_prdt_entry_t prdt_entry[];  // Physical region descriptor table entries, 0 ~ 65535
-} hba_cmd_table_t;
+} __attribute__ ((packed)) hba_cmd_table_t;
 
 typedef struct ahci_ident
 {
