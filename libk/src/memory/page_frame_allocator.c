@@ -166,7 +166,7 @@ inline uint64_t pfa_get_free_pages()
     return max_pages - used_pages;
 }
 
-inline uint64_t pfa_get_page_size()
+inline uint64_t pfa_page_size()
 {
     return PFA_PAGE_SIZE;
 }

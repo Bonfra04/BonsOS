@@ -49,7 +49,7 @@ void init(bootinfo_t* bootinfo)
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
 
     static heap_data_t kernel_heap;
-    kernel_heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
+    kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
     heap_activate(&kernel_heap);
 
     pci_init();
@@ -88,6 +88,10 @@ void shell()
     while(1);
 }
 
+typedef char symbol[];
+
+void* kernel_start;
+void* kernel_end;
 
 void main(bootinfo_t* bootinfo)
 {
@@ -95,6 +99,11 @@ void main(bootinfo_t* bootinfo)
 
     if(!execute_tests())
         return;
+
+    extern symbol __kernel_start_addr;
+    extern symbol __kernel_end_addr;
+    kernel_start = __kernel_start_addr;
+    kernel_end = __kernel_end_addr;
 
     create_process(shell, PRIVILEGE_KERNEL);
     schedule();

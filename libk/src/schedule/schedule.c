@@ -52,7 +52,7 @@ static void idle_task()
 static void* create_stack(uint64_t rip)
 {
     void* stack = pfa_alloc_page();
-    process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_get_page_size() - sizeof(process_context_t));
+    process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_page_size() - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
     context->rip = rip;
 
@@ -85,9 +85,9 @@ static thread_t create_thread(process_t* parent, entry_point_t entry_point)
 {
     thread_t thread;
     thread.parent = parent;
-    thread.heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
+    thread.heap = heap_create(pfa_alloc_page(), pfa_page_size());
     thread.stack_base = create_stack((uint64_t)entry_point);
-    thread.rsp = (uint64_t)thread.stack_base + pfa_get_page_size() - sizeof(process_context_t);
+    thread.rsp = (uint64_t)thread.stack_base + pfa_page_size() - sizeof(process_context_t);
     thread.ss = KERNEL_DATA;
     return thread;
 }

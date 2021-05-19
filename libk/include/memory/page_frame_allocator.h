@@ -17,4 +17,4 @@ void pfa_init(void* bitmap_addr);
 uint64_t pfa_get_bitmap_size();
 
 uint64_t pfa_get_free_pages();
-uint64_t pfa_get_page_size();
+uint64_t pfa_page_size();

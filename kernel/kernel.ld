@@ -5,6 +5,8 @@ SECTIONS
 {
     . = 0x00100000 + 0x1000;
 
+    __kernel_start_addr = .;
+
     .text : ALIGN(0x1000)
     {
         *(.start)
@@ -27,6 +29,5 @@ SECTIONS
         *(.bss)
     }
 
-    /* extern uint32_t endkernel; printf("%p", &endkernel); // (use address) */
-    endkernel = .;
+    __kernel_end_addr = .;
 }
