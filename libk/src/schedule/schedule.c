@@ -87,7 +87,7 @@ static thread_t create_thread(process_t* parent, entry_point_t entry_point)
     thread.parent = parent;
     thread.heap = heap_create(pfa_alloc_page(), pfa_get_page_size());
     thread.stack_base = create_stack((uint64_t)entry_point);
-    thread.rsp = thread.stack_base + pfa_get_page_size() - sizeof(process_context_t);
+    thread.rsp = (uint64_t)thread.stack_base + pfa_get_page_size() - sizeof(process_context_t);
     thread.ss = KERNEL_DATA;
     return thread;
 }
@@ -167,7 +167,7 @@ void process_terminate()
     for(size_t i = 0; i < process->thread_count; i++)
     {
         thread_t* thread = &(process->threads[i]);
-        pfa_free_page(thread->heap.base_address); // free heap memory
+        pfa_free_page((void*)thread->heap.base_address); // free heap memory
         pfa_free_page(thread->stack_base);  // free stack memory;
     }
     processes[current_process].pid = -1;

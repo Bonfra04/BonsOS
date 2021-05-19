@@ -30,7 +30,7 @@ void init(bootinfo_t* bootinfo)
 {
     identity_map_everything();
 
-    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, bootinfo->framebuffer);
+    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
     tty_init();
 
     interrupts_init();
