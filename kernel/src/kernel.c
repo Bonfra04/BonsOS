@@ -20,6 +20,7 @@
 #include <graphics/renderer.h>
 #include <schedule/scheduler.h>
 #include <device/pit.h>
+#include <memory/paging.h>
 
 #include "paging_tmp.h"
 #include "bootinfo.h"
@@ -41,7 +42,7 @@ void init(bootinfo_t* bootinfo)
     enable_interrupts();
 
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
-    uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64u;
+    uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull;
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
     // After the stack
     pfa_init((void*)0x00D00001);
@@ -65,6 +66,13 @@ void init(bootinfo_t* bootinfo)
 
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
+
+    static paging_data_t paging_data;
+    paging_data = paging_create();
+    for(uint64_t i = 0; i < memorySize / 1024; i += 2)
+        paging_attach_2mb_page(paging_data, i * 0x200000, i * 0x200000);
+
+    asm("mov cr3, %[addr]" : : [addr]"r"(paging_data));
 }
 
 void shell()
