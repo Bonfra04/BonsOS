@@ -181,7 +181,7 @@ void paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtu
 
         pml4[pml4_offset] |= PML_PRESENT;
         pml4[pml4_offset] |= PML_READWRITE;
-        pml4[pml4_offset] |= ~PML_USER; // set if using usermode
+        pml4[pml4_offset] &= ~PML_USER; // set if using usermode
         PML_UPDATE_ADDRESS(pml4[pml4_offset], (uint64_t)pdp);
     }
 
@@ -193,14 +193,14 @@ void paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtu
 
         pdp[pdp_offset] |= PML_PRESENT;
         pdp[pdp_offset] |= PML_READWRITE;
-        pdp[pdp_offset] |= ~PML_USER; // set if using usermode
+        pdp[pdp_offset] &= ~PML_USER; // set if using usermode
         PML_UPDATE_ADDRESS(pdp[pdp_offset], (uint64_t)pd);
     }
 
     uint64_t* pd = (uint64_t*)((pdp[pdp_offset] & PML_ADDRESS) >> 12);
     pd[pd_offset] |= PML_PRESENT;
     pd[pd_offset] |= PML_READWRITE;
-    pd[pd_offset] |= ~PML_USER; // set if using usermode
+    pd[pd_offset] &= ~PML_USER; // set if using usermode
     pd[pd_offset] |= PML_SIZE; // 2mb page
     PML_UPDATE_ADDRESS(pd[pd_offset], (uint64_t)physical_addr);
 }
