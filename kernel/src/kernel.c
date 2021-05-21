@@ -72,7 +72,7 @@ void init(bootinfo_t* bootinfo)
     for(uint64_t i = 0; i < memorySize / 1024; i += 2)
         paging_attach_2mb_page(paging_data, i * 0x200000, i * 0x200000);
 
-    asm("mov cr3, %[addr]" : : [addr]"r"(paging_data));
+    asm volatile("mov cr3, %[addr]" : : [addr]"r"(paging_data) : "memory");
 }
 
 void shell()
