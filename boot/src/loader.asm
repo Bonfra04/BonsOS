@@ -69,8 +69,8 @@ load:
     lgdt [GDT32.Table.Pointer]
 
 .detectGraphicsMode:
-    mov ax, 1280    ; width
-    mov bx, 720     ; height
+    mov ax, 1024    ; width
+    mov bx, 768     ; height
     mov cl, 32      ; bpp
     call DetectVesaMode
     jc error.vesaNotSupported
@@ -79,8 +79,8 @@ load:
 
     mov [boot_info+bootinfo.framebuffer], ecx
     mov [boot_info+bootinfo.screen_pitch], ax
-    mov dword [boot_info+bootinfo.screen_width], 1280
-    mov dword [boot_info+bootinfo.screen_height], 720
+    mov dword [boot_info+bootinfo.screen_width], 1024
+    mov dword [boot_info+bootinfo.screen_height], 768
 
     ; TODO: printf("Found VESA mode (%d x %d x %d)", width, height, bpp);
 
@@ -117,7 +117,7 @@ load:
     call SetupPageTables
     ; Enable PAE paging.
     mov eax, cr4
-    or eax, (1 << 5)    ; CR4.PAE
+    or eax, (1 << 5) | (1 << 4)   ; CR4.PAE | CR4.PSE
     mov cr4, eax
 
 .enable64BitMode:
