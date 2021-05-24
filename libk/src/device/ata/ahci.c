@@ -3,6 +3,7 @@
 #include <x86/ports.h>
 #include <memory/page_frame_allocator.h>
 #include <string.h>
+#include <memory/paging.h>
 #include <stdbool.h>
 #include "ahci_types.h"
 
@@ -186,6 +187,8 @@ void ahci_register_pci_device(pci_device_t* device)
     uint32_t starting_device = registered_devices;
 
     hba_mem_t* hba_mem = (hba_mem_t*)(uint64_t)device->base5;
+    extern paging_data_t kernel_paging;
+    paging_map(kernel_paging, hba_mem, hba_mem, sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL, false);
 
     for(int bit = 0; bit < 32; bit++)
         if(hba_mem->pi & (1 << bit)) // bit is set: device exists

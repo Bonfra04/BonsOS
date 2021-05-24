@@ -117,7 +117,7 @@ load:
     call SetupPageTables
     ; Enable PAE paging.
     mov eax, cr4
-    or eax, (1 << 5) | (1 << 4)   ; CR4.PAE | CR4.PSE
+    or eax, (1 << 5) | (1 << 4) | (1 << 7)  ; CR4.PAE | CR4.PSE | CR4.PGE
     mov cr4, eax
 
 .enable64BitMode:

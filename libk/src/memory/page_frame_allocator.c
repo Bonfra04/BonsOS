@@ -83,7 +83,7 @@ void pfa_deinit_region(uint64_t base_address, uint64_t region_length)
     uint64_t align = base_address / PFA_PAGE_SIZE;
     uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
 
-    while(pages--)
+    while(align <= max_pages && pages--)
     {
         bitmap_set(align++);
         used_pages++;

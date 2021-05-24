@@ -9,7 +9,8 @@
                 "isDefault": true
             },
             "presentation": {
-                "clear": true
+                "clear": true,
+                "showReuseMessage": false
             },
             "windows": {
                 "command": ".\\scripts\\run_qemu.cmd"
@@ -21,8 +22,13 @@
         {
             "label": "kill qemu",
             "type": "shell",
+            "presentation": {
+                "echo": false,
+                "showReuseMessage": false,
+                "reveal": "never"
+            },
             "windows": {
-                "command": "taskkill /F /IM qemu-system-x86_64.exe /T > nul"
+                "command": "taskkill /F /IM qemu-system-x86_64.exe /T > nul 2> nul"
             }
         },
         {
