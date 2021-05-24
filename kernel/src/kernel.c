@@ -22,25 +22,15 @@
 #include <device/pit.h>
 #include <memory/paging.h>
 
-#include "paging_tmp.h"
 #include "bootinfo.h"
 
 #include "unit_tests/unit_test.h"
 
+paging_data_t kernel_paging;
+heap_data_t kernel_heap;
+
 void init(bootinfo_t* bootinfo)
 {
-    identity_map_everything();
-
-    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
-    tty_init();
-
-    interrupts_init();
-    exceptions_init();
-
-    kb_init();
-
-    enable_interrupts();
-
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
     uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull;
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
@@ -48,14 +38,33 @@ void init(bootinfo_t* bootinfo)
     pfa_init((void*)0x00D00001);
     // Deinit the region the kernel/stack/bitmap is in as its in use
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
+    // Deninit frame buffer region
+    size_t fb_size = bootinfo->screen_height * bootinfo->screen_pitch;
+    pfa_deinit_region(bootinfo->framebuffer, fb_size);
 
-    static heap_data_t kernel_heap;
-    kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
-    heap_activate(&kernel_heap);
+    kernel_paging = paging_create();
+    size_t mem_2mball_size = (memorySize * 1024) + 0x200000 - (memorySize * 1024) % 0x200000;
+    paging_map(kernel_paging, 0, 0, mem_2mball_size, PAGE_PRIVILEGE_KERNEL, false); // identity map entire memory
+    paging_enable(kernel_paging);
+    size_t fb_2mball_size = fb_size + 0x200000 - (fb_size) % 0x200000;
+    paging_map(kernel_paging, bootinfo->framebuffer, bootinfo->framebuffer, fb_2mball_size, PAGE_PRIVILEGE_KERNEL, false); // identity map fb
+
+    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
+
+    interrupts_init();
+    exceptions_init();
+
+    tty_init();
+    kb_init();
+
+    enable_interrupts();
 
     pci_init();
 
     disk_manager_init();
+
+    kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
+    heap_activate(&kernel_heap);
 
     renderer_load_font("a:/fonts/zapvga16.psf");
 
@@ -66,13 +75,6 @@ void init(bootinfo_t* bootinfo)
 
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
-
-    static paging_data_t paging_data;
-    paging_data = paging_create();
-    for(uint64_t i = 0; i < memorySize / 1024; i += 2)
-        paging_attach_2mb_page(paging_data, i * 0x200000, i * 0x200000);
-
-    asm volatile("mov cr3, %[addr]" : : [addr]"r"(paging_data) : "memory");
 }
 
 void shell()
