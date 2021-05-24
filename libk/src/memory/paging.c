@@ -128,9 +128,9 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
         length += 0x1000 - length % 0x1000;
     // align addr to 4KB
     if((uint64_t)physical_addr % 0x1000 != 0)
-        physical_addr += (uint64_t)physical_addr % 0x1000;
+        physical_addr -= (uint64_t)physical_addr % 0x1000;
     if((uint64_t)virtual_addr % 0x1000 != 0)
-        virtual_addr += (uint64_t)virtual_addr % 0x1000;
+        virtual_addr -= (uint64_t)virtual_addr % 0x1000;
     
     size_t amt_2mb = length / 0x200000;
     size_t amt_4kb = (length - (amt_2mb * 0x200000)) / 0x1000;
