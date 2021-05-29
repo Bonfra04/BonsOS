@@ -21,6 +21,7 @@
 #include <schedule/scheduler.h>
 #include <device/pit.h>
 #include <memory/paging.h>
+#include <x86/gdt.h>
 
 #include "bootinfo.h"
 
@@ -31,6 +32,7 @@ heap_data_t kernel_heap;
 
 void init(bootinfo_t* bootinfo)
 {
+    gdt_init();
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
     uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull;
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
@@ -38,16 +40,11 @@ void init(bootinfo_t* bootinfo)
     pfa_init((void*)0x00D00001);
     // Deinit the region the kernel/stack/bitmap is in as its in use
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
-    // Deninit frame buffer region
-    size_t fb_size = bootinfo->screen_height * bootinfo->screen_pitch;
-    pfa_deinit_region(bootinfo->framebuffer, fb_size);
 
     kernel_paging = paging_create();
     size_t mem_2mball_size = (memorySize * 1024) + 0x200000 - (memorySize * 1024) % 0x200000;
     paging_map(kernel_paging, 0, 0, mem_2mball_size, PAGE_PRIVILEGE_KERNEL, false); // identity map entire memory
     paging_enable(kernel_paging);
-    size_t fb_2mball_size = fb_size + 0x200000 - (fb_size) % 0x200000;
-    paging_map(kernel_paging, bootinfo->framebuffer, bootinfo->framebuffer, fb_2mball_size, PAGE_PRIVILEGE_KERNEL, false); // identity map fb
 
     screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
 
@@ -91,11 +88,13 @@ void shell()
 
         if(strcmp("exit", buff) == 0)
             break;
+        //gdt_init();
     }
+
 
     disk_manager_flush(0);
 
-    while(1);
+    process_terminate();
 }
 
 typedef char symbol[];
@@ -115,7 +114,7 @@ void main(bootinfo_t* bootinfo)
     kernel_start = __kernel_start_addr;
     kernel_end = __kernel_end_addr;
 
-    create_process(shell, PRIVILEGE_KERNEL);
+    create_process(shell, PRIVILEGE_USER);
     schedule();
 
     while(1)

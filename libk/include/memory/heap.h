@@ -17,7 +17,7 @@ typedef struct
     uint64_t base_address;
     uint64_t size;
     heap_region_t* first_region;
-} heap_data_t;
+} __attribute__ ((packed)) heap_data_t;
 
 /**
  * @brief Creates a sized heap in a specific memory address.

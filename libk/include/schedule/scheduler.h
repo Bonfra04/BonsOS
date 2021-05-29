@@ -9,8 +9,8 @@
 
 typedef enum process_privilege
 {
-    PRIVILEGE_KERNEL,
-    PRIVILEGE_USER,
+    PRIVILEGE_KERNEL = 0,
+    PRIVILEGE_USER = 1,
 } process_privilege_t;
 
 typedef void(*entry_point_t)(void);
@@ -20,17 +20,17 @@ typedef struct process process_t;
 typedef struct thread
 {
     uint64_t rsp;
-    uint64_t ss;
     void* stack_base;
     heap_data_t heap;
     process_t* parent;
-} __attribute__ ((packed))thread_t;
+} __attribute__ ((packed)) thread_t;
 
 typedef struct process
 {
     size_t pid;
     process_privilege_t privilege;
     size_t thread_count;
+    size_t current_thread;
     thread_t threads[MAX_THREADS];
 } __attribute__ ((packed))process_t;
 

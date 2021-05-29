@@ -3,9 +3,7 @@
 #include <memory/page_frame_allocator.h>
 #include <device/pit.h>
 #include <memory/heap.h>
-
-#define KERNEL_DATA 0x08
-#define KERNEL_CODE 0x10
+#include <x86/gdt.h>
 
 #define MAX_POCESSES 32
 
@@ -13,6 +11,8 @@ extern void schedule_isr(const interrupt_context_t* interrupt_context);
 
 typedef struct process_context
 {
+    uint64_t rip;
+
     uint64_t rax;
     uint64_t rbx;
     uint64_t rcx;
@@ -31,13 +31,7 @@ typedef struct process_context
 
     uint64_t cr3;
 
-    uint64_t ds;
-    uint64_t es;
-    uint64_t fs;
-    uint64_t gs;
-
-    uint64_t rip;
-    uint64_t cs;
+    uint64_t flags;
 } __attribute__ ((packed)) process_context_t;
 
 static process_t processes[MAX_POCESSES];
@@ -55,12 +49,7 @@ static void* create_stack(uint64_t rip)
     process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_page_size() - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
     context->rip = rip;
-
-    context->cs = KERNEL_CODE;
-	context->ds = KERNEL_DATA;
-	context->es = KERNEL_DATA;
-	context->fs = KERNEL_DATA;
-	context->gs = KERNEL_DATA;
+    context->flags = 0x202;
 
     return stack;
 }
@@ -83,20 +72,20 @@ static process_t* find_process(size_t pid)
 
 static thread_t create_thread(process_t* parent, entry_point_t entry_point)
 {
+    parent->thread_count++;
     thread_t thread;
     thread.parent = parent;
     thread.heap = heap_create(pfa_alloc_page(), pfa_page_size());
     thread.stack_base = create_stack((uint64_t)entry_point);
     thread.rsp = (uint64_t)thread.stack_base + pfa_page_size() - sizeof(process_context_t);
-    thread.ss = KERNEL_DATA;
     return thread;
 }
 
 // used in schedule_isr.asm
-void set_thread_stack(size_t ss, size_t rsp, size_t thread_id)
+void set_thread_stack(size_t rsp)
 {
-    processes[current_process].threads[thread_id].ss = ss;
-    processes[current_process].threads[thread_id].rsp = rsp;
+    process_t* process = &(processes[current_process]);
+    process->threads[process->current_thread].rsp = rsp;
 }
 
 // used in schedule_isr.asm
@@ -140,8 +129,9 @@ size_t create_process(entry_point_t entry_point, process_privilege_t privilege)
 
     process->pid = slot;
     process->privilege = privilege;
-    process->thread_count = 1;
-    process->threads[0] = create_thread(processes, entry_point);
+    process->thread_count = 0;
+    process->current_thread = 0;
+    process->threads[0] = create_thread(process, entry_point);
 
     return slot;
 }
@@ -156,7 +146,6 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
         return false;
 
     process->threads[process->thread_count] = create_thread(processes, entry_point);
-    process->thread_count++;
 
     return true;
 }

@@ -1,5 +1,14 @@
 bits 64
 
+SELECTOR_KERNEL_DATA equ 0x08
+SELECTOR_KERNEL_CODE equ 0x10
+
+SELECTOR_USER_DATA equ 0x18
+SELECTOR_USER_CODE equ 0x20
+
+PRIVILEGE_KERNEL equ 0
+PRIVILEGE_USER equ 1
+
 section .text
     global schedule_isr
     extern set_thread_stack
@@ -11,19 +20,6 @@ section .text
 ;*****;
 schedule_isr:
 .preserve_regs:
-    ; ds
-    mov rax, [rdi + 0 * 8]
-    mov [.r_ds], rax
-    ; es
-    mov rax, [rdi + 1 * 8]
-    mov [.r_es], rax
-    ; fs
-    mov rax, [rdi + 2 * 8]
-    mov [.r_fs], rax
-    ; gs
-    mov rax, [rdi + 3 * 8]
-    mov [.r_gs], rax
-
     ; rax
     mov rax, [rdi + 4 * 8]
     mov [.r_rax], rax
@@ -74,34 +70,25 @@ schedule_isr:
     mov rax, cr3
     mov [.r_cr3], rax
 
+    ; flags
+    mov rax, [rdi + 23 * 8]
+    mov [.r_flags], rax
+
     ; rip
     mov rax, [rdi + 21 * 8]
     mov [.r_rip], rax
-    ; cs
-    mov rax, [rdi + 22 * 8]
-    mov [.r_cs], rax
 
     ; rsp
     mov rax, [rdi + 24 * 8]
     mov [.r_rsp], rax
-    ; ss
-    mov rax, [rdi + 25 * 8]
-    mov [.r_ss], rax
 
 .save_regs:
 
     ; restore stack
-    mov ss, [.r_ss]
     mov rsp, [.r_rsp]
 
     ; push registers
-    push qword [.r_cs]
-    push qword [.r_rip]
-
-    push qword [.r_gs]
-    push qword [.r_fs]
-    push qword [.r_es]
-    push qword [.r_ds]
+    push qword [.r_flags]
     
     push qword [.r_cr3]
 
@@ -120,21 +107,54 @@ schedule_isr:
     push qword [.r_rcx]
     push qword [.r_rbx]
     push qword [.r_rax]
+
+    push qword [.r_rip]
     
+; void set_thread_stack(size_t rsp)
 .save_thread_stack:
-    mov rdi, ss
-    mov rsi, rsp
-    mov rdx, 0      ; thread id
+    mov rdi, rsp
     call set_thread_stack
 
+; thread_t* get_next_thread()
 .select_next_thread:
     call get_next_thread ; rax contains a pointer to the next thread
 
-.exec_next_thread:
+.restore_segments:
+    mov rbx, qword [rax + 5 * 8] ; rbx points to parent process
+    mov ecx, dword [rbx + 1 * 8] ; ecx contains the privilege
+    mov [.priv], ecx
+
+    cmp dword [.priv], PRIVILEGE_KERNEL
+    je .kernel_seg
+.user_seg:
+    mov rbx, SELECTOR_USER_DATA | 3
+    mov ds, rbx
+    mov rbx, SELECTOR_USER_DATA | 3
+    mov es, rbx
+    mov rbx, SELECTOR_USER_DATA | 3
+    mov fs, rbx
+    mov rbx, SELECTOR_USER_DATA | 3
+    mov gs, rbx
+    jmp .seg_done
+.kernel_seg:
+    mov rbx, SELECTOR_KERNEL_DATA
+    mov ds, rbx
+    mov rbx, SELECTOR_KERNEL_DATA
+    mov es, rbx
+    mov rbx, SELECTOR_KERNEL_DATA
+    mov fs, rbx
+    mov rbx, SELECTOR_KERNEL_DATA
+    mov gs, rbx
+.seg_done:
+
+.restore_registers:
 
     ; set other thread stack
-    mov ss, qword [rax + 1 * 8]
     mov rsp, qword [rax + 0 * 8]
+
+    ; rip
+    pop rax
+    mov [.r_rip], rax
 
     pop rax
     pop rbx
@@ -154,14 +174,39 @@ schedule_isr:
 
     add rsp, 1 * 8 ; thrash cr3 for now
 
-    mov [.r_rax], rax ; save rax
-    pop rax
-    mov ds, rax
-    pop rax
-    mov es, rax
-    pop fs
-    pop gs
-    mov rax, [.r_rax] ; restore rax
+    pop qword [.r_flags]
+
+.prepare_ret_stack:
+    cmp dword [.priv], PRIVILEGE_KERNEL
+    je .kernel_stack
+.user_stack:
+    push SELECTOR_USER_DATA | 3 ; ss
+
+    ;rsp
+    mov [.r_rax], rax
+    mov rax, rsp
+    add rax, 8
+    push rax
+    mov rax, [.r_rax]
+
+    push qword [.r_flags]   ; rflags
+    push SELECTOR_USER_CODE | 3 ; cs
+    push qword [.r_rip]     ; rip
+    jmp .stack_done
+.kernel_stack:
+    push SELECTOR_KERNEL_DATA ; ss
+    
+    ;rsp
+    mov [.r_rax], rax
+    mov rax, rsp
+    add rax, 8
+    push rax
+    mov rax, [.r_rax]
+
+    push qword [.r_flags]   ; rflags
+    push SELECTOR_KERNEL_CODE ; cs
+    push qword [.r_rip]     ; rip
+.stack_done:
 
 .interrupt_done:
     push rax    ; save rax
@@ -176,10 +221,11 @@ schedule_isr:
     pop rax     ; restore rax
 
 .done:
-    ; stack has cs and rip
-    o64 retf
+    iretq
 
 section .bss
+
+.priv: resd 1
 
 .r_rax: resq 1
 .r_rbx: resq 1
@@ -199,13 +245,8 @@ section .bss
 
 .r_cr3: resq 1
 
-.r_ds: resq 1
-.r_es: resq 1
-.r_fs: resq 1
-.r_gs: resq 1
+.r_flags: resq 1
 
 .r_rip: resq 1
-.r_cs: resq 1
 
 .r_rsp: resq 1
-.r_ss: resq 1

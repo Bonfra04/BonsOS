@@ -1,6 +1,7 @@
 #include <graphics/screen.h>
 #include <stdint.h>
 #include <memory/paging.h>
+#include <memory/page_frame_allocator.h>
 
 #define SCREEN_BPP 32
 
@@ -36,7 +37,7 @@ void screen_init(size_t width, size_t height, size_t pitch, void* _framebuffer)
     // identity map fb
     paging_map(kernel_paging, _framebuffer, _framebuffer, fb_size, PAGE_PRIVILEGE_KERNEL, false);
     // Deninit frame buffer region
-    pfa_deinit_region(_framebuffer, fb_size);
+    pfa_deinit_region((uint64_t)_framebuffer, fb_size);
 
     screen_clear(0xFF000000);
 }

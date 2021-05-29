@@ -135,14 +135,14 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
     size_t amt_2mb = length / 0x200000;
     size_t amt_4kb = (length - (amt_2mb * 0x200000)) / 0x1000;
 
-    uint64_t ph_addr = physical_addr;
-    uint64_t vt_addr = virtual_addr;
+    uint64_t ph_addr = (uint64_t)physical_addr;
+    uint64_t vt_addr = (uint64_t)virtual_addr;
 
     bool error = false;
 
     while(amt_4kb > 0 && vt_addr % 0x200000 != 0)
     {
-        if(!paging_attach_4kb_page(data, ph_addr, vt_addr, privilege, global))
+        if(!paging_attach_4kb_page(data, (void*)ph_addr, (void*)vt_addr, privilege, global))
             error = true;
         ph_addr += 0x1000;
         vt_addr += 0x1000;
@@ -151,7 +151,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
 
     while(amt_2mb > 0)
     {
-        if(!paging_attach_2mb_page(data, ph_addr, vt_addr, privilege, global))
+        if(!paging_attach_2mb_page(data, (void*)ph_addr, (void*)vt_addr, privilege, global))
             error = true;
         ph_addr += 0x200000;
         vt_addr += 0x200000;
@@ -160,7 +160,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
 
     while(amt_4kb > 0)
     {
-        if(!paging_attach_4kb_page(data, ph_addr, vt_addr, privilege, global))
+        if(!paging_attach_4kb_page(data, (void*)ph_addr, (void*)vt_addr, privilege, global))
             error = true;
         ph_addr += 0x1000;
         vt_addr += 0x1000;
