@@ -33,9 +33,8 @@ void screen_init(size_t width, size_t height, size_t pitch, void* _framebuffer)
     framebuffer = _framebuffer;
 
     size_t fb_size = height * pitch;
-    extern paging_data_t kernel_paging;
     // identity map fb
-    paging_map(kernel_paging, _framebuffer, _framebuffer, fb_size, PAGE_PRIVILEGE_KERNEL, false);
+    paging_map_global(_framebuffer, _framebuffer, fb_size, PAGE_PRIVILEGE_USER);
     // Deninit frame buffer region
     pfa_deinit_region((uint64_t)_framebuffer, fb_size);
 

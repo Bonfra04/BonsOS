@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <x86/cpu.h>
 #include <memory/heap.h>
+#include <memory/paging.h>
 
 #define MAX_THREADS 32
 
@@ -21,6 +22,7 @@ typedef struct thread
 {
     uint64_t rsp;
     void* stack_base;
+    void* kernel_rsp;
     heap_data_t heap;
     process_t* parent;
 } __attribute__ ((packed)) thread_t;
@@ -29,6 +31,7 @@ typedef struct process
 {
     size_t pid;
     process_privilege_t privilege;
+    paging_data_t pagign;
     size_t thread_count;
     size_t current_thread;
     thread_t threads[MAX_THREADS];

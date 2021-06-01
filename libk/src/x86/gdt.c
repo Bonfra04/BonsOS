@@ -96,6 +96,7 @@ void gdt_init()
     GDT.gdt_desc[4].limit_high_flags = GDT_64BIT;
 
     memset(&tss, 0, sizeof(tss_entry_t));
+    tss.IOPB_offset = sizeof(tss_entry_t);
 
     uint64_t base = (uint64_t)&tss;
     GDT.tss_desc[0].limit_low = sizeof(tss_entry_t) - 1;
@@ -104,9 +105,15 @@ void gdt_init()
     GDT.tss_desc[0].access = TSS_PRESENT | TSS_PRIV_KERNEL | TSS_FREE;
     GDT.tss_desc[0].base_high = (base >> 24) & 0xFF;
     GDT.tss_desc[0].base_highest = base >> 32;
-    
+
     gdtr.size = sizeof(GDT) - 1;
     gdtr.offset = (uint64_t)&GDT;
 
     asm volatile("lgdt %[addr]" : : [addr]"m"(gdtr) : "memory");
+    asm volatile("mov ax, 0x28 \n ltr ax");
+}
+
+void tss_set_kstack(void* stack_top)
+{
+    tss.RSP0 = (uint64_t)stack_top;
 }

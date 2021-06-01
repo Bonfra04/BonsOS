@@ -120,7 +120,7 @@ schedule_isr:
     call get_next_thread ; rax contains a pointer to the next thread
 
 .restore_segments:
-    mov rbx, qword [rax + 5 * 8] ; rbx points to parent process
+    mov rbx, qword [rax + 6 * 8] ; rbx points to parent process
     mov ecx, dword [rbx + 1 * 8] ; ecx contains the privilege
     mov [.priv], ecx
 

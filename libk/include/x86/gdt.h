@@ -12,3 +12,8 @@
  * @brief Initialize the gdt
  */
 void gdt_init();
+
+/**
+ * @brief Sets the stack pointer in the tss
+ */
+void tss_set_kstack(void* stack_top);

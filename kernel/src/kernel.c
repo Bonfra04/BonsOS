@@ -41,10 +41,8 @@ void init(bootinfo_t* bootinfo)
     // Deinit the region the kernel/stack/bitmap is in as its in use
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
 
-    kernel_paging = paging_create();
     size_t mem_2mball_size = (memorySize * 1024) + 0x200000 - (memorySize * 1024) % 0x200000;
-    paging_map(kernel_paging, 0, 0, mem_2mball_size, PAGE_PRIVILEGE_KERNEL, false); // identity map entire memory
-    paging_enable(kernel_paging);
+    kernel_paging = paging_init(mem_2mball_size);
 
     screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
 
@@ -88,9 +86,7 @@ void shell()
 
         if(strcmp("exit", buff) == 0)
             break;
-        //gdt_init();
     }
-
 
     disk_manager_flush(0);
 

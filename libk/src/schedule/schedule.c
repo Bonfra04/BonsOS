@@ -77,6 +77,7 @@ static thread_t create_thread(process_t* parent, entry_point_t entry_point)
     thread.parent = parent;
     thread.heap = heap_create(pfa_alloc_page(), pfa_page_size());
     thread.stack_base = create_stack((uint64_t)entry_point);
+    thread.kernel_rsp = pfa_alloc_page() + pfa_page_size();
     thread.rsp = (uint64_t)thread.stack_base + pfa_page_size() - sizeof(process_context_t);
     return thread;
 }
@@ -96,10 +97,14 @@ thread_t* get_next_thread()
         {
             current_process = i;
             heap_activate(&(processes[i].threads[0].heap));
+            paging_enable(processes[i].pagign);
+            tss_set_kstack(processes[i].threads[0].kernel_rsp);
             return &(processes[i].threads[0]);
         }
     current_process = 0;
     heap_activate(&(processes[0].threads[0].heap));
+    paging_enable(processes[0].pagign);
+    tss_set_kstack(processes[0].threads[0].kernel_rsp);
     return &(processes[0].threads[0]);
 } 
 
@@ -131,6 +136,10 @@ size_t create_process(entry_point_t entry_point, process_privilege_t privilege)
     process->privilege = privilege;
     process->thread_count = 0;
     process->current_thread = 0;
+    process->pagign = paging_create();
+    paging_map(process->pagign, 0, 0, 512 * 1024 * 1024,
+        privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
+    );
     process->threads[0] = create_thread(process, entry_point);
 
     return slot;
@@ -157,7 +166,8 @@ void process_terminate()
     {
         thread_t* thread = &(process->threads[i]);
         pfa_free_page((void*)thread->heap.base_address); // free heap memory
-        pfa_free_page(thread->stack_base);  // free stack memory;
+        pfa_free_page(thread->stack_base);  // free stack memory
+        pfa_free_page(thread->kernel_rsp - pfa_page_size()); // free kernel stack memory
     }
     processes[current_process].pid = -1;
 

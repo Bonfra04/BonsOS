@@ -116,7 +116,7 @@ void interrupts_init()
     }
 
     // load idt
-    idtr.limit = sizeof(idt);
+    idtr.limit = sizeof(idt) - 1;
     idtr.offset = (uint64_t)&idt;
     asm ("lidt %0" : : "m" (idtr));
 }

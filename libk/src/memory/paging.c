@@ -5,7 +5,7 @@
 
 #define PML_PRESENT (1ull << 0)
 #define PML_READWRITE (1ull << 1)
-#define PML_USER (1ull << 2)
+#define PML_PRIVILEGE (1ull << 2)
 #define PML_WRITETHROUGH (1ull << 3)
 #define PML_CACHEDISABLE (1ull << 4)
 #define PML_ACCESSED (1ull << 5)
@@ -24,19 +24,22 @@
 #define PML_SET_ADDRESS(entry, val) (entry |= (val & PML_ADDRESS))
 #define PML_UPDATE_ADDRESS(entry, val) (PML_CLEAR_ADDRESS(entry), PML_SET_ADDRESS(entry, val))
 
+static paging_data_t main_data = 0;
+
+paging_data_t paging_init(size_t memsize)
+{
+    main_data = paging_create();
+    paging_map(main_data, 0, 0, memsize, PAGE_PRIVILEGE_KERNEL);
+    paging_enable(main_data);
+    return main_data;
+}
+
 void paging_enable(paging_data_t data)
 {
     asm volatile("mov cr3, %[addr]" : : [addr]"r"(data) : "memory");
 }
 
-paging_data_t paging_create()
-{
-    uint64_t* pml4 = (uint64_t*)pfa_alloc_page();
-    memset(pml4, 0, pfa_page_size());
-    return (paging_data_t)pml4;
-}
-
-bool paging_attach_4kb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege, bool global)
+static bool attach_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege, bool size, bool global)
 {
     uint64_t pml4_offset = ((uint64_t)virtual_addr >> 39) & 0x01FF;
     uint64_t pdp_offset = ((uint64_t)virtual_addr >> 30) & 0x01FF;
@@ -64,6 +67,18 @@ bool paging_attach_4kb_page(paging_data_t data, void* physical_addr, void* virtu
     }
 
     uint64_t* pd = (uint64_t*)((pdp[pdp_offset] & PML_ADDRESS));
+
+    if(size)
+    {
+        if(pd[pd_offset] & PML_PRESENT)
+        return false; // page altready exists
+
+        pd[pd_offset] = (PML_PRESENT | PML_READWRITE | PML_SIZE) | privilege | (PML_GLOBAL * global);
+        PML_UPDATE_ADDRESS(pd[pd_offset], (uint64_t)physical_addr);
+
+        return true;
+    }
+
     if((pd[pd_offset] & PML_PRESENT) == 0)
     {
         uint64_t* pt = pfa_alloc_page();
@@ -79,49 +94,63 @@ bool paging_attach_4kb_page(paging_data_t data, void* physical_addr, void* virtu
     if(pt[pt_offset] & PML_PRESENT)
         return false; // page altready exists
 
-    pt[pt_offset] = (PML_PRESENT | PML_READWRITE) | privilege | (PML_GLOBAL * global);
+    pt[pt_offset] = (PML_PRESENT | PML_READWRITE) | privilege;
     PML_UPDATE_ADDRESS(pt[pt_offset], (uint64_t)physical_addr);
 
     return true;
 }
 
-bool paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege, bool global)
+paging_data_t paging_create()
 {
-    uint64_t pml4_offset = ((uint64_t)virtual_addr >> 39) & 0x01FF;
-    uint64_t pdp_offset = ((uint64_t)virtual_addr >> 30) & 0x01FF;
-    uint64_t pd_offset = ((uint64_t)virtual_addr >> 21) & 0x01FF;
+    uint64_t* pml4 = (uint64_t*)pfa_alloc_page();
+    memset(pml4, 0, pfa_page_size());
+    paging_data_t data = (paging_data_t)pml4;
 
-    uint64_t* pml4 = data;
-    if((pml4[pml4_offset] & PML_PRESENT) == 0)
+    if(main_data)
     {
-        uint64_t* pdp = pfa_alloc_page();
-        memset(pdp, 0, pfa_page_size());
-
-        pml4[pml4_offset] = (PML_PRESENT | PML_READWRITE) | privilege;
-        PML_UPDATE_ADDRESS(pml4[pml4_offset], (uint64_t)pdp);
+        uint64_t* main_pml4 = main_data;
+        for(int i = 0; i < 512; i++)
+            if(main_pml4[i] & PML_PRESENT)
+            {
+                uint64_t* main_pdp = (uint64_t*)(main_pml4[i] & PML_ADDRESS);
+                for(int j = 0; j < 512; j++)
+                    if(main_pdp[j] & PML_PRESENT)
+                    {
+                        uint64_t* main_pd = (uint64_t*)(main_pdp[j] & PML_ADDRESS);
+                        for(int y = 0; y < 512; y++)
+                            if(main_pd[y] & PML_PRESENT)
+                            {
+                                if(main_pd[y] & PML_SIZE)
+                                {
+                                    if(main_pd[y] & PML_GLOBAL)
+                                    {
+                                        uint64_t vt_addr = (uint64_t)i << 39 | (uint64_t)j << 30 | (uint64_t)y << 21;
+                                        uint64_t ph_addr = main_pd[y] & PML_ADDRESS;
+                                        page_privilege_t priv = main_pd[y] & PML_PRIVILEGE;
+                                        attach_page(data, (void*)ph_addr, (void*)vt_addr, priv, 1, 1);
+                                    }
+                                }
+                                else
+                                {
+                                    uint64_t* main_pt = (uint64_t*)(main_pd[y] & PML_ADDRESS);
+                                    for(int l = 0; l < 512; l++)
+                                        if(main_pt[l] & (PML_PRESENT | PML_GLOBAL))
+                                        {
+                                            uint64_t vt_addr = (uint64_t)(i) << 39 | (uint64_t)j << 30 | (uint64_t)y << 21 | (uint64_t)l << 12;
+                                            uint64_t ph_addr = main_pt[l] & PML_ADDRESS;
+                                            page_privilege_t priv = main_pt[l] & PML_PRIVILEGE;
+                                            attach_page(data, (void*)ph_addr, (void*)vt_addr, priv, 0, 1);
+                                        }  
+                                }
+                            }
+                    }
+            }
     }
 
-    uint64_t* pdp = (uint64_t*)((pml4[pml4_offset] & PML_ADDRESS));
-    if((pdp[pdp_offset] & PML_PRESENT) == 0)
-    {
-        uint64_t* pd = pfa_alloc_page();
-        memset(pd, 0, pfa_page_size());
-
-        pdp[pdp_offset] = (PML_PRESENT | PML_READWRITE) | privilege;
-        PML_UPDATE_ADDRESS(pdp[pdp_offset], (uint64_t)pd);
-    }
-
-    uint64_t* pd = (uint64_t*)((pdp[pdp_offset] & PML_ADDRESS));
-    if(pd[pd_offset] & PML_PRESENT)
-        return false; // page altready exists
-
-    pd[pd_offset] = (PML_PRESENT | PML_READWRITE | PML_SIZE) | privilege | (PML_GLOBAL * global);
-    PML_UPDATE_ADDRESS(pd[pd_offset], (uint64_t)physical_addr);
-
-    return true;
+    return data;
 }
 
-bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege, bool global)
+static bool map(paging_data_t data, void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege, bool global)
 {
     // align length to 4KB
     if(length % 0x1000 != 0)
@@ -142,7 +171,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
 
     while(amt_4kb > 0 && vt_addr % 0x200000 != 0)
     {
-        if(!paging_attach_4kb_page(data, (void*)ph_addr, (void*)vt_addr, privilege, global))
+        if(!attach_page(data, (void*)ph_addr, (void*)vt_addr, privilege, 0, global))
             error = true;
         ph_addr += 0x1000;
         vt_addr += 0x1000;
@@ -151,7 +180,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
 
     while(amt_2mb > 0)
     {
-        if(!paging_attach_2mb_page(data, (void*)ph_addr, (void*)vt_addr, privilege, global))
+        if(!attach_page(data, (void*)ph_addr, (void*)vt_addr, privilege, 1, global))
             error = true;
         ph_addr += 0x200000;
         vt_addr += 0x200000;
@@ -160,7 +189,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
 
     while(amt_4kb > 0)
     {
-        if(!paging_attach_4kb_page(data, (void*)ph_addr, (void*)vt_addr, privilege, global))
+        if(!attach_page(data, (void*)ph_addr, (void*)vt_addr, privilege, 0, global))
             error = true;
         ph_addr += 0x1000;
         vt_addr += 0x1000;
@@ -168,4 +197,24 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
     }
 
     return !error;
+}
+
+bool paging_attach_4kb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege)
+{
+    return attach_page(data, physical_addr, virtual_addr, privilege, 0, false);
+}
+
+bool paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege)
+{
+    return attach_page(data, physical_addr, virtual_addr, privilege, 1, false);
+}
+
+bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege)
+{
+    return map(data, physical_addr, virtual_addr, length, privilege, false);
+}
+
+bool paging_map_global(void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege)
+{
+    return map(main_data, physical_addr, virtual_addr, length, privilege, true);
 }
