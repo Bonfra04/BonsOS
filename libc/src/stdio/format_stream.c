@@ -3,7 +3,7 @@
 
 int vfprintf(FILE* stream, const char * format, va_list arg)
 {
-    char buf[512];
+    char buf[1024];
     int res = vsprintf(buf, format, arg);
     return fwrite(&buf, 1, res, stream);
 }
@@ -33,9 +33,9 @@ int printf(const char * format, ...)
 
 int vfscanf(FILE* stream, const char* format, va_list arg)
 {
-    char buffer[513];
+    char buffer[1024];
     size_t pos = ftell(stream);
-    size_t last = fread(&buffer, 1, 512, stream);
+    size_t last = fread(&buffer, 1, 1024, stream);
     if(last == 0)
         return EOF;
     buffer[last] = '\0';
