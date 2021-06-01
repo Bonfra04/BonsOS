@@ -25,6 +25,7 @@
         "libc/Makefile": true,
         "libk/Makefile": true,
         "boot/Makefile": true,
+        "qemu.log": true,
 
         // Other VMs
         "vmware": true,

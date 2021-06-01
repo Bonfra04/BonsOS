@@ -6,6 +6,8 @@ BonsOS.img
 BonsOS.hdd
 BonsOS.vhd
 
+qemu.log
+
 docs/Resources
 
 vbox/BonsOS/Logs
