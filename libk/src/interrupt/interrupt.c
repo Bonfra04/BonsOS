@@ -111,8 +111,8 @@ void interrupts_init()
             idt[i].flags = 0b1000111000000011;
         if(i < 32)          // store the flags (IST=0, Type=interrupt, DPL=0, P=1)
             idt[i].flags = 0b1000111000000000;
-        else                // store the flags (IST=0, Type=trap, DPL=0, P=1)            
-            idt[i].flags = 0b1000111100000000;
+        else                // store the flags (IST=0, Type=interrupt, DPL=0, P=1)            
+            idt[i].flags = 0b1000111000000000;
     }
 
     // load idt
