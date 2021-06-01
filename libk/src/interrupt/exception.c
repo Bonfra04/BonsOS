@@ -47,10 +47,15 @@ static void dump_context(const interrupt_context_t* context)
     asm("mov %0, cr2" : "=r"(cr2));
     printf("CR2: %llX\n", cr2);
 
-    printf("Stack:\n");
+    printf("\nStack:\n");
     void* stack = (void*)context->rsp;
     dump_memory(buf, sizeof(buf), stack, 8 * 16, DUMPSTYLE_ADDR);
-    //printf(buf);
+    printf(buf);
+
+    printf("\nCode:\n");
+    void* rip = (void*)context->retaddr;
+    dump_memory(buf, sizeof(buf), rip, 8 * 16, DUMPSTYLE_ADDR);
+    printf(buf);
 }
 
 static void hang()
