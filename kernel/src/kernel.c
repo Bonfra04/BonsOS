@@ -93,11 +93,6 @@ void shell()
     process_terminate();
 }
 
-typedef char symbol[];
-
-void* kernel_start;
-void* kernel_end;
-
 void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
@@ -105,12 +100,7 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    extern symbol __kernel_start_addr;
-    extern symbol __kernel_end_addr;
-    kernel_start = __kernel_start_addr;
-    kernel_end = __kernel_end_addr;
-
-    create_process(shell, PRIVILEGE_USER);
+    create_process(shell, PRIVILEGE_KERNEL);
     schedule();
 
     while(1)

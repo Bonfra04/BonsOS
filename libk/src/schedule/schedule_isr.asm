@@ -13,7 +13,6 @@ section .text
     global schedule_isr
     extern set_thread_stack
     extern get_next_thread
-
 ;*****;
 ; Parameters:
 ;   rdi: pointer to interrupt_context
@@ -114,6 +113,9 @@ schedule_isr:
 .save_thread_stack:
     mov rdi, rsp
     call set_thread_stack
+
+; switch to temporary stack
+    mov rsp, .handler_stack_top
 
 ; thread_t* get_next_thread()
 .select_next_thread:
@@ -250,3 +252,6 @@ section .bss
 .r_rip: resq 1
 
 .r_rsp: resq 1
+
+.handler_stack_base: resq 64
+.handler_stack_top:

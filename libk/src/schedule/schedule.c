@@ -73,18 +73,32 @@ static process_t* find_process(size_t pid)
 static thread_t create_thread(process_t* parent, entry_point_t entry_point)
 {
     parent->thread_count++;
+
     thread_t thread;
     thread.parent = parent;
     thread.heap = heap_create(pfa_alloc_page(), pfa_page_size());
     thread.stack_base = create_stack((uint64_t)entry_point);
     thread.kernel_rsp = pfa_alloc_page() + pfa_page_size();
     thread.rsp = (uint64_t)thread.stack_base + pfa_page_size() - sizeof(process_context_t);
+
+    paging_map(parent->pagign, thread.heap.base_address, thread.heap.base_address, thread.heap.size,
+        parent->privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
+    );
+    paging_map(parent->pagign, thread.stack_base, thread.stack_base, pfa_page_size(),
+        parent->privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
+    );
+    paging_map(parent->pagign, thread.kernel_rsp - pfa_page_size(), thread.kernel_rsp - pfa_page_size(), pfa_page_size(),
+        parent->privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
+    );
+
     return thread;
 }
 
 // used in schedule_isr.asm
 void set_thread_stack(size_t rsp)
 {
+    if(current_process == -1)
+        return;
     process_t* process = &(processes[current_process]);
     process->threads[process->current_thread].rsp = rsp;
 }
@@ -106,7 +120,7 @@ thread_t* get_next_thread()
     paging_enable(processes[0].pagign);
     tss_set_kstack(processes[0].threads[0].kernel_rsp);
     return &(processes[0].threads[0]);
-} 
+}
 
 void scheduler_initialize()
 {
@@ -116,7 +130,8 @@ void scheduler_initialize()
         processes[i].pid = -1;   
     }
 
-    current_process = create_process(idle_task, PRIVILEGE_KERNEL);
+    current_process = -1;
+    create_process(idle_task, PRIVILEGE_KERNEL);
 }
 
 void schedule()
@@ -137,9 +152,7 @@ size_t create_process(entry_point_t entry_point, process_privilege_t privilege)
     process->thread_count = 0;
     process->current_thread = 0;
     process->pagign = paging_create();
-    paging_map(process->pagign, 0, 0, 512 * 1024 * 1024,
-        privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
-    );
+    extern void* kernel_end;    
     process->threads[0] = create_thread(process, entry_point);
 
     return slot;

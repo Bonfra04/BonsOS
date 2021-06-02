@@ -29,7 +29,19 @@ static paging_data_t main_data = 0;
 paging_data_t paging_init(size_t memsize)
 {
     main_data = paging_create();
-    paging_map(main_data, 0, 0, memsize, PAGE_PRIVILEGE_KERNEL);
+
+    extern char __kernel_start_addr[];
+    extern char __kernel_end_addr[];
+    void* kernel_start = __kernel_start_addr;
+    void*  kernel_end = __kernel_end_addr;
+    size_t kernel_end_aligned = (uint64_t)kernel_end + 0x200000 - (uint64_t)kernel_end % 0x200000;
+
+    // globally map kernel code
+    paging_map_global(kernel_start, kernel_start, (void*)kernel_end_aligned - kernel_start, PAGE_PRIVILEGE_KERNEL);
+
+    // identity map entire memory
+    paging_map(main_data, 0, 0, (size_t)kernel_start, PAGE_PRIVILEGE_KERNEL);
+    paging_map(main_data, (void*)kernel_end_aligned, (void*)kernel_end_aligned, memsize - kernel_end_aligned, PAGE_PRIVILEGE_KERNEL);
     paging_enable(main_data);
     return main_data;
 }
