@@ -22,6 +22,7 @@
 #include <device/pit.h>
 #include <memory/paging.h>
 #include <x86/gdt.h>
+#include <syscall/syscall.h>
 
 #include "bootinfo.h"
 
@@ -68,6 +69,8 @@ void init(bootinfo_t* bootinfo)
 
     scheduler_initialize();
 
+    syscall_init();
+
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
@@ -93,6 +96,8 @@ void shell()
     process_terminate();
 }
 
+static uint8_t user_process_code[512] __attribute__((aligned(4096)));
+
 void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
@@ -100,7 +105,14 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    create_process(shell, PRIVILEGE_KERNEL);
+    paging_map_global(user_process_code, 0x8000000000, 0x1000, PAGE_PRIVILEGE_USER);
+
+    memset(user_process_code, 0, 512);
+    FILE* pFile = fopen("a:/bin/test", "r");
+    fread(user_process_code, 1, 512, pFile);
+    fclose(pFile);
+
+    create_process(0x8000000000, PRIVILEGE_USER);
     schedule();
 
     while(1)

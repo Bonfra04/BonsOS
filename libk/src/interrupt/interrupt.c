@@ -1,5 +1,6 @@
 #include <interrupt/interrupt.h>
 #include <stdint.h>
+#include <x86/gdt.h>
 
 #define ICW1_INIT 0x10
 #define ICW1_ICW4 0x01
@@ -100,7 +101,7 @@ void interrupts_init()
         idt[i].offset_low = (uint16_t)(addr & 0x000000000000FFFF);
         idt[i].offset_mid = (uint16_t)((addr & 0x00000000FFFF0000) >> 16);
         idt[i].offset_high = (uint32_t)((addr & 0xFFFFFFFF00000000) >> 32);
-        idt[i].segment = 0x10;
+        idt[i].segment = SELECTOR_KERNEL_CODE;
         idt[i].reserved = 0;
 
         if(i == EX_NMI)     // NMI exception (IST=1, Type=interrupt, DPL=0, P=1)

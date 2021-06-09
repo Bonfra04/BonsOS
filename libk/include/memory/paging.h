@@ -25,6 +25,14 @@ paging_data_t paging_init(size_t memsize);
 paging_data_t paging_create();
 
 /**
+ * @brief translate a virtual address in physical address
+ * @param[in] data paging hierachy to interrogate
+ * @param[in] vt the virtual address to transalte
+ * @return the translated physical address
+ */
+void* paging_get_ph(paging_data_t data, void* vt);
+
+/**
  * @brief attaches a page to a paging structure
  * @param[in] data data structure returned by paging_create()
  * @param[in] physical_addr 4KB aligned physical address to map form

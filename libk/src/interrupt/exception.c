@@ -47,10 +47,13 @@ static void dump_context(const interrupt_context_t* context)
     asm("mov %0, cr2" : "=r"(cr2));
     printf("CR2: %llX\n", cr2);
 
-    printf("\nStack:\n");
-    void* stack = (void*)context->rsp;
-    dump_memory(buf, sizeof(buf), stack, 8 * 16, DUMPSTYLE_ADDR);
-    printf(buf);
+    // cannot deduce stack base so causing page fault
+    /*
+        printf("\nStack:\n");
+        void* stack = (void*)context->rsp;
+        dump_memory(buf, sizeof(buf), stack - 8 * 16, 8 * 16, DUMPSTYLE_ADDR);
+        printf(buf);
+    */
 
     printf("\nCode:\n");
     void* rip = (void*)context->retaddr;

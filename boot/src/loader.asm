@@ -130,10 +130,10 @@ load:
     ; Disable interrupts
     cli
 
-    ; Enable 64-bit mode
+    ; Enable 64-bit mode mode and syscall/sysret.
     mov ecx, 0xc0000080 ; Extended Feature Enable Register (EFER)
     rdmsr
-    or eax, 1 << 8
+    or eax, (1 << 8) | (1 << 0)
     wrmsr
 
     ; Enable paging and protected mode.

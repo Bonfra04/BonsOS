@@ -1,18 +1,11 @@
 bits 64
 
-SELECTOR_KERNEL_DATA equ 0x08
-SELECTOR_KERNEL_CODE equ 0x10
-
-SELECTOR_USER_DATA equ 0x18
-SELECTOR_USER_CODE equ 0x20
-
-PRIVILEGE_KERNEL equ 0
-PRIVILEGE_USER equ 1
-
 section .text
     global schedule_isr
     extern set_thread_stack
     extern get_next_thread
+    extern set_thread_paging
+
 ;*****;
 ; Parameters:
 ;   rdi: pointer to interrupt_context
@@ -65,9 +58,24 @@ schedule_isr:
     mov rax, [rdi + 18 * 8]
     mov [.r_r15], rax
 
-    ; cr3
-    mov rax, cr3
-    mov [.r_cr3], rax
+    ; ds
+    mov rax, [rdi + 0 * 8]
+    mov [.r_ds], rax
+    ; es
+    mov rax, [rdi + 1 * 8]
+    mov [.r_es], rax
+    ; fs
+    mov rax, [rdi + 2 * 8]
+    mov [.r_fs], rax
+    ; gs
+    mov rax, [rdi + 3 * 8]
+    mov [.r_gs], rax
+    ; ss
+    mov rax, [rdi + 25 * 8]
+    mov [.r_ss], rax
+    ; cs
+    mov rax, [rdi + 22 * 8]
+    mov [.r_cs], rax
 
     ; flags
     mov rax, [rdi + 23 * 8]
@@ -88,8 +96,14 @@ schedule_isr:
 
     ; push registers
     push qword [.r_flags]
-    
-    push qword [.r_cr3]
+
+    push qword [.r_cs]
+    push qword [.r_ss]
+
+    push qword [.r_gs]
+    push qword [.r_fs]
+    push qword [.r_es]
+    push qword [.r_ds]
 
     push qword [.r_r15]
     push qword [.r_r14]
@@ -117,37 +131,14 @@ schedule_isr:
 ; switch to temporary stack
     mov rsp, .handler_stack_top
 
+; void set_thread_paging(size_t cr3)
+.save_thread_cr3:
+    mov rdi, cr3
+    call set_thread_paging
+
 ; thread_t* get_next_thread()
 .select_next_thread:
     call get_next_thread ; rax contains a pointer to the next thread
-
-.restore_segments:
-    mov rbx, qword [rax + 6 * 8] ; rbx points to parent process
-    mov ecx, dword [rbx + 1 * 8] ; ecx contains the privilege
-    mov [.priv], ecx
-
-    cmp dword [.priv], PRIVILEGE_KERNEL
-    je .kernel_seg
-.user_seg:
-    mov rbx, SELECTOR_USER_DATA | 3
-    mov ds, rbx
-    mov rbx, SELECTOR_USER_DATA | 3
-    mov es, rbx
-    mov rbx, SELECTOR_USER_DATA | 3
-    mov fs, rbx
-    mov rbx, SELECTOR_USER_DATA | 3
-    mov gs, rbx
-    jmp .seg_done
-.kernel_seg:
-    mov rbx, SELECTOR_KERNEL_DATA
-    mov ds, rbx
-    mov rbx, SELECTOR_KERNEL_DATA
-    mov es, rbx
-    mov rbx, SELECTOR_KERNEL_DATA
-    mov fs, rbx
-    mov rbx, SELECTOR_KERNEL_DATA
-    mov gs, rbx
-.seg_done:
 
 .restore_registers:
 
@@ -174,15 +165,26 @@ schedule_isr:
     pop r14
     pop r15
 
-    add rsp, 1 * 8 ; thrash cr3 for now
+    mov [.r_rax], rax
+    pop rax
+    mov ds, rax
+    pop rax
+    mov es, rax
+    pop rax
+    mov fs, rax
+    pop rax
+    mov gs, rax
+
+    pop rax
+    mov [.r_ss], rax
+    pop rax
+    mov [.r_cs], rax
+    mov rax, [.r_rax]
 
     pop qword [.r_flags]
 
 .prepare_ret_stack:
-    cmp dword [.priv], PRIVILEGE_KERNEL
-    je .kernel_stack
-.user_stack:
-    push SELECTOR_USER_DATA | 3 ; ss
+    push qword [.r_ss]
 
     ;rsp
     mov [.r_rax], rax
@@ -192,23 +194,8 @@ schedule_isr:
     mov rax, [.r_rax]
 
     push qword [.r_flags]   ; rflags
-    push SELECTOR_USER_CODE | 3 ; cs
+    push qword [.r_cs]
     push qword [.r_rip]     ; rip
-    jmp .stack_done
-.kernel_stack:
-    push SELECTOR_KERNEL_DATA ; ss
-    
-    ;rsp
-    mov [.r_rax], rax
-    mov rax, rsp
-    add rax, 8
-    push rax
-    mov rax, [.r_rax]
-
-    push qword [.r_flags]   ; rflags
-    push SELECTOR_KERNEL_CODE ; cs
-    push qword [.r_rip]     ; rip
-.stack_done:
 
 .interrupt_done:
     push rax    ; save rax
@@ -245,7 +232,12 @@ section .bss
 .r_r14: resq 1
 .r_r15: resq 1
 
-.r_cr3: resq 1
+.r_ds: resq 1
+.r_es: resq 1
+.r_fs: resq 1
+.r_gs: resq 1
+.r_ss: resq 1
+.r_cs: resq 1
 
 .r_flags: resq 1
 

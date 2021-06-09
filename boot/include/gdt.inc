@@ -6,8 +6,8 @@ GDT32.Selector.Data32       equ     0x10    ; 32-bit protected mode (data)
 GDT32.Selector.Code16       equ     0x18    ; 16-bit protected mode (code)
 GDT32.Selector.Data16       equ     0x20    ; 16-bit protected mode (data)
 
-GDT64.Selector.Kernel.Data  equ     0x08    ; 64-bit mode (kernel data)
-GDT64.Selector.Kernel.Code  equ     0x10    ; 64-bit mode (kernel code)
+GDT64.Selector.Kernel.Data  equ     0x10    ; 64-bit mode (kernel data)
+GDT64.Selector.Kernel.Code  equ     0x08    ; 64-bit mode (kernel code)
 GDT64.Selector.User.Data    equ     0x18    ; 64-bit mode (user data)
 GDT64.Selector.User.Code    equ     0x20    ; 64-bit mode (user code)
 
@@ -102,17 +102,7 @@ istruc GDT.Descriptor
     at GDT.Descriptor.BaseHigh,         db 0x00
 iend
 
-; kernel: data segment descriptor (selector = 0x08)
-istruc GDT.Descriptor
-    at GDT.Descriptor.LimitLow,         dw 0x0000
-    at GDT.Descriptor.BaseLow,          dw 0x0000
-    at GDT.Descriptor.BaseMiddle,       db 0x00
-    at GDT.Descriptor.Access,           db 10010010b
-    at GDT.Descriptor.LimitHighFlags,   db 00000000b
-    at GDT.Descriptor.BaseHigh,         db 0x00
-iend
-
-; kernel: code segment descriptor (selector = 0x10)
+; kernel: code segment descriptor (selector = 0x08)
 istruc GDT.Descriptor
     at GDT.Descriptor.LimitLow,         dw 0x0000
     at GDT.Descriptor.BaseLow,          dw 0x0000
@@ -122,23 +112,13 @@ istruc GDT.Descriptor
     at GDT.Descriptor.BaseHigh,         db 0x00
 iend
 
-; user: data segment descriptor (selector = 0x18)
+; kernel: data segment descriptor (selector = 0x10)
 istruc GDT.Descriptor
     at GDT.Descriptor.LimitLow,         dw 0x0000
     at GDT.Descriptor.BaseLow,          dw 0x0000
     at GDT.Descriptor.BaseMiddle,       db 0x00
-    at GDT.Descriptor.Access,           db 11110010b
+    at GDT.Descriptor.Access,           db 10010010b
     at GDT.Descriptor.LimitHighFlags,   db 00000000b
-    at GDT.Descriptor.BaseHigh,         db 0x00
-iend
-
-; user: code segment descriptor (selector = 0x20)
-istruc GDT.Descriptor
-    at GDT.Descriptor.LimitLow,         dw 0x0000
-    at GDT.Descriptor.BaseLow,          dw 0x0000
-    at GDT.Descriptor.BaseMiddle,       db 0x00
-    at GDT.Descriptor.Access,           db 11111010b
-    at GDT.Descriptor.LimitHighFlags,   db 00100000b
     at GDT.Descriptor.BaseHigh,         db 0x00
 iend
 

@@ -80,20 +80,20 @@ void gdt_init()
     memset(&GDT, 0, sizeof(GDT));
 
     // Kernel data descriptor
-    GDT.gdt_desc[1].access = GDT_PRESENT | GDT_PRIV_KERNEL | GDT_TYPE | GDT_READ_WRITE;
-    GDT.gdt_desc[1].limit_high_flags = GDT_64BIT;
+    GDT.gdt_desc[SELECTOR_KERNEL_DATA / 8].access = GDT_PRESENT | GDT_PRIV_KERNEL | GDT_TYPE | GDT_READ_WRITE;
+    GDT.gdt_desc[SELECTOR_KERNEL_DATA / 8].limit_high_flags = GDT_64BIT;
 
     // Kernel code descriptor
-    GDT.gdt_desc[2].access = GDT_PRESENT | GDT_PRIV_KERNEL | GDT_TYPE | GDT_EXEC | GDT_READ_WRITE;
-    GDT.gdt_desc[2].limit_high_flags = GDT_64BIT;
+    GDT.gdt_desc[SELECTOR_KERNEL_CODE / 8].access = GDT_PRESENT | GDT_PRIV_KERNEL | GDT_TYPE | GDT_EXEC | GDT_READ_WRITE;
+    GDT.gdt_desc[SELECTOR_KERNEL_CODE / 8].limit_high_flags = GDT_64BIT;
 
     // User data descriptor
-    GDT.gdt_desc[3].access = GDT_PRESENT | GDT_PRIV_USER | GDT_TYPE | GDT_READ_WRITE;
-    GDT.gdt_desc[3].limit_high_flags = GDT_64BIT;
+    GDT.gdt_desc[SELECTOR_USER_DATA / 8].access = GDT_PRESENT | GDT_PRIV_USER | GDT_TYPE | GDT_READ_WRITE;
+    GDT.gdt_desc[SELECTOR_USER_DATA / 8].limit_high_flags = GDT_64BIT;
 
     // User code descriptor
-    GDT.gdt_desc[4].access = GDT_PRESENT | GDT_PRIV_USER | GDT_TYPE | GDT_EXEC | GDT_READ_WRITE;
-    GDT.gdt_desc[4].limit_high_flags = GDT_64BIT;
+    GDT.gdt_desc[SELECTOR_USER_CODE / 8].access = GDT_PRESENT | GDT_PRIV_USER | GDT_TYPE | GDT_EXEC | GDT_READ_WRITE;
+    GDT.gdt_desc[SELECTOR_USER_CODE / 8].limit_high_flags = GDT_64BIT;
 
     memset(&tss, 0, sizeof(tss_entry_t));
     tss.IOPB_offset = sizeof(tss_entry_t);
@@ -116,4 +116,9 @@ void gdt_init()
 void tss_set_kstack(void* stack_top)
 {
     tss.RSP0 = (uint64_t)stack_top;
+}
+
+void* tss_get_kstack()
+{
+    return tss.RSP0;
 }

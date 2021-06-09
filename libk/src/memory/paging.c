@@ -24,10 +24,11 @@
 #define PML_SET_ADDRESS(entry, val) (entry |= (val & PML_ADDRESS))
 #define PML_UPDATE_ADDRESS(entry, val) (PML_CLEAR_ADDRESS(entry), PML_SET_ADDRESS(entry, val))
 
-static paging_data_t main_data = 0;
+static paging_data_t main_data;
 
 paging_data_t paging_init(size_t memsize)
 {
+    main_data = 0;
     main_data = paging_create();
 
     extern char __kernel_start_addr[];
@@ -49,6 +50,35 @@ paging_data_t paging_init(size_t memsize)
 void paging_enable(paging_data_t data)
 {
     asm volatile("mov cr3, %[addr]" : : [addr]"r"(data) : "memory");
+}
+
+void* paging_get_ph(paging_data_t data, void* vt)
+{
+    uint64_t pml4_offset = ((uint64_t)vt >> 39) & 0x01FF;
+    uint64_t pdp_offset = ((uint64_t)vt >> 30) & 0x01FF;
+    uint64_t pd_offset = ((uint64_t)vt >> 21) & 0x01FF;
+    uint64_t pt_offset = ((uint64_t)vt >> 12) & 0x01FF;
+
+    uint64_t* pml4 = data;
+    if((pml4[pml4_offset] & PML_PRESENT) == 0)
+        return 0;
+
+    uint64_t* pdp = (uint64_t*)((pml4[pml4_offset] & PML_ADDRESS));
+    if((pdp[pdp_offset] & PML_PRESENT) == 0)
+        return 0;
+
+    uint64_t* pd = (uint64_t*)((pdp[pdp_offset] & PML_ADDRESS));
+    if((pd[pd_offset] & PML_PRESENT) == 0)
+        return 0;
+
+    if((pd[pd_offset] & PML_SIZE))
+        return pd[pd_offset] & PML_ADDRESS;
+    
+    uint64_t* pt = (uint64_t*)((pd[pd_offset] & PML_ADDRESS));
+    if((pt[pt_offset] & PML_PRESENT) == 0)
+        return 0;
+
+    return pt[pt_offset] & PML_ADDRESS;
 }
 
 static bool attach_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege, bool size, bool global)
