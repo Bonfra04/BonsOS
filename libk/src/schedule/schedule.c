@@ -5,6 +5,7 @@
 #include <memory/heap.h>
 #include <x86/gdt.h>
 #include <memory/virtual_memory_manager.h>
+#include <schedule/atomic.h>
 
 #define MAX_POCESSES 32
 
@@ -43,6 +44,7 @@ typedef struct process_context
 
 static process_t processes[MAX_POCESSES];
 static volatile size_t current_process;
+static void* terminating_stack;
 
 static void idle_task()
 {
@@ -155,6 +157,7 @@ void scheduler_initialize()
 
     current_process = -1;
     create_process(idle_task, PRIVILEGE_KERNEL);
+    terminating_stack = pfa_alloc_page();
 }
 
 void schedule()
@@ -209,30 +212,47 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
 
 void thread_terminate()
 {
+    atomic_start();
+
     process_t* process = &(processes[current_process]);
     thread_t* thread = &(process->threads[process->current_thread]);
-    vmm_free_pages(thread->stack_base, 4);
-    vmm_free_pages(thread->kernel_rsp - pfa_page_size() * 4, 4);
+
+    vmm_set_paging(process->pagign);
+
+    vmm_free_page(thread->stack_base);
+    vmm_free_page(thread->kernel_rsp - pfa_page_size());
     memset(thread, 0, sizeof(thread_t));
     process->thread_count--;
     if(process->thread_count == 0)
         process_terminate();
+
+    atomic_end();
 }
 
 void process_terminate()
 {
+    atomic_start();
+
     process_t* process = &(processes[current_process]);
+
+    vmm_set_paging(process->pagign);
+
     for(size_t i = 0; i < MAX_THREADS; i++)
-        if(processes->threads[i].parent)
+        if(process->threads[i].parent)
         {
-            thread_t* thread = &(processes->threads[i]);
-            vmm_free_pages(thread->stack_base, 4);
-            vmm_free_pages(thread->kernel_rsp - pfa_page_size() * 4, 4);
+            thread_t* thread = &(process->threads[i]);
+            vmm_free_page(thread->stack_base);
+            vmm_free_page(thread->kernel_rsp - pfa_page_size());
             memset(thread, 0, sizeof(thread_t));
             process->thread_count--;
         }
     memset(process, 0, sizeof(process_t));
     process->pid = -1;
+    current_process = -1;
+
+    vmm_destroy();
+
+    atomic_end();
 
     while(1)
         asm("pause");

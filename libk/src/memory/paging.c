@@ -249,6 +249,36 @@ paging_data_t paging_create()
     return data;
 }
 
+void paging_destroy(paging_data_t data)
+{
+    uint64_t* pml4 = (uint64_t*)data;    
+    for(uint16_t pml4_off = 0; pml4_off < 512; pml4_off++)
+    {
+        if(!(pml4[pml4_off] & PML_PRESENT))
+            continue;
+
+        uint64_t* pdp = (uint64_t*)(pml4[pml4_off] & PML_ADDRESS);
+        for(uint16_t pdp_off = 0; pdp_off < 512; pdp_off++)
+        {
+            if(!(pdp[pdp_off] & PML_PRESENT))
+                continue;
+
+            uint64_t* pd = (uint64_t*)(pdp[pdp_off] & PML_ADDRESS);
+            for(uint16_t pd_pff = 0; pdp_off < 512; pdp_off++)
+            {
+                if(!(pd[pd_pff] & PML_PRESENT))
+                    continue;
+
+                pfa_free_page(pd[pd_pff] & PML_ADDRESS);
+            }
+
+            pfa_free_page(pdp[pdp_off] & PML_ADDRESS);
+        }
+
+        pfa_free_page(pml4[pml4_off] & PML_ADDRESS);
+    }
+}
+
 static bool map(paging_data_t data, void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege, bool global)
 {
     // align length to 4KB

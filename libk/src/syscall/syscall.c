@@ -2,25 +2,22 @@
 #include <x86/cpu.h>
 #include <x86/gdt.h>
 #include <memory/paging.h>
+#include "syscalls.h"
 
 // Model-specific registers used to set up system calls.
 #define MSR_IA32_STAR   0xc0000081
 #define MSR_IA32_LSTAR  0xc0000082
 #define MSR_IA32_FMASK  0xc0000084
 
-extern void syscall_handle();
-
 #define MAX_SYSCALL 128
+
+extern void syscall_handle();
 
 syscall_t syscalls[MAX_SYSCALL];
 
-#include <stdio.h>
-
-static int i = 0;
-
-static void empty_syscall(syscall_parameter_t* params)
+static void empty_syscall(const syscall_parameter_t* params)
 {
-    printf("%d.", i++);
+    (void)params;
 }
 
 void syscall_register(size_t id, syscall_t systemcall)
@@ -55,4 +52,7 @@ void syscall_init()
 
     for(size_t i = 0; i < MAX_SYSCALL; i++)
         syscalls[i] = empty_syscall;
+
+    syscall_register(0, syscall_process_terminate);
+    syscall_register(1, syscall_thread_terminate);
 }

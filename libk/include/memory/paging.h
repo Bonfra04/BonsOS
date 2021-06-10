@@ -26,6 +26,11 @@ paging_data_t paging_init(size_t memsize);
 paging_data_t paging_create();
 
 /**
+ * @brief destroys a paging structure
+ */
+void paging_destroy(paging_data_t data);
+
+/**
  * @brief translate a virtual address in physical address
  * @param[in] data paging hierachy to interrogate
  * @param[in] vt the virtual address to transalte

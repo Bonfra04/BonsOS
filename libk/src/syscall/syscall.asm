@@ -77,13 +77,14 @@ syscall_handle:
 
 .call_handler:
     ; set parameters
-    push 10 ; r15
-    push 20 ; r14
-    push 30 ; r13
-    push 40 ; r12
-    push 50 ; r10
-    push 60 ; r9
-    push 70 ; r8
+    push r15 ; r15
+    push r14 ; r14
+    push r13 ; r13
+    push r12 ; r12
+    push r11 ; r11
+    push r10 ; r10
+    push r9  ; r9
+    push r8  ; r8
 
     ; get function address
     mov rax, [.syscall_id]

@@ -10,6 +10,11 @@
 void vmm_set_paging(paging_data_t data);
 
 /**
+ * @brief destroys the selected paging hierarchy
+ */
+void vmm_destroy();
+
+/**
  * @brief translates a virtual address to a physical address
  * @param[in] vaddr virtual address to translate
  * @return translated physical address 

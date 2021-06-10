@@ -2,6 +2,10 @@
 #include <memory/page_frame_allocator.h>
 #include <stdint.h>
 
+#define PML_PRESENT (1ull << 0)
+#define PML_READWRITE (1ull << 1)
+#define PML_ADDRESS (0xFFFFFFFFFFull << 12)
+
 static paging_data_t paging_data;
 
 void vmm_set_paging(paging_data_t data)
@@ -9,14 +13,28 @@ void vmm_set_paging(paging_data_t data)
     paging_data = data;
 }
 
+void vmm_destroy()
+{
+    // deallocates everything
+    for(uint16_t pml4_off = 1; pml4_off < 512; pml4_off++)
+        for(uint16_t pdp_off = 0; pdp_off < 512; pdp_off++)
+            for(uint16_t pd_pff = 0; pdp_off < 512; pdp_off++)
+                for(uint16_t pt_off = 0; pt_off < 512; pt_off++)
+                {
+                    uint64_t address = paging_retrieve_node(paging_data, pml4_off, pdp_off, pdp_off, pt_off) & PML_ADDRESS;
+                    if(address == 0)
+                        continue;
+                    paging_populate_node(paging_data, pml4_off, pdp_off, pdp_off, pt_off, 0);
+                    pfa_free_page((void*)address);
+                }
+    // destroy actual paging
+    paging_destroy(paging_data);
+}
+
 void* vmm_translate_vaddr(void* vaddr)
 {
     return paging_get_ph(paging_data, vaddr);
 }
-
-#define PML_PRESENT (1ull << 0)
-#define PML_READWRITE (1ull << 1)
-#define PML_ADDRESS (0xFFFFFFFFFFull << 12)
 
 void* vmm_alloc_page(page_privilege_t privilege)
 {
