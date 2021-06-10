@@ -4,6 +4,7 @@
 #include <device/pit.h>
 #include <memory/heap.h>
 #include <x86/gdt.h>
+#include <memory/virtual_memory_manager.h>
 
 #define MAX_POCESSES 32
 
@@ -51,8 +52,11 @@ static void idle_task()
 
 static void* create_stack(uint64_t rip, process_privilege_t privilege)
 {
-    void* stack = pfa_alloc_page();
-    process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_page_size() - sizeof(process_context_t));
+    page_privilege_t priv = privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER;
+
+    void* stack = vmm_alloc_page(priv);
+    void* ph_stack = vmm_translate_vaddr(stack);
+    process_context_t* context = (process_context_t*)((uint8_t*)ph_stack + pfa_page_size() - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
     context->rip = rip;
     context->flags = 0x202;
@@ -95,32 +99,6 @@ static process_t* find_process(size_t pid)
     return 0;
 }
 
-static thread_t create_thread(process_t* parent, entry_point_t entry_point)
-{
-    parent->thread_count++;
-
-    void* heap_base = pfa_alloc_page();
-    void* stack_base = create_stack((uint64_t)entry_point, parent->privilege);
-    void* kstack_base = pfa_alloc_page();
-
-    thread_t thread;
-    thread.parent = parent;
-    thread.heap = heap_create(0xb000000000, pfa_page_size());
-    thread.stack_base = 0xa000000000;
-    thread.kernel_rsp = 0x9000000000 + pfa_page_size();
-    thread.rsp = (uint64_t)thread.stack_base + pfa_page_size() - sizeof(process_context_t);
-
-    paging_map(parent->pagign, heap_base, 0xb000000000, thread.heap.size,
-        parent->privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
-    );
-    paging_map(parent->pagign, stack_base, 0xa000000000, pfa_page_size(),
-        parent->privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER
-    );
-    paging_map(parent->pagign, kstack_base, 0x9000000000, pfa_page_size(), PRIVILEGE_KERNEL);
-
-    return thread;
-}
-
 // used in schedule_isr.asm
 void set_thread_stack(size_t rsp)
 {
@@ -139,31 +117,36 @@ void set_thread_paging(size_t cr3)
     process->pagign = (paging_data_t)cr3;
 }
 
+static thread_t* run_thread(size_t proc, size_t thread)
+{
+    current_process = proc;
+    processes[proc].current_thread = thread;
+    paging_enable(processes[proc].pagign);
+    tss_set_kstack(processes[proc].threads[thread].kernel_rsp);
+    return &(processes[proc].threads[thread]);
+}
+
 // used in schedule_isr.asm
 thread_t* get_next_thread()
 {
+    if(current_process == -1)
+        return run_thread(0, 0);
+
+    for(size_t i = processes[current_process].current_thread + 1; i < MAX_THREADS; i++)
+        if(processes[current_process].threads[i].parent)
+            return run_thread(current_process, i); 
+
     for(size_t i = current_process + 1; i < MAX_POCESSES; i++)
         if(processes[i].pid != -1)
-        {
-            current_process = i;
-            heap_activate(&(processes[i].threads[0].heap));
-            paging_enable(processes[i].pagign);
-            tss_set_kstack(processes[i].threads[0].kernel_rsp);
-            return &(processes[i].threads[0]);
-        }
-    current_process = 0;
-    heap_activate(&(processes[0].threads[0].heap));
-    paging_enable(processes[0].pagign);
-    tss_set_kstack(processes[0].threads[0].kernel_rsp);
-    return &(processes[0].threads[0]);
+            for(size_t j = 0; j < MAX_THREADS; j++)
+                if(processes[current_process].threads[j].parent)
+                    return run_thread(i, j);
+
+    return run_thread(0, 0);
 }
 
 void scheduler_initialize()
 {
-    // map in kernel paging process address
-    extern paging_data_t kernel_paging;
-    paging_map(kernel_paging, 0x9000000000, 0x9000000000, 0x3000000000, PAGE_PRIVILEGE_KERNEL);
-
     for(size_t i = 0; i < MAX_POCESSES; i++)
     {
         memset(&(processes[i]), 0, sizeof(process_t));
@@ -192,8 +175,7 @@ size_t create_process(entry_point_t entry_point, process_privilege_t privilege)
     process->thread_count = 0;
     process->current_thread = 0;
     process->pagign = paging_create();
-    extern void* kernel_end;    
-    process->threads[0] = create_thread(process, entry_point);
+    attach_thread(process->pid, entry_point);
 
     return slot;
 }
@@ -204,25 +186,53 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
     if(!process)
         return false;
 
-    if(process->thread_count > MAX_THREADS)
+    if(process->thread_count >= MAX_THREADS)
         return false;
 
-    process->threads[process->thread_count] = create_thread(processes, entry_point);
+    thread_t* thread;
+    for(size_t i = 0; i < MAX_THREADS; i++)
+        if(process->threads[i].parent == 0)
+        {
+            thread = &(process->threads[i]);
+            break;
+        }
+
+    vmm_set_paging(process->pagign);
+
+    thread->parent = process;
+    thread->stack_base = create_stack((uint64_t)entry_point, process->privilege);
+    thread->rsp = (uint64_t)thread->stack_base + pfa_page_size() - sizeof(process_context_t);
+    thread->kernel_rsp = vmm_alloc_page(PAGE_PRIVILEGE_KERNEL) + pfa_page_size();
 
     return true;
+}
+
+void thread_terminate()
+{
+    process_t* process = &(processes[current_process]);
+    thread_t* thread = &(process->threads[process->current_thread]);
+    vmm_free_pages(thread->stack_base, 4);
+    vmm_free_pages(thread->kernel_rsp - pfa_page_size() * 4, 4);
+    memset(thread, 0, sizeof(thread_t));
+    process->thread_count--;
+    if(process->thread_count == 0)
+        process_terminate();
 }
 
 void process_terminate()
 {
     process_t* process = &(processes[current_process]);
-    for(size_t i = 0; i < process->thread_count; i++)
-    {
-        thread_t* thread = &(process->threads[i]);
-        pfa_free_page((void*)thread->heap.base_address); // free heap memory
-        pfa_free_page(thread->stack_base);  // free stack memory
-        pfa_free_page(thread->kernel_rsp - pfa_page_size()); // free kernel stack memory
-    }
-    processes[current_process].pid = -1;
+    for(size_t i = 0; i < MAX_THREADS; i++)
+        if(processes->threads[i].parent)
+        {
+            thread_t* thread = &(processes->threads[i]);
+            vmm_free_pages(thread->stack_base, 4);
+            vmm_free_pages(thread->kernel_rsp - pfa_page_size() * 4, 4);
+            memset(thread, 0, sizeof(thread_t));
+            process->thread_count--;
+        }
+    memset(process, 0, sizeof(process_t));
+    process->pid = -1;
 
     while(1)
         asm("pause");

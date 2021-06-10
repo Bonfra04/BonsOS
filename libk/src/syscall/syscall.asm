@@ -1,7 +1,7 @@
 bits 64
 
 SELECTOR_KERNEL_DATA equ 0x10
-PROCESS_KERNEL_STACK equ 0x9000000000
+KSTACK_SIZE equ 0x1000
 
 section .text
     global syscall_handle
@@ -66,7 +66,9 @@ syscall_handle:
     
     ; set kernel stack
     mov rdi, rax            ; old paging
-    mov rsi, PROCESS_KERNEL_STACK
+    call tss_get_kstack     ; rax contains virtual address of kstack top
+    sub rax, KSTACK_SIZE    ; rax contains virtual address of kstack base
+    mov rsi, rax
     call paging_get_ph      ; rax contains physical kstack rsp
     mov rsp, rax            ; set new stack
 

@@ -64,6 +64,11 @@ size_t create_process(entry_point_t entry_point, process_privilege_t privilege);
 bool attach_thread(size_t pid, entry_point_t entry_point);
 
 /**
+ * @brief stops the execution of the current thread (calls process_terminate if no more threads are presents)
+ */
+void thread_terminate();
+
+/**
  * @brief stops the execution of the current process
  */
 void process_terminate();

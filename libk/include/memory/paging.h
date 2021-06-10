@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef enum page_privilege
 {
@@ -31,6 +32,28 @@ paging_data_t paging_create();
  * @return the translated physical address
  */
 void* paging_get_ph(paging_data_t data, void* vt);
+
+/**
+ * @brief populates a specific node of the hierarchy
+ * @param[in] data paging hierachy to interrogate
+ * @param[in] pml4_off pml4 index
+ * @param[in] pdp_off pdp index
+ * @param[in] pd_off pd index
+ * @param[in] pt_off pt index
+ */
+void paging_populate_node(paging_data_t data, uint16_t pml4_off, uint16_t pdp_off, uint16_t pd_off, uint16_t pt_off, uint64_t value);
+
+/**
+ * @brief retrieve a specific node of the hierarchy
+ * @param[in] data paging hierachy to interrogate
+ * @param[in] pml4_off pml4 index
+ * @param[in] pdp_off pdp index
+ * @param[in] pd_off pd index
+ * @param[in] pt_off pt index
+ * @return the value of the node
+ */
+uint64_t paging_retrieve_node(paging_data_t data, uint16_t pml4_off, uint16_t pdp_off, uint16_t pd_off, uint16_t pt_off);
+
 
 /**
  * @brief attaches a page to a paging structure

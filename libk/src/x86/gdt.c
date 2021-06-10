@@ -120,5 +120,5 @@ void tss_set_kstack(void* stack_top)
 
 void* tss_get_kstack()
 {
-    return tss.RSP0;
+    return (void*)tss.RSP0;
 }

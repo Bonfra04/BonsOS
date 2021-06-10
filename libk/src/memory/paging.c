@@ -52,6 +52,63 @@ void paging_enable(paging_data_t data)
     asm volatile("mov cr3, %[addr]" : : [addr]"r"(data) : "memory");
 }
 
+void paging_populate_node(paging_data_t data, uint16_t pml4_off, uint16_t pdp_off, uint16_t pd_off, uint16_t pt_off, uint64_t value)
+{
+    page_privilege_t privilege = value & PML_PRIVILEGE;
+    
+    uint64_t* pml4 = (uint64_t*)data;
+    if(!(pml4[pml4_off] & PML_PRESENT))
+    {
+        uint64_t* pdp = pfa_alloc_page();
+        memset(pdp, 0, pfa_page_size());
+
+        pml4[pml4_off] = (PML_PRESENT | PML_READWRITE) | privilege;
+        PML_UPDATE_ADDRESS(pml4[pml4_off], (uint64_t)pdp);
+    }
+
+    uint64_t* pdp = (uint64_t*)((pml4[pml4_off] & PML_ADDRESS));
+    if(!(pdp[pdp_off] & PML_PRESENT))
+    {
+        uint64_t* pd = pfa_alloc_page();
+        memset(pd, 0, pfa_page_size());
+
+        pdp[pdp_off] = (PML_PRESENT | PML_READWRITE) | privilege;
+        PML_UPDATE_ADDRESS(pdp[pdp_off], (uint64_t)pd);
+    }
+
+    uint64_t* pd = (uint64_t*)((pdp[pdp_off] & PML_ADDRESS));
+    if(!(pd[pd_off] & PML_PRESENT))
+    {
+        uint64_t* pt = pfa_alloc_page();
+        memset(pt, 0, pfa_page_size());
+
+        pd[pd_off] = (PML_PRESENT | PML_READWRITE) | privilege;
+        PML_UPDATE_ADDRESS(pd[pd_off], (uint64_t)pt);
+    }
+
+    uint64_t* pt = (uint64_t*)((pd[pd_off] & PML_ADDRESS));
+    pt[pt_off] = value;
+}
+
+uint64_t paging_retrieve_node(paging_data_t data, uint16_t pml4_off, uint16_t pdp_off, uint16_t pd_off, uint16_t pt_off)
+{
+    uint64_t* pml4 = (uint64_t*)data;
+    if(!(pml4[pml4_off] & PML_PRESENT))
+        return 0;
+
+    uint64_t* pdp = (uint64_t*)((pml4[pml4_off] & PML_ADDRESS));
+    if(!(pdp[pdp_off] & PML_PRESENT))
+        return 0;
+
+    uint64_t* pd = (uint64_t*)((pdp[pdp_off] & PML_ADDRESS));
+    if(!(pd[pd_off] & PML_PRESENT) || pd[pd_off] & PML_SIZE)
+        return 0;
+
+    uint64_t* pt = (uint64_t*)((pd[pd_off] & PML_ADDRESS));
+    return pt[pt_off];
+}
+
+
 void* paging_get_ph(paging_data_t data, void* vt)
 {
     uint64_t pml4_offset = ((uint64_t)vt >> 39) & 0x01FF;
@@ -72,13 +129,13 @@ void* paging_get_ph(paging_data_t data, void* vt)
         return 0;
 
     if((pd[pd_offset] & PML_SIZE))
-        return pd[pd_offset] & PML_ADDRESS;
+        return (void*)(pd[pd_offset] & PML_ADDRESS);
     
     uint64_t* pt = (uint64_t*)((pd[pd_offset] & PML_ADDRESS));
     if((pt[pt_offset] & PML_PRESENT) == 0)
         return 0;
 
-    return pt[pt_offset] & PML_ADDRESS;
+    return (void*)(pt[pt_offset] & PML_ADDRESS);
 }
 
 static bool attach_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege, bool size, bool global)
