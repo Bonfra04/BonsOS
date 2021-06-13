@@ -1,24 +1,24 @@
-tools/
+/tools/
 
-bin/
-bin-int/
+/bin/
+/bin-int/
 BonsOS.img
 BonsOS.hdd
 BonsOS.vhd
 
 qemu.log
 
-docs/Resources
+/docs/Resources
 
-vbox/BonsOS/Logs
-vbox/BonsOS/Snapshots
-vbox/BonsOS/BonsOS.vbox-prev
+/vbox/BonsOS/Logs
+/vbox/BonsOS/Snapshots
+/vbox/BonsOS/BonsOS.vbox-prev
 
 BonsOS.img.lock
-vmware/BonsOS/vmware-0.log
-vmware/BonsOS/vmware-1.log
-vmware/BonsOS/vmware-2.log
-vmware/BonsOS/vmware-vmx-0.dmp
-vmware/BonsOS/vmware-vmx-1.dmp
-vmware/BonsOS/vmware-vmx.dmp
-vmware/BonsOS/vmware.log
+/vmware/BonsOS/vmware-0.log
+/vmware/BonsOS/vmware-1.log
+/vmware/BonsOS/vmware-2.log
+/vmware/BonsOS/vmware-vmx-0.dmp
+/vmware/BonsOS/vmware-vmx-1.dmp
+/vmware/BonsOS/vmware-vmx.dmp
+/vmware/BonsOS/vmware.log
