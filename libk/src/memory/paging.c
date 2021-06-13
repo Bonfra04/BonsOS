@@ -269,13 +269,13 @@ void paging_destroy(paging_data_t data)
                 if(!(pd[pd_pff] & PML_PRESENT))
                     continue;
 
-                pfa_free_page(pd[pd_pff] & PML_ADDRESS);
+                pfa_free_page((void*)(pd[pd_pff] & PML_ADDRESS));
             }
 
-            pfa_free_page(pdp[pdp_off] & PML_ADDRESS);
+            pfa_free_page((void*)(pdp[pdp_off] & PML_ADDRESS));
         }
 
-        pfa_free_page(pml4[pml4_off] & PML_ADDRESS);
+        pfa_free_page((void*)(pml4[pml4_off] & PML_ADDRESS));
     }
 }
 

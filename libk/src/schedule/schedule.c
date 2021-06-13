@@ -224,7 +224,7 @@ bool create_kernel_task(entry_point_t entry_point)
     void* stack = pfa_alloc_page();
     process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_page_size() - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
-    context->rip = entry_point;
+    context->rip = (uint64_t)entry_point;
     context->flags = 0x202;
 
     context->ds = SELECTOR_KERNEL_DATA;
@@ -235,7 +235,7 @@ bool create_kernel_task(entry_point_t entry_point)
     context->cs = SELECTOR_KERNEL_CODE;
 
     thread->stack_base = stack;
-    thread->rsp = thread->stack_base + pfa_page_size() - sizeof(process_context_t);
+    thread->rsp = (uint64_t)thread->stack_base + pfa_page_size() - sizeof(process_context_t);
     thread->parent = kernel_process;
 
     return true;

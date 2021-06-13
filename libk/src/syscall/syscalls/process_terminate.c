@@ -4,6 +4,6 @@
 
 void syscall_process_terminate(const syscall_parameter_t* params)
 {
-    printf("CIAO");
-    //process_terminate();
+    (void)params;
+    process_terminate();
 }

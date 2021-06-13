@@ -231,8 +231,8 @@ void vmm_free_pages(void* pages, size_t count)
 {
     for(size_t i = 0; i < count; i++)
     {
-        uint64_t ph_addr = paging_get_ph(paging_data, pages);
-        pfa_free_page((void*)ph_addr);
+        void* ph_addr = paging_get_ph(paging_data, pages);
+        pfa_free_page(ph_addr);
         vmm_free_page(pages);
         pages += pfa_page_size();
     }
