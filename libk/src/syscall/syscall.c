@@ -55,4 +55,7 @@ void syscall_init()
 
     syscall_register(0, syscall_process_terminate);
     syscall_register(1, syscall_thread_terminate);
+    syscall_register(2, syscall_process_execute);
+    syscall_register(3, syscall_read_file);
+    syscall_register(4, syscall_write_file);
 }

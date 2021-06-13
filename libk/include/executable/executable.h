@@ -1,0 +1,16 @@
+#pragma once
+
+typedef enum executable_format
+{
+    BINARY,
+    ELF,
+    PE,
+} executable_format_t;
+
+/**
+ * @brief parse an executable file and enqueue a process for it
+ * @param[in] path path of the executable
+ * @param[in] privilege privilege of the process
+ * @param[in] format executable format
+ */
+void run_executable(const char* path, executable_format_t format);

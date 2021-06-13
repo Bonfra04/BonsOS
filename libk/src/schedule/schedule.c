@@ -44,43 +44,29 @@ typedef struct process_context
 
 static process_t processes[MAX_POCESSES];
 static volatile size_t current_process;
-static void* terminating_stack;
+static process_t* kernel_process;
 
-static void idle_task()
+static void __attribute__((aligned(4096))) idle_task()
 {
     while(true)
         asm("pause");
 }
 
-static void* create_stack(uint64_t rip, process_privilege_t privilege)
+static void* create_stack(uint64_t rip)
 {
-    page_privilege_t priv = privilege == PRIVILEGE_KERNEL ? PAGE_PRIVILEGE_KERNEL : PAGE_PRIVILEGE_USER;
-
-    void* stack = vmm_alloc_page(priv);
+    void* stack = vmm_alloc_page(PAGE_PRIVILEGE_USER);
     void* ph_stack = vmm_translate_vaddr(stack);
     process_context_t* context = (process_context_t*)((uint8_t*)ph_stack + pfa_page_size() - sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
     context->rip = rip;
     context->flags = 0x202;
 
-    if(privilege == PRIVILEGE_USER)
-    {
-        context->ds = SELECTOR_USER_DATA | 3;
-        context->es = SELECTOR_USER_DATA | 3;
-        context->fs = SELECTOR_USER_DATA | 3;
-        context->gs = SELECTOR_USER_DATA | 3;
-        context->ss = SELECTOR_USER_DATA | 3;
-        context->cs = SELECTOR_USER_CODE | 3;
-    }
-    else
-    {
-        context->ds = SELECTOR_KERNEL_DATA;
-        context->es = SELECTOR_KERNEL_DATA;
-        context->fs = SELECTOR_KERNEL_DATA;
-        context->gs = SELECTOR_KERNEL_DATA;
-        context->ss = SELECTOR_KERNEL_DATA;
-        context->cs = SELECTOR_KERNEL_CODE;
-    }
+    context->ds = SELECTOR_USER_DATA | 3;
+    context->es = SELECTOR_USER_DATA | 3;
+    context->fs = SELECTOR_USER_DATA | 3;
+    context->gs = SELECTOR_USER_DATA | 3;
+    context->ss = SELECTOR_USER_DATA | 3;
+    context->cs = SELECTOR_USER_CODE | 3;
 
     return stack;
 }
@@ -156,8 +142,16 @@ void scheduler_initialize()
     }
 
     current_process = -1;
-    create_process(idle_task, PRIVILEGE_KERNEL);
-    terminating_stack = pfa_alloc_page();
+    kernel_process = &(processes[0]);
+
+    extern paging_data_t kernel_paging;
+
+    kernel_process->pid = 0;
+    kernel_process->thread_count = 0;
+    kernel_process->current_thread = 0;
+    kernel_process->pagign = kernel_paging;
+
+    create_kernel_task(idle_task);
 }
 
 void schedule()
@@ -165,20 +159,22 @@ void schedule()
     pit_register_callback(schedule_isr);
 }
 
-size_t create_process(entry_point_t entry_point, process_privilege_t privilege)
+size_t create_process(entry_point_t entry_point, size_t size)
 {
     size_t slot = find_process_slot();
     if(slot == -1)
         return -1;
 
     process_t* process = &(processes[slot]);
-
     process->pid = slot;
-    process->privilege = privilege;
     process->thread_count = 0;
     process->current_thread = 0;
     process->pagign = paging_create();
-    attach_thread(process->pid, entry_point);
+
+    vmm_set_paging(process->pagign);
+
+    void* pages = vmm_assign_pages(PAGE_PRIVILEGE_USER, size, entry_point);
+    attach_thread(process->pid, pages);
 
     return slot;
 }
@@ -203,9 +199,44 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
     vmm_set_paging(process->pagign);
 
     thread->parent = process;
-    thread->stack_base = create_stack((uint64_t)entry_point, process->privilege);
+    thread->stack_base = create_stack((uint64_t)entry_point);
     thread->rsp = (uint64_t)thread->stack_base + pfa_page_size() - sizeof(process_context_t);
     thread->kernel_rsp = vmm_alloc_page(PAGE_PRIVILEGE_KERNEL) + pfa_page_size();
+
+    return true;
+}
+
+bool create_kernel_task(entry_point_t entry_point)
+{
+    if(kernel_process->thread_count >= MAX_THREADS)
+        return false;
+
+    kernel_process->thread_count++;
+
+    thread_t* thread;
+    for(size_t i = 0; i < MAX_THREADS; i++)
+        if(kernel_process->threads[i].parent == 0)
+        {
+            thread = &(kernel_process->threads[i]);
+            break;
+        }
+
+    void* stack = pfa_alloc_page();
+    process_context_t* context = (process_context_t*)((uint8_t*)stack + pfa_page_size() - sizeof(process_context_t));
+    memset(context, 0, sizeof(process_context_t));
+    context->rip = entry_point;
+    context->flags = 0x202;
+
+    context->ds = SELECTOR_KERNEL_DATA;
+    context->es = SELECTOR_KERNEL_DATA;
+    context->fs = SELECTOR_KERNEL_DATA;
+    context->gs = SELECTOR_KERNEL_DATA;
+    context->ss = SELECTOR_KERNEL_DATA;
+    context->cs = SELECTOR_KERNEL_CODE;
+
+    thread->stack_base = stack;
+    thread->rsp = thread->stack_base + pfa_page_size() - sizeof(process_context_t);
+    thread->parent = kernel_process;
 
     return true;
 }

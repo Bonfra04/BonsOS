@@ -2,7 +2,8 @@
 
 #include <schedule/scheduler.h>
 
-void syscall_thread_terminate(const syscall_parameter_t* params)
+void syscall_process_terminate(const syscall_parameter_t* params)
 {
-    thread_terminate();
+    printf("CIAO");
+    //process_terminate();
 }
