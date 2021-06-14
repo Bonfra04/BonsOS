@@ -76,30 +76,6 @@ void init(bootinfo_t* bootinfo)
     printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
 
-void __attribute__((aligned(4096))) shell()
-{
-    while(true)
-    {
-        char buff[32];
-        tty_set_textcolor_fg(0xFF0000FF); // blue
-        printf("BonsOS ");
-        tty_set_textcolor_fg(0xFFFFFF00); // yellow
-        printf("$> ");
-        tty_set_textcolor_fg(0xFFFFFFFF); // white
-        scanf("%s", buff);
-
-        if(strcmp("exit", buff) == 0)
-            break;
-    }
-
-    disk_manager_flush(0);
-
-    process_terminate();
-
-    while(1)
-        asm("pause");
-}
-
 void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
@@ -107,7 +83,7 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    run_executable("a:/bin/test", BINARY);
+    run_executable("a:/bin/init.bin", BINARY);
     schedule();
 
     while(1)
