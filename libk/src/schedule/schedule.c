@@ -7,6 +7,8 @@
 #include <memory/virtual_memory_manager.h>
 #include <schedule/atomic.h>
 
+#define USER_PROCESS_BASE_ADDRESS 0x8000000000
+
 #define MAX_POCESSES 32
 
 extern void schedule_isr(const interrupt_context_t* interrupt_context);
@@ -173,7 +175,11 @@ size_t create_process(entry_point_t entry_point, size_t size)
 
     vmm_set_paging(process->pagign);
 
-    void* pages = vmm_assign_pages(PAGE_PRIVILEGE_USER, size, entry_point);
+    void* pages = (void*)USER_PROCESS_BASE_ADDRESS;
+    for(size_t i = 0; i < size; i++)
+        paging_attach_4kb_page(process->pagign, entry_point + pfa_page_size() * i, pages + pfa_page_size() * i, PAGE_PRIVILEGE_USER);
+
+    //void* pages = vmm_assign_pages(PAGE_PRIVILEGE_USER, size, entry_point);
     attach_thread(process->pid, pages);
 
     return slot;
