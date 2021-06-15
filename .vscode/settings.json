@@ -25,6 +25,9 @@
         "libc/Makefile": true,
         "libk/Makefile": true,
         "boot/Makefile": true,
+        "programs/Makefile": true,
+        "programs/*/Makefile": true,
+
         "qemu.log": true,
 
         // Other VMs

@@ -22,3 +22,6 @@ BonsOS.img.lock
 /vmware/BonsOS/vmware-vmx-1.dmp
 /vmware/BonsOS/vmware-vmx.dmp
 /vmware/BonsOS/vmware.log
+
+/programs/init/obj
+/img-content/*.bin
