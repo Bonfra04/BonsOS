@@ -6,7 +6,7 @@ section .text
 
 _start:
     call main       ; main()
-    mov rax, 1      ; process_terminate(
+    mov rax, 1      ; thread_terminate(
     syscall         ; )
 
 .hang:

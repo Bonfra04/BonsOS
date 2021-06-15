@@ -202,6 +202,8 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
             break;
         }
 
+    process->thread_count++;
+
     vmm_set_paging(process->pagign);
 
     thread->parent = process;

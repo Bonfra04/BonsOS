@@ -66,10 +66,11 @@ syscall_handle:
     
     ; set kernel stack
     mov rdi, rax            ; old paging
-    call tss_get_kstack     ; rax contains virtual address of kstack top
-    sub rax, KSTACK_SIZE    ; rax contains virtual address of kstack base
+    call tss_get_kstack     ; rax contains virtual kstack top
+    sub rax, KSTACK_SIZE    ; rax contains virtual kstack base
     mov rsi, rax
-    call paging_get_ph      ; rax contains physical kstack rsp
+    call paging_get_ph      ; rax contains physical kstack base
+    add rax, KSTACK_SIZE    ; rax contains physical kstack top
     mov rsp, rax            ; set new stack
 
     ; enable back interrupts
@@ -96,10 +97,11 @@ syscall_handle:
     ; set parameter
     mov rdi, rsp
 
+    ; call handler
     call rax
 
     ; pop parameters
-    add rsp, 8 * 7
+    add rsp, 8 * 8
 
     ; disable interrupts
     cli
@@ -149,5 +151,5 @@ section .bss
 .r_rax: resq 1
 
 .tmp_rsp: resq 1
-.tmp_stack: resq 256
+.tmp_stack: resq 512
 .tmp_stack_top:
