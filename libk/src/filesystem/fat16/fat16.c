@@ -165,12 +165,12 @@ size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
         return 0;
     }
 
-    seek_to_data_region(fs, data->cluster, data->offset);
-
     size_t bytes_read_count = 0;
 
     while(length > 0)
     {
+        seek_to_data_region(fs, data->cluster, data->offset);
+        
         if(data->bytes_left == 0)
             return bytes_read_count;
 
