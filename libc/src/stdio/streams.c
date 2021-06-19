@@ -425,7 +425,7 @@ int fclose(FILE* stream)
         
     fflush(stream);
 
-    SYS_FCLOSE(&file);
+    SYS_FCLOSE(file);
     return 0;
 }
 
@@ -526,7 +526,7 @@ size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
 
     if(stream == (FILE*)STREAM_STDIN)
     {
-        SYS_FREAD(FSYS_STDIN, ptr, size * count);
+        SYS_FREAD((file_t*)FSYS_STDIN, ptr, size * count);
         return count;
     }
 
@@ -562,7 +562,7 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream)
 
     if(stream == (FILE*)STREAM_STDOUT || stream == (FILE*)STREAM_STDERR)
     {
-        SYS_FWRITE(FSYS_STDOUT, (void*)ptr, size * count);
+        SYS_FWRITE((file_t*)FSYS_STDOUT, (void*)ptr, size * count);
         return count;
     }
 
