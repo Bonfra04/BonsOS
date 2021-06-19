@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define STREAM_STDOUT 1
+#define STREAM_STDIN 2
+#define STREAM_STDERR 3
+
 int vfprintf(FILE* stream, const char * format, va_list arg)
 {
     char buf[1024];
@@ -34,13 +38,14 @@ int printf(const char * format, ...)
 int vfscanf(FILE* stream, const char* format, va_list arg)
 {
     char buffer[1024];
-    size_t pos = ftell(stream);
+    size_t pos = stream == (FILE*)STREAM_STDIN ? 0 : ftell(stream);
     size_t last = fread(&buffer, 1, 1024, stream);
     if(last == 0)
         return EOF;
     buffer[last] = '\0';
     int res = vsscanf(buffer, format, arg);
-    fseek(stream, pos + res, SEEK_SET);
+    if(stream != (FILE*)STREAM_STDIN)
+        fseek(stream, pos + res, SEEK_SET);
     return res;
 }
 
