@@ -3,7 +3,7 @@ include $(DIR_ROOT)/scripts/config.mk
 
 LIB_NAME		:= kernel
 LD_FILE			:= kernel.ld
-LIB_DEPS		:= $(call libfile, libk) $(call libfile, libc) 
+LIB_DEPS		:= $(call libfile, libk) $(call libfile, klibc) 
 
 RUNNABLE		:= $(DIR_BIN)/kernel/kernel.sys
 

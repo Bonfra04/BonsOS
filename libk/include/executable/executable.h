@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 typedef enum executable_format
 {
     BINARY,
@@ -12,5 +14,6 @@ typedef enum executable_format
  * @param[in] path path of the executable
  * @param[in] privilege privilege of the process
  * @param[in] format executable format
+ * @return pid (0 on error)
  */
-void run_executable(const char* path, executable_format_t format);
+size_t run_executable(const char* path, executable_format_t format);

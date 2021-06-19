@@ -227,6 +227,50 @@ void* vmm_assign_pages(page_privilege_t privilege, size_t count, void* ph_addr)
     return (void*)vt_addr;
 }
 
+void* vmm_realloc_pages(page_privilege_t privilege, size_t count, void* vt_addr)
+{
+    uint64_t pml4_offset = ((uint64_t)vt_addr >> 39) & 0x01FF;
+    uint64_t pdp_offset = ((uint64_t)vt_addr >> 30) & 0x01FF;
+    uint64_t pd_offset = ((uint64_t)vt_addr >> 21) & 0x01FF;
+    uint64_t pt_offset = ((uint64_t)vt_addr >> 12) & 0x01FF;
+
+    if(pml4_offset < 1 || pml4_offset >= 512)
+        return 0;
+    if(pdp_offset >= 512 || pd_offset >= 512 || pt_offset >= 512)
+        return 0;
+
+    void* ph_addr = pfa_alloc_pages(count);
+    void* base_addr = ph_addr;
+    for(size_t i = 0; i < count; i++)
+    {
+        uint64_t entry = (uint64_t)ph_addr | PML_PRESENT | PML_READWRITE | PML_MANUAL_ALLOC | privilege;
+        ph_addr += pfa_page_size();
+        uint64_t node = paging_retrieve_node(paging_data, pml4_offset, pdp_offset, pd_offset, pt_offset);
+        if(node & (PML_PRESENT | PML_MANUAL_ALLOC))
+            pfa_free_page((void*)(node & PML_ADDRESS));
+        paging_populate_node(paging_data, pml4_offset, pdp_offset, pd_offset, pt_offset, entry);
+
+        pt_offset++;
+        if(pt_offset == 512)
+        {
+            pt_offset = 0;
+            pd_offset++;
+            if(pd_offset == 512)
+            {
+                pd_offset = 0;
+                pdp_offset++;
+                if(pdp_offset == 512)
+                {
+                    pdp_offset = 0;
+                    pml4_offset++;
+                }
+            }
+        }
+    }
+
+    return base_addr;
+}
+
 void vmm_free_pages(void* pages, size_t count)
 {
     for(size_t i = 0; i < count; i++)

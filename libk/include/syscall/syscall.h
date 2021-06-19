@@ -15,7 +15,7 @@ typedef struct syscall_parameters
     uint64_t r15;
 } __attribute__((packed)) syscall_parameter_t;
 
-typedef void(*syscall_t)(const syscall_parameter_t*);
+typedef uint64_t(*syscall_t)(const syscall_parameter_t*);
 
 /**
  * @brief initializie system calls

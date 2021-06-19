@@ -3,6 +3,7 @@
 #include <filesystem/fsys.h>
 #include <filesystem/ttyfs.h>
 #include <filesystem/kbfs.h>
+#include "../syscall/syscall_api.h"
 
 FILE* stdout;
 FILE* stderr;
@@ -26,6 +27,10 @@ static char buffers[FOPEN_MAX][BUFSIZ];
 
 void stdio_stream_init()
 {
+    stdout = (FILE*)STREAM_STDOUT;
+    stdin = (FILE*)STREAM_STDIN;
+    stderr = (FILE*)STREAM_STDERR;
+
     for(int i = 0; i < FOPEN_MAX; i++)
     {
         opened_files[i].flags = FS_INVALID;
@@ -33,10 +38,6 @@ void stdio_stream_init()
         object_files[i].buffer_size = BUFSIZ;
         object_files[i].buffered = -1;
     }
-
-    stdout = (FILE*)STREAM_STDOUT;
-    stdin = (FILE*)STREAM_STDIN;
-    stderr = (FILE*)STREAM_STDERR;
 }
 
 static file_t* get_file(FILE* stream)
@@ -55,7 +56,7 @@ static file_t* get_file(FILE* stream)
 
 static size_t fread_unbuffered(const void* ptr, size_t length, FILE* stream)
 {
-    size_t res = fsys_read_file(get_file(stream), (void*)ptr, length);
+    size_t res = SYS_FREAD(get_file(stream), (void*)ptr, length);
     if(res == FS_EOF)
         return EOF;
     return res;
@@ -68,21 +69,21 @@ static size_t fread_linebuffered(const void* ptr, size_t length, FILE* stream)
     // If nothing is buffered, buffer something
     if(stream->buffered == -1)
     {
-        stream->buffered = fsys_get_position(file);
+        stream->buffered = SYS_FTELL(file);
         char c;
         size_t adv = 0;
         do {
-            fsys_read_file(file, &c, 1);
+            SYS_FREAD(file, &c, 1);
             ((char*)stream->buffer)[adv++] = c;
             if(file->error || file->eof)
                 break;
         } while(adv < stream->buffer_size && c != '\n');
         if(file->error)
             return 0;
-        fsys_set_position(file, 0);
+        SYS_FSEEK(file, 0);
     }
 
-    size_t pos = fsys_get_position(file);
+    size_t pos = SYS_FTELL(file);
     size_t bred = stream->buffered;
     size_t bsiz = stream->buffer_size;
 
@@ -93,7 +94,7 @@ static size_t fread_linebuffered(const void* ptr, size_t length, FILE* stream)
     if(pos >= bred && (pos + length) <= (bred + bsiz))
     {
         memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), length);
-        fsys_set_position(file, pos + length);
+        SYS_FSEEK(file, pos + length);
         return length;
     }
     // to-read is below and inside the buffer
@@ -113,19 +114,19 @@ static size_t fread_linebuffered(const void* ptr, size_t length, FILE* stream)
         memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), size);
         length -= size;
         ptr = (uint8_t*)ptr + size;
-        fsys_set_position(file, stream->buffered + size);
+        SYS_FSEEK(file, stream->buffered + size);
     }
 
     // read the data that isn't buffered
     size_t advance = 0;
     while (length > 0)
     {
-        stream->buffered = fsys_get_position(file);
+        stream->buffered = SYS_FTELL(file);
         size_t res = 0;
         {
             char c;
             do {
-                fsys_read_file(file, &c, 1);
+                SYS_FREAD(file, &c, 1);
                 ((char*)stream->buffer)[res++] = c;
                 if(file->error || file->eof)
                     break;
@@ -140,7 +141,7 @@ static size_t fread_linebuffered(const void* ptr, size_t length, FILE* stream)
         memcpy((uint8_t*)ptr + advance, stream->buffer, readable);
         length -= readable;
         advance += readable;
-        fsys_set_position(file, stream->buffered + readable);
+        SYS_FSEEK(file, stream->buffered + readable);
 
         if(file->eof)
             break;
@@ -158,14 +159,14 @@ static size_t fread_fullybuffered(const void* ptr, size_t length, FILE* stream)
     // If nothing is buffered, buffer something
     if(stream->buffered == -1)
     {
-        stream->buffered = fsys_get_position(file);
-        fsys_read_file(file, stream->buffer, stream->buffer_size);
+        stream->buffered = SYS_FTELL(file);
+        SYS_FREAD(file, stream->buffer, stream->buffer_size);
         if(file->error)
             return 0;
-        fsys_set_position(file, 0);
+        SYS_FSEEK(file, 0);
     }
 
-    size_t pos = fsys_get_position(file);
+    size_t pos = SYS_FTELL(file);
     size_t bred = stream->buffered;
     size_t bsiz = stream->buffer_size;
 
@@ -176,7 +177,7 @@ static size_t fread_fullybuffered(const void* ptr, size_t length, FILE* stream)
     if(pos >= bred && (pos + length) <= (bred + bsiz))
     {
         memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), length);
-        fsys_set_position(file, pos + length);
+        SYS_FSEEK(file, pos + length);
         return length;
     }
     // to-read is below and inside the buffer
@@ -196,15 +197,15 @@ static size_t fread_fullybuffered(const void* ptr, size_t length, FILE* stream)
         memcpy((void*)ptr, (uint8_t*)stream->buffer + (pos - bred), size);
         length -= size;
         ptr = (uint8_t*)ptr + size;
-        fsys_set_position(file, stream->buffered + size);
+        SYS_FSEEK(file, stream->buffered + size);
     }
 
     // read the data that isn't buffered
     size_t advance = 0;
     while (length > 0)
     {
-        stream->buffered = fsys_get_position(file);
-        size_t res = fsys_read_file(file, stream->buffer, stream->buffer_size);
+        stream->buffered = SYS_FTELL(file);
+        size_t res = SYS_FREAD(file, stream->buffer, stream->buffer_size);
 
         if(res != stream->buffer_size && !file->eof)
             break;
@@ -214,7 +215,7 @@ static size_t fread_fullybuffered(const void* ptr, size_t length, FILE* stream)
         memcpy((uint8_t*)ptr + advance, stream->buffer, readable);
         length -= readable;
         advance += readable;
-        fsys_set_position(file, stream->buffered + readable);
+        SYS_FSEEK(file, stream->buffered + readable);
 
         if(file->eof)
             break;
@@ -225,7 +226,7 @@ static size_t fread_fullybuffered(const void* ptr, size_t length, FILE* stream)
 
 static size_t fwrite_unbuffered(const void* ptr, size_t length, FILE* stream)
 {
-    return fsys_write_file(get_file(stream), (void*)ptr, length);
+    return SYS_FWRITE(get_file(stream), (void*)ptr, length);
 }
 
 static size_t fwrite_linebuffered(const void* ptr, size_t length, FILE* stream)
@@ -241,18 +242,18 @@ static size_t fwrite_fullybuffered(const void* ptr, size_t length, FILE* stream)
     // If nothing is buffered, buffer something
     if(stream->buffered == -1)
     {
-        stream->buffered = fsys_get_position(file);
+        stream->buffered = SYS_FTELL(file);
         memset(stream->buffer, 0, stream->buffer_size);
     }
 
-    size_t pos = fsys_get_position(file);
+    size_t pos = SYS_FTELL(file);
 
     // writes the largest amount of bytes to the buffer
     size_t bytes_buffered = pos - stream->buffered;
     size_t free_buffer = (stream->buffer_size - bytes_buffered);
     size_t writable = length < free_buffer ? length : free_buffer;
     memcpy((uint8_t*)stream->buffer + bytes_buffered, ptr, writable);
-    fsys_set_position(file, pos + writable);
+    SYS_FSEEK(file, pos + writable);
     pos += writable;
     length -= writable;
 
@@ -266,16 +267,16 @@ static size_t fwrite_fullybuffered(const void* ptr, size_t length, FILE* stream)
     while(length > 0)
     {
         // flush
-        size_t res = fsys_write_file(file, stream->buffer, stream->buffer_size);
+        size_t res = SYS_FWRITE(file, stream->buffer, stream->buffer_size);
         
         if(res != stream->buffer_size || file->error)
             break;
 
         // update buffer
-        stream->buffered = fsys_get_position(file);
+        stream->buffered = SYS_FTELL(file);
         size_t to_write = stream->buffer_size < length ? stream->buffer_size : length;
         memcpy(stream->buffer, (uint8_t*)ptr + writed, to_write);
-        fsys_set_position(file, stream->buffered + to_write);
+        SYS_FSEEK(file, stream->buffered + to_write);
         length -= to_write;
         writed += to_write;
     }
@@ -295,11 +296,11 @@ int fflush(FILE* stream)
     if(file->mode == 'r')
         return 0;
 
-    size_t pos = fsys_get_position(file);
-    fsys_set_position(file, stream->buffered);
+    size_t pos = SYS_FTELL(file);
+    SYS_FSEEK(file, stream->buffered);
     size_t bytes_buffered = pos - stream->buffered;
-    size_t res = fsys_write_file(file, stream->buffer, bytes_buffered);
-    fsys_set_position(file, pos);
+    size_t res = SYS_FWRITE(file, stream->buffer, bytes_buffered);
+    SYS_FSEEK(file, pos);
 
     if(res != bytes_buffered)
         return EOF;
@@ -365,7 +366,7 @@ int setvbuf(FILE* stream, char* buffer, int mode, size_t size)
 
 int remove(const char* filename)
 {
-    return !fsys_delete_file(filename);
+    return 0;//!fsys_delete_file(filename);
 }
 
 FILE* fopen(const char* filename, const char* mode)
@@ -402,7 +403,7 @@ FILE* fopen(const char* filename, const char* mode)
         flags &= ~(STATUS_WRITING);
     }
 
-    opened_files[index] = fsys_open_file(filename, mode);
+    SYS_FOPEN(filename, mode, &(opened_files[index]));
     if(opened_files[index].flags == FS_INVALID)
         return NULL;
 
@@ -424,7 +425,7 @@ int fclose(FILE* stream)
         
     fflush(stream);
 
-    fsys_close_file(file);
+    SYS_FCLOSE(&file);
     return 0;
 }
 
@@ -525,7 +526,7 @@ size_t fread(void* ptr, size_t size, size_t count, FILE* stream)
 
     if(stream == (FILE*)STREAM_STDIN)
     {
-        kbfs_read_file(0, 0, ptr, size * count);
+        SYS_FREAD(FSYS_STDIN, ptr, size * count);
         return count;
     }
 
@@ -561,7 +562,7 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream)
 
     if(stream == (FILE*)STREAM_STDOUT || stream == (FILE*)STREAM_STDERR)
     {
-        ttyfs_write_file(0, 0, (void*)ptr, size * count);
+        SYS_FWRITE(FSYS_STDOUT, (void*)ptr, size * count);
         return count;
     }
 
@@ -593,7 +594,7 @@ int fgetpos(FILE* stream, fpos_t* pos)
     if(!file)
         return -1;
 
-    *pos = fsys_get_position(file);
+    *pos = SYS_FTELL(file);
 
     return 0;
 }
@@ -612,13 +613,13 @@ int fseek(FILE* stream, long int offset, int origin)
     switch (origin)
     {
     case SEEK_SET:
-        fsys_set_position(file, offset);
+        SYS_FSEEK(file, offset);
         break;
     case SEEK_CUR:
-        fsys_set_position(file, fsys_get_position(file) + offset);
+        SYS_FSEEK(file, SYS_FTELL(file) + offset);
         break;
     case SEEK_END:
-        fsys_set_position(file, file->length + offset);
+        SYS_FSEEK(file, file->length + offset);
         break;    
     default:
         return -1;
@@ -651,7 +652,7 @@ int fsetpos(FILE* stream, const fpos_t* pos)
 
     fflush(stream);
 
-    fsys_set_position(file, *pos);
+    SYS_FSEEK(file, *pos);
 
     if(stream->flags & MODE_UPDATE)
         if(stream->flags & STATUS_WRITING)
@@ -678,7 +679,7 @@ long int ftell(FILE* stream)
     if(!file)
         return -1;
 
-    return fsys_get_position(file);
+    return SYS_FTELL(file);
 }
 
 void rewind(FILE* stream)
@@ -692,7 +693,7 @@ void rewind(FILE* stream)
 
     fflush(stream);
 
-    fsys_set_position(file, 0);
+    SYS_FSEEK(file, 0);
 
     if(stream->flags & MODE_UPDATE)
         if(stream->flags & STATUS_WRITING)

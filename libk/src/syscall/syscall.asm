@@ -99,6 +99,7 @@ syscall_handle:
 
     ; call handler
     call rax
+    mov [.return_val], rax
 
     ; pop parameters
     add rsp, 8 * 8
@@ -135,10 +136,9 @@ syscall_handle:
     pop rbx
     pop rax
 
-    mov [.r_rax], rax
     pop rax
     mov cr3, rax
-    mov rax, [.r_rax]
+    mov rax, [.return_val]
 
     mov rsp, [.r_rsp]
     o64 sysret
@@ -146,6 +146,7 @@ syscall_handle:
 section .bss
 
 .syscall_id: resq 1
+.return_val: resq 1
 
 .r_rsp: resq 1
 .r_rax: resq 1

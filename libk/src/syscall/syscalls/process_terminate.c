@@ -2,8 +2,9 @@
 
 #include <schedule/scheduler.h>
 
-void syscall_process_terminate(const syscall_parameter_t* params)
+uint64_t syscall_process_terminate(const syscall_parameter_t* params)
 {
     (void)params;
     process_terminate();
+    return 0;
 }

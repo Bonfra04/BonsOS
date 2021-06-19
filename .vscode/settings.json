@@ -9,6 +9,7 @@
         "bin-int/": true,
         "BonsOS.img": true,
         "BonsOS.hdd": true,
+        "programs/*/obj/": true,
 
         // Tools
         "tools/": true,
@@ -34,5 +35,9 @@
         "vmware": true,
     },
     "git.ignoreLimitWarning": true,
-    "debug.allowBreakpointsEverywhere": true
+    "debug.allowBreakpointsEverywhere": true,
+    "files.associations": {
+        "*.make": "makefile",
+        "*.h": "c",
+    }
 }

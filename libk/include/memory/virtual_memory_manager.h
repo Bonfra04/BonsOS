@@ -46,9 +46,18 @@ void* vmm_alloc_pages(page_privilege_t privilege, size_t count);
  * @param[in] privilege privilege to assign to the newly allocated pages
  * @param[in] count amount of contiguous pages to allocate
  * @param[in] ph_addr physical address to map
- * @return base address of the pages
+ * @return virtual base address of the pages
  */
 void* vmm_assign_pages(page_privilege_t privilege, size_t count, void* ph_addr);
+
+/**
+ * @brief allocates `count` contigoud 4KB pages at the provided vt_addr
+ * @param[in] privilege privilege to assign to the newly allocated pages
+ * @param[in] count amount of contigous pages to allocate
+ * @param[in] vt_addr virtual address to map
+ * @return physical base address of the pages
+ */
+void* vmm_realloc_pages(page_privilege_t privilege, size_t count, void* vt_addr);
 
 /**
  * @brief frees `count` contiguous 4KB pages in virtual space

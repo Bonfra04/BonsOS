@@ -3,6 +3,7 @@
 #    LIB_NAME        The name of the library produced by this makefile
 #    POST_BUILD_RULE The optional rule that runs after the lib is built
 #	 LIB_DEPS		 The paths to the dependencies of this project
+#	 PREPROC		 List of prepocessor definitions
 #
 #	 RUNNABLE		 The path of the binary file if wanted
 #	 LD_FILE		 The path of the linker file 		(if RUNNABLE)
@@ -61,4 +62,4 @@ $(OBJ_FILES_ASM): $(DIR_LIB_BUILD)/%_asm.o: %.asm
 
 $(OBJ_FILES_C): $(DIR_LIB_BUILD)/%.o: %.c
 	@echo "$(TAG) Compiling $<"
-	@$(CC) $(CCFLAGS) -c $< -o $@
+	@$(CC) $(CCFLAGS) $(PREPROC) -c $< -o $@

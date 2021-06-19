@@ -1,6 +1,8 @@
 #include <filesystem/fsys.h>
 #include <device/ata/ahci.h>
 #include <filesystem/fat16.h>
+#include <filesystem/ttyfs.h>
+#include <filesystem/kbfs.h>
 
 #define DEVICE_MAX 26
 
@@ -72,6 +74,9 @@ bool fsys_close_file(file_t* file)
 
 size_t fsys_read_file(file_t* file, void* buffer, size_t length)
 {
+    if(file == FSYS_STDIN)
+        return kbfs_read_file(0, file, buffer, length);
+
     if (!file || file->flags != FS_FILE)
         return 0;
 
@@ -85,6 +90,9 @@ size_t fsys_read_file(file_t* file, void* buffer, size_t length)
 
 size_t fsys_write_file(file_t* file, void* buffer, size_t length)
 {
+    if(file == FSYS_STDOUT || file == FSYS_STDERR)
+        return ttyfs_write_file(0, file, buffer, length);
+
     if (!file || file->flags != FS_FILE)
         return 0;
     

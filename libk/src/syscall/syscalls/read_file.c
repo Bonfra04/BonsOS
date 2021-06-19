@@ -1,11 +1,11 @@
 #include "../syscalls.h"
-#include <stdio.h>
+#include <filesystem/fsys.h>
 #include <memory/virtual_memory_manager.h>
 
-void syscall_read_file(const syscall_parameter_t* params)
+uint64_t syscall_read_file(const syscall_parameter_t* params)
 {
-    FILE* file = (FILE*)params->r8;
+    file_t* file = (file_t*)params->r8;
     void* buffer = vmm_translate_vaddr((void*) params->r9);
     size_t length = params->r10;
-    fread(buffer, 1, length, file);
+    return fsys_read_file(file, buffer, length);
 }

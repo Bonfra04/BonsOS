@@ -8,6 +8,10 @@
 #define FS_FILE        0b01
 #define FS_DIRECTORY   0b10
 
+#define FSYS_STDOUT 1
+#define FSYS_STDIN 2
+#define FSYS_STDERR 3
+
 #define FS_EOF -1
 
 typedef enum fsys_type

@@ -83,7 +83,7 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    run_executable("a:/bin/init.bin", BINARY);
+    run_executable("a:/bin/init.elf", ELF);
     schedule();
 
     while(1)

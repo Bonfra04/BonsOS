@@ -185,6 +185,15 @@ size_t create_process(entry_point_t entry_point, size_t size)
     return slot;
 }
 
+const thread_t* get_current_thread()
+{
+    if(current_process == -1)
+        return 0;
+    
+    process_t* process = &processes[current_process];
+    return &(process->threads[process->current_thread]);
+}
+
 bool attach_thread(size_t pid, entry_point_t entry_point)
 {
     process_t* process = find_process(pid);

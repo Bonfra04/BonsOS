@@ -15,9 +15,10 @@ extern void syscall_handle();
 
 syscall_t syscalls[MAX_SYSCALL];
 
-static void empty_syscall(const syscall_parameter_t* params)
+static uint64_t empty_syscall(const syscall_parameter_t* params)
 {
     (void)params;
+    return 0;
 }
 
 void syscall_register(size_t id, syscall_t systemcall)
@@ -58,4 +59,8 @@ void syscall_init()
     syscall_register(2, syscall_process_execute);
     syscall_register(3, syscall_read_file);
     syscall_register(4, syscall_write_file);
+    syscall_register(5, syscall_seek_file);
+    syscall_register(6, syscall_tell_file);
+    syscall_register(7, syscall_file_open);
+    syscall_register(8, syscall_file_close);
 }

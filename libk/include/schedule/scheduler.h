@@ -49,6 +49,12 @@ void schedule();
 size_t create_process(entry_point_t entry_point, size_t size);
 
 /**
+ * @brief return a pointer to the current executing thread
+ * @return pointer to the thread struct
+ */
+const thread_t* get_current_thread();
+
+/**
  * @brief attaches thread to a process
  * @param[in] pid id of the process to attach to
  * @param[in] entry_point the entry point of the thread
