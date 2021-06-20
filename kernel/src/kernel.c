@@ -26,6 +26,7 @@
 #include <executable/executable.h>
 
 #include "bootinfo.h"
+#include "dbg.h"
 
 #include "unit_tests/unit_test.h"
 
@@ -55,6 +56,8 @@ void init(bootinfo_t* bootinfo)
     kb_init();
 
     enable_interrupts();
+
+    dbg_init();
 
     pci_init();
 

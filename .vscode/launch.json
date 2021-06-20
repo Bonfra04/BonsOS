@@ -10,7 +10,7 @@
             "remote": true,
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
-            "preLaunchTask": "debug qemu",
+            "preLaunchTask": "run qemu (debug)",
             "postDebugTask": "kill qemu",
             "autorun": [    // path issues
                 "set remotetimeout 15",

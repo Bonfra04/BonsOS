@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Bons",
+            "name": "BonsOS",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/libc/include/",

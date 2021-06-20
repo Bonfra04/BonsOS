@@ -2,46 +2,111 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "debug qemu",
+            "label": "run qemu (debug)",
             "type": "shell",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -d int -D qemu.log -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial",
+            "isBackground": true,
             "presentation": {
                 "clear": true,
-                "showReuseMessage": false
+                "showReuseMessage": false,
+                "revealProblems": "never",
+                "reveal": "silent",
+                "panel": "dedicated",
+                "echo": false
             },
-            "windows": {
-                "command": ".\\scripts\\run_qemu.cmd"
-            },
-            "linux": {
-                "command": "./scripts/run_qemu.sh"
-            }
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "qemu monitor", "qemu serial", //"compile"
+            ],
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
         },
         {
-            "label": "kill qemu",
-            "type": "shell",
+            "label": "compile",
+            "command": "make",
+            "presentation": {
+                "focus": true,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "qemu monitor",
+            "command": "./scripts/pipe_console.sh",
+            "args": [ "/tmp/qemu-monitor" ],
+            "isBackground": true,
             "presentation": {
                 "echo": false,
                 "showReuseMessage": false,
-                "reveal": "never"
+                "focus": false,
+                "clear": true,
+                "panel": "dedicated"
             },
-            "windows": {
-                "command": "taskkill /F /IM qemu-system-x86_64.exe /T > nul 2> nul"
-            }
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
         },
         {
-            "label": "run vmware",
-            "type": "shell",
-            "group": "build",
-            "windows": {
-                "command": ".\\scripts\\run_vmware.cmd"
-            },
+            "label": "qemu serial",
+            "command": "./scripts/pipe_console.sh",
+            "args": [ "/tmp/qemu-serial" ],
+            "isBackground": true,
             "presentation": {
-                "clear": true
+                "echo": false,
+                "showReuseMessage": false,
+                "focus": false,
+                "clear": true,
+                "panel": "dedicated"
             },
-            "problemMatcher": []
-        }
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
     ]
 }
