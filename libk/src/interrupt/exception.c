@@ -86,17 +86,9 @@ static void isr_fatal(const interrupt_context_t* context)
     hang();
 }
 
-static void isr_breakpoint(const interrupt_context_t *context)
-{
-    (void)context;
-    printf("Breakpoint hit.\n");
-}
-
 void exceptions_init()
 {
     for (int i = 0; i < 32; i++)
         isr_set(i, isr_fatal); // fatal for now. temporary.
     isr_set(0xFF, isr_fatal);
-
-    isr_set(EXCEPTION_BREAKPOINT, isr_breakpoint);
 }

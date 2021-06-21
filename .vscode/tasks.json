@@ -16,7 +16,7 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "qemu monitor", "qemu serial", //"compile"
+                "qemu monitor", "qemu serial", "compile"
             ],
             "problemMatcher": [
                 {
@@ -35,6 +35,25 @@
                     }
                 }
             ]
+        },
+        {
+            "label": "run qemu",
+            "type": "shell",
+            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -d int -D qemu.log -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial",
+            "isBackground": true,
+            "presentation": {
+                "clear": true,
+                "showReuseMessage": false,
+                "revealProblems": "never",
+                "reveal": "silent",
+                "panel": "dedicated",
+                "echo": false
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "qemu monitor", "qemu serial", "compile"
+            ],
+            "problemMatcher": []
         },
         {
             "label": "compile",

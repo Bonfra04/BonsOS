@@ -58,6 +58,7 @@ void init(bootinfo_t* bootinfo)
     enable_interrupts();
 
     dbg_init();
+    dbg_break();
 
     pci_init();
 
