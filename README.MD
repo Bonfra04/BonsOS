@@ -1,21 +1,24 @@
-# Bons-OS
-Bons-OS is a simple operating system. A two stage bootloader loads a lower half kernel. The kernel is responsible to setup all the essential things and initialize the comunication between the software and the hardware. The primary objective is to implement a fully working standard C library to then implement the interface of the operating system.
+# BonsOS
+BonsOS is a simple operating system. A simple home made bootloader loads the kernel which is responsible of seting up all the essential things and initialize the comunication between the software and the hardware. After the initialization process the kernel loads the `init.elf` executable which is the root of all the processes.
 
 ## Build tools
-### Using windows
-Is recommended to use the [WSL](https://docs.microsoft.com/it-it/windows/wsl/install-win10) with [Debian](https://www.microsoft.com/it-it/p/debian/9msvkqc78pk6?activetab=pivot:overviewtab) or [Ubuntu](https://www.microsoft.com/it-it/p/ubuntu/9nblggh4msv6?activetab=pivot:overviewtab) (Ubuntu may be faster). WSL does not include a graphical interface so [QEMU](https://www.qemu.org/download/#windows) must be installed to run and debug the OS. [GDB](https://www.gnu.org/software/gdb/) is used as a debugger and it can be installed with [MinGW](https://osdn.net/projects/mingw/downloads/68260/mingw-get-setup.exe/) as it contains GDB and other usefull programs. Don't forget to [add to Window's path](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/) QEMU and GDB.
+### Using windows:
+Using windows [WSL](https://docs.microsoft.com/it-it/windows/wsl/install-win10) is mandatory to execute correctly the code (I suggest using [Ubuntu](https://www.microsoft.com/it-it/p/ubuntu/9nblggh4msv6?activetab=pivot:overviewtab)). WSL does not yet include a graphical interface so [Xming](https://sourceforge.net/projects/xming/files/latest/download) is a good option to emulate it.
 
 ## Install needed dependencies:
-Make sure to run `$ apt-get update` and `$ apt-get upgrade` before. Then run `$ ./dependencies.sh` to setup the project, it is a long process.
-
-## Run the project:
-Open the folder using [Visual Studio Code](https://code.visualstudio.com/) and install the [Native Debug extension](https://marketplace.visualstudio.com/items?itemName=webfreak.debug). On Windows, make sure that the default terminal is setted to cmd or powershell. Hit F5 to start the debugger.
+You are going to need [Visual Studio Code](https://code.visualstudio.com/) to easly run/debug the project.
+On Windows make sure that you are using the [Remote - WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extension to run VSCode as if it was under linux.</br>
+Run `$ apt-get update` and `$ apt-get upgrade` to ensure your system is up to date, then run `$ ./dependencies.sh` to install al the needed dependencies, it is a long process.
 
 ## Compile the project:
-Open a terminal in the folder and run `$ make`. This will compile all files and buold the .img output file.
+To compile the code and generate the `BonsOS.img` output file you can either run `$ make` or in VSCode you can run the `compile` task.
+
+## Run the project:
+Open the folder in VSCode and and run the `run qemu` task.
+
+## Debug the project:
+Open the folder in VSCode and install the [Native Debug](https://marketplace.visualstudio.com/items?itemName=webfreak.debug) extension. Hit F5 to start the debugger. Two panels will show up hosting the `qemu monitor` and the `qemu serial`; remember to close them before starting the next debug session.
 
 ## Export the OS
-Finally you can run the .img file in a virtual machine or burn it to a drive using a tool like [Rufus](https://rufus.ie/).
+Finally you can run the .img file in a virtual machine or burn it to a drive using a tool like [Rufus](https://rufus.ie/) for windows.
 
-### Troubleshooting
-If when hitting F5 to debug on vscode an error is prompted, try opening `.vscode/launch.json` and increment the number at line 16
