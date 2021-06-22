@@ -26,7 +26,7 @@
 #include <executable/executable.h>
 
 #include "bootinfo.h"
-#include "dbg.h"
+#include "dbg/dbg.h"
 
 #include "unit_tests/unit_test.h"
 
