@@ -16,7 +16,9 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "qemu monitor", "qemu serial", "compile"
+                "qemu monitor",
+                "qemu serial",
+                "compile"
             ],
             "problemMatcher": [
                 {
@@ -31,10 +33,26 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": ".",
-                        "endsPattern": ".",
+                        "endsPattern": "."
                     }
                 }
             ]
+        },
+        {
+            "label": "stop qemu debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "close current terminal",
+                "close current terminal",
+                "close current terminal",
+                "close current terminal"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "close current terminal",
+            "command": "${command:workbench.action.terminal.kill}",
+            "problemMatcher": []
         },
         {
             "label": "run qemu",
@@ -51,7 +69,9 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "qemu monitor", "qemu serial", "compile"
+                "qemu monitor",
+                "qemu serial",
+                "compile"
             ],
             "problemMatcher": []
         },
@@ -63,14 +83,15 @@
                 "panel": "dedicated",
                 "showReuseMessage": false,
                 "clear": true
-
             },
             "problemMatcher": []
         },
         {
             "label": "qemu monitor",
             "command": "./scripts/pipe_console.sh",
-            "args": [ "/tmp/qemu-monitor" ],
+            "args": [
+                "/tmp/qemu-monitor"
+            ],
             "isBackground": true,
             "presentation": {
                 "echo": false,
@@ -92,7 +113,7 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": ".",
-                        "endsPattern": ".",
+                        "endsPattern": "."
                     }
                 }
             ]
@@ -100,7 +121,9 @@
         {
             "label": "qemu serial",
             "command": "./scripts/pipe_console.sh",
-            "args": [ "/tmp/qemu-serial" ],
+            "args": [
+                "/tmp/qemu-serial"
+            ],
             "isBackground": true,
             "presentation": {
                 "echo": false,
@@ -122,10 +145,10 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": ".",
-                        "endsPattern": ".",
+                        "endsPattern": "."
                     }
                 }
             ]
-        },
+        }
     ]
 }
