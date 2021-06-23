@@ -72,8 +72,8 @@ struct
     tss_descriptor_t tss_desc[1];
 } __attribute__ ((packed)) GDT __attribute__ ((aligned(8)));
 
-gdtr_t gdtr;
-tss_entry_t tss;
+static gdtr_t gdtr;
+static tss_entry_t tss;
 
 void gdt_init()
 {
