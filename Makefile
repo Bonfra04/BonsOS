@@ -6,7 +6,7 @@ include $(DIR_ROOT)/scripts/config.mk
 
 all: build
 
-build: clean mkdir bootloader kernel programs image
+build: mkdir bootloader kernel programs image
 	@echo "Done"
 
 bootloader:
@@ -26,7 +26,7 @@ programs:
 	@make $(MAKE_FLAGS) --directory=$(DIR_PROGRAMS)
 
 mkdir:
-	@mkdir bin
+	@mkdir -p bin
 	@mkdir -p bin/img
 
 clean:
