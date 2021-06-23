@@ -3,12 +3,6 @@
 
 int main()
 {
-    char pswd[512];
-    printf("Insert password: ");
-    scanf("%s", pswd);
-    if(strcmp("1234", pswd) != 0)
-        return 1;
-    
-    printf("Welcome back!\n");
+    printf("Welcome in BonsOS");
     return 0;
 }

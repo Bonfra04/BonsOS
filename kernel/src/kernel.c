@@ -58,7 +58,6 @@ void init(bootinfo_t* bootinfo)
     enable_interrupts();
 
     dbg_init();
-    dbg_break();
 
     pci_init();
 
@@ -87,7 +86,15 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    run_executable("a:/bin/init.elf", ELF);
+    size_t pid = run_executable("a:/bin/init.elf", ELF);
+
+    if(pid == 0)
+    {
+        printf("Fatal error while loading core components.\n");
+        return;
+    }
+
+    printf("Running OS...\n");
     schedule();
 
     while(1)
