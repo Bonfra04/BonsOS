@@ -33,9 +33,19 @@
 paging_data_t kernel_paging;
 heap_data_t kernel_heap;
 
+typedef char symbol[];
+
 void init(bootinfo_t* bootinfo)
 {
+    // zero out bss
+    extern symbol __bss_start_addr, __bss_size;
+    memset((void*)__bss_start_addr, 0, (size_t)__bss_size);
+
+    extern void initialize_standard_library();
+    initialize_standard_library();
+
     gdt_init();
+
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
     uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull;
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
@@ -48,6 +58,7 @@ void init(bootinfo_t* bootinfo)
     kernel_paging = paging_init(mem_2mball_size);
 
     screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
+    renderer_init();
 
     interrupts_init();
     exceptions_init();

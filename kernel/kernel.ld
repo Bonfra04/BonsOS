@@ -23,11 +23,13 @@ SECTIONS
         *(.rodata)
     }
 
+    __bss_start_addr = .;
     .bss : ALIGN(0x1000)
     {
         *(COMMON)
         *(.bss)
     }
+    __bss_size = . - __bss_start_addr;
 
     __kernel_end_addr = .;
 }
