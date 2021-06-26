@@ -70,3 +70,10 @@ uint64_t syscall_file_open(const syscall_parameter_t* params);
  * @return success
  */
 uint64_t syscall_file_close(const syscall_parameter_t* params);
+
+/**
+ * @brief remove a file
+ * @param[in] r8 pointer to a string containing the file name
+ * @return success
+ */
+uint64_t syscall_file_remove(const syscall_parameter_t* params);

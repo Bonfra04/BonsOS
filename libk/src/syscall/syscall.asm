@@ -78,11 +78,8 @@ syscall_handle:
 
 .call_handler:
     ; set parameters
-    push r15 ; r15
-    push r14 ; r14
     push r13 ; r13
     push r12 ; r12
-    push r11 ; r11
     push r10 ; r10
     push r9  ; r9
     push r8  ; r8
@@ -102,7 +99,7 @@ syscall_handle:
     mov [.return_val], rax
 
     ; pop parameters
-    add rsp, 8 * 8
+    add rsp, 6 * 8  ; 6 qwords
 
     ; disable interrupts
     cli

@@ -366,7 +366,7 @@ int setvbuf(FILE* stream, char* buffer, int mode, size_t size)
 
 int remove(const char* filename)
 {
-    return 0;//!fsys_delete_file(filename);
+    return !SYS_REMOVE(filename);
 }
 
 FILE* fopen(const char* filename, const char* mode)
