@@ -1,7 +1,5 @@
 section .text
     global uart_init
-    global uart_putc
-    global uart_getc
 
 uart_init:
     push rax
@@ -40,54 +38,5 @@ uart_init:
     in al, dx
 
     pop rax
-    pop rdx
-    ret
-
-; Param RDI[low8] => character to put
-uart_putc:
-    push rax
-    push rcx
-    push rdx
-    mov ecx, 10000
-    mov dx, 0x3fd
-.one:
-    in al, dx
-    pause
-    cmp al, 0xff
-    je .two
-    dec ecx
-    jz .two
-    and al, 0x20
-    jz .one
-
-    mov ax, di
-    sub dl, 5
-    out dx, al
-.two:
-
-    pop rdx
-    pop rcx
-    pop rax
-    ret
-
-uart_getc:
-    push rdx
-
-    xor rax, rax
-
-    mov dx, 0x3fd
-.one:
-    pause
-    in al, dx
-    and al, 1
-    jz .one
-    sub dl, 5
-    in al, dx
-
-    cmp al, 13 ; '\r'
-    jne .done
-    mov al, 10 ; '\n'
-.done:
-
     pop rdx
     ret

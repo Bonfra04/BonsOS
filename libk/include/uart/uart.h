@@ -9,7 +9,7 @@ void uart_init();
  * @brief put a character to uart
  * @param[in] c character to put
  */
-void uart_putc(unsigned int c);
+void uart_putc(char c);
 
 /**
  * @brief get a character from uart

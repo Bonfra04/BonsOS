@@ -9,6 +9,7 @@
 #include <string.h>
 
 static bool tracing;
+static bool initialized;
 
 static void dump_memory(uint64_t from, size_t length)
 {
@@ -55,6 +56,9 @@ static char* help = "BonsOS integrated debugger"
 
 static void on_debug(const interrupt_context_t* context)
 {
+    if(!initialized)
+        return;
+
     char cmd[512];
     static bool last_was_call;
     static uint16_t call_byte;
@@ -145,9 +149,12 @@ static void on_debug(const interrupt_context_t* context)
 
 void dbg_init()
 {
+    initialized = false;
     tracing = false;
-    uart_init();
     isr_set(EXCEPTION_BREAKPOINT, on_debug);
     isr_set(EXCEPTION_DEBUG, on_debug);
+    uart_init();
     uart_printf("BonsOS debugger initialized\n");
+    initialized = true;
+    return true;
 }
