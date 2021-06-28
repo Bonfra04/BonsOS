@@ -54,14 +54,58 @@ static void __attribute__((aligned(4096))) idle_task()
         asm("pause");
 }
 
-static void* create_stack(uint64_t rip)
+static inline uint64_t stack_push8(uint64_t rsp, uint8_t value)
+{
+    *(uint8_t*)rsp = value;
+    return --rsp;
+}
+
+static inline uint64_t stack_push64(uint64_t rsp, uint64_t value)
+{
+    *(uint64_t*)rsp = value;
+    rsp -= 8;
+    return rsp;
+}
+
+static void* create_stack(uint64_t rip, int argc, char* argv[], uint64_t* rsp)
 {
     void* stack = vmm_alloc_page(PAGE_PRIVILEGE_USER);
     void* ph_stack = vmm_translate_vaddr(stack);
-    process_context_t* context = (process_context_t*)((uint8_t*)ph_stack + pfa_page_size() - sizeof(process_context_t));
+
+    uint64_t sp = (uint64_t)ph_stack + pfa_page_size();
+
+    // push arguments
+    for(int i = 0; i < argc; i++)
+    {
+        size_t len = strlen(argv[i]);
+
+        // pad to qwrod align
+        while((sp - len) % 8 != 0)
+            sp = stack_push8(sp, 0);
+
+        sp = stack_push8(sp, 0); // null term
+        for(int j = len - 1; j >= 0; j--)
+            sp = stack_push8(sp, argv[i][j]);
+
+        argv[i] = (uint64_t)stack + (sp + 1 - (uint64_t)ph_stack);
+    }
+    // pad to qwrod align
+    while(sp % 8 != 0)
+        sp = stack_push8(sp, 0);
+
+    // push pointer to arguments
+    for(int i = argc - 1; i >= 0; i--)
+        sp = stack_push64(sp, (uint64_t)argv[i]);
+    uint64_t argv_ptr = sp + 8;
+
+    // push context
+    process_context_t* context = (process_context_t*)(sp -= sizeof(process_context_t));
     memset(context, 0, sizeof(process_context_t));
+    
     context->rip = rip;
     context->flags = 0x202;
+    context->rdi = argc;
+    context->rsi = (uint64_t)stack + (argv_ptr - (uint64_t)ph_stack);
 
     context->ds = SELECTOR_USER_DATA | 3;
     context->es = SELECTOR_USER_DATA | 3;
@@ -69,6 +113,8 @@ static void* create_stack(uint64_t rip)
     context->gs = SELECTOR_USER_DATA | 3;
     context->ss = SELECTOR_USER_DATA | 3;
     context->cs = SELECTOR_USER_CODE | 3;
+
+    *rsp = (uint64_t)stack + (sp - (uint64_t)ph_stack);
 
     return stack;
 }
@@ -161,7 +207,7 @@ void schedule()
     pit_register_callback(schedule_isr);
 }
 
-size_t create_process(entry_point_t entry_point, size_t size)
+size_t create_process(entry_point_t entry_point, int argc, char* argv[], size_t size)
 {
     size_t slot = find_process_slot();
     if(slot == -1)
@@ -180,7 +226,7 @@ size_t create_process(entry_point_t entry_point, size_t size)
         paging_attach_4kb_page(process->pagign, entry_point + pfa_page_size() * i, pages + pfa_page_size() * i, PAGE_PRIVILEGE_USER);
 
     //void* pages = vmm_assign_pages(PAGE_PRIVILEGE_USER, size, entry_point);
-    attach_thread(process->pid, pages);
+    attach_thread(process->pid, pages, argc, argv);
 
     return slot;
 }
@@ -194,7 +240,7 @@ const thread_t* get_current_thread()
     return &(process->threads[process->current_thread]);
 }
 
-bool attach_thread(size_t pid, entry_point_t entry_point)
+bool attach_thread(size_t pid, entry_point_t entry_point, int argc, char* argv[])
 {
     process_t* process = find_process(pid);
     if(!process)
@@ -216,8 +262,7 @@ bool attach_thread(size_t pid, entry_point_t entry_point)
     vmm_set_paging(process->pagign);
 
     thread->parent = process;
-    thread->stack_base = create_stack((uint64_t)entry_point);
-    thread->rsp = (uint64_t)thread->stack_base + pfa_page_size() - sizeof(process_context_t);
+    thread->stack_base = create_stack((uint64_t)entry_point, argc, argv, &thread->rsp);
     thread->kernel_rsp = vmm_alloc_page(PAGE_PRIVILEGE_KERNEL) + pfa_page_size();
 
     return true;

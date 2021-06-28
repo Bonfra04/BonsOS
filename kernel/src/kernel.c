@@ -97,7 +97,9 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    size_t pid = run_executable("a:/bin/init.elf", ELF);
+    char* argv[] = { "Hello", "There", "General Kenoby" };
+
+    size_t pid = run_executable("a:/bin/init.elf", 3, argv, ELF);
 
     if(pid == 0)
     {

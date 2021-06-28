@@ -6,7 +6,15 @@ section .text
     extern initialize_standard_library
 
 _start:
+    ; preserve arguments
+    push rdi
+    push rsi
+
     call initialize_standard_library
+    
+    ; restore arguments
+    pop rsi
+    pop rdi
 
     call main       ; main()
     mov rax, 1      ; thread_terminate(

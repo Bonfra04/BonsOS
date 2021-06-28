@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-extern size_t run_binary_executable(void* address, size_t num_pages);
-extern size_t run_elf_executable(void* address, size_t num_pages);
+extern size_t run_binary_executable(void* address, int argc, char* argv[], size_t num_pages);
+extern size_t run_elf_executable(void* address, int argc, char* argv[], size_t num_pages);
 
-size_t run_executable(const char* path, executable_format_t format)
+size_t run_executable(const char* path, int argc, char* argv[], executable_format_t format)
 {
     FILE* pFile = fopen(path, "r");
     if(!pFile)
@@ -29,9 +29,9 @@ size_t run_executable(const char* path, executable_format_t format)
     switch (format)
     {
     case BINARY:
-        return run_binary_executable(address, num_pages);
+        return run_binary_executable(address, argc, argv, num_pages);
     case ELF:
-        return run_elf_executable(address, num_pages);
+        return run_elf_executable(address, argc, argv, num_pages);
     
     default:
         return 0;

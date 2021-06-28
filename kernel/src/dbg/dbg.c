@@ -156,5 +156,4 @@ void dbg_init()
     uart_init();
     uart_printf("BonsOS debugger initialized\n");
     initialized = true;
-    return true;
 }

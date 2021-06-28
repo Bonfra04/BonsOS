@@ -46,7 +46,7 @@ typedef struct program_header
     uint64_t align;
 } __attribute__ ((packed)) program_header_t;
 
-size_t run_elf_executable(void* address, size_t num_pages)
+size_t run_elf_executable(void* address, int argc, char* argv[], size_t num_pages)
 {
     elf64_header_t* header = (elf64_header_t*)address;
     program_header_t* phtable = (program_header_t*)(address + header->e_phoff); 
@@ -69,5 +69,5 @@ size_t run_elf_executable(void* address, size_t num_pages)
     memcpy(new_addr, address + 0x1000, (num_pages - 1) * pfa_page_size());
     pfa_free_pages(address, num_pages);
 
-    return create_process(new_addr, size);
+    return create_process(new_addr, argc, argv, size);
 }

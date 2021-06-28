@@ -16,4 +16,4 @@ typedef enum executable_format
  * @param[in] format executable format
  * @return pid (0 on error)
  */
-size_t run_executable(const char* path, executable_format_t format);
+size_t run_executable(const char* path, int argc, char* argv[], executable_format_t format);

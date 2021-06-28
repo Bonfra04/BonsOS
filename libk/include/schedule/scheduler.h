@@ -43,10 +43,12 @@ void schedule();
 /**
  * @brief creates a process and adds it to the queue
  * @param[in] entry_point the entry point of the main thread
+ * @param[in] argc number of arguments
+ * @param[in] argv array of arguments
  * @param[in] size amount of pages from the entry point
  * @return the process id (-1 on error)
  */
-size_t create_process(entry_point_t entry_point, size_t size);
+size_t create_process(entry_point_t entry_point, int argc, char* argv[], size_t size);
 
 /**
  * @brief return a pointer to the current executing thread
@@ -60,7 +62,7 @@ const thread_t* get_current_thread();
  * @param[in] entry_point the entry point of the thread
  * @return success
  */
-bool attach_thread(size_t pid, entry_point_t entry_point);
+bool attach_thread(size_t pid, entry_point_t entry_point, int argc, char* argv[]);
 
 /**
  * @brief creates a kernel task and adds it to the queue
