@@ -54,16 +54,17 @@ static void __attribute__((aligned(4096))) idle_task()
         asm("pause");
 }
 
-static inline uint64_t stack_push8(uint64_t rsp, uint8_t value)
+static uint64_t stack_push8(uint64_t rsp, uint8_t value)
 {
+    rsp -= 1;
     *(uint8_t*)rsp = value;
-    return --rsp;
+    return rsp;
 }
 
-static inline uint64_t stack_push64(uint64_t rsp, uint64_t value)
+static uint64_t stack_push64(uint64_t rsp, uint64_t value)
 {
-    *(uint64_t*)rsp = value;
     rsp -= 8;
+    *(uint64_t*)rsp = value;
     return rsp;
 }
 
@@ -80,23 +81,20 @@ static void* create_stack(uint64_t rip, int argc, char* argv[], uint64_t* rsp)
         size_t len = strlen(argv[i]);
 
         // pad to qwrod align
-        while((sp - len) % 8 != 0)
+        while((sp - (len + 1)) % 8 != 0)
             sp = stack_push8(sp, 0);
 
         sp = stack_push8(sp, 0); // null term
         for(int j = len - 1; j >= 0; j--)
             sp = stack_push8(sp, argv[i][j]);
 
-        argv[i] = (uint64_t)stack + (sp + 1 - (uint64_t)ph_stack);
+        argv[i] = (uint64_t)stack + (sp - (uint64_t)ph_stack);
     }
-    // pad to qwrod align
-    while(sp % 8 != 0)
-        sp = stack_push8(sp, 0);
 
     // push pointer to arguments
     for(int i = argc - 1; i >= 0; i--)
         sp = stack_push64(sp, (uint64_t)argv[i]);
-    uint64_t argv_ptr = sp + 8;
+    uint64_t argv_ptr = sp;
 
     // push context
     process_context_t* context = (process_context_t*)(sp -= sizeof(process_context_t));

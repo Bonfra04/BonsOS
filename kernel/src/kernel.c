@@ -30,10 +30,19 @@
 
 #include "unit_tests/unit_test.h"
 
+typedef struct system_info
+{
+    void* framebuffer;
+    size_t screen_width;
+    size_t sreen_height;
+} system_info_t;
+
+typedef char symbol[];
+
 paging_data_t kernel_paging;
 heap_data_t kernel_heap;
 
-typedef char symbol[];
+static system_info_t system_info;
 
 void init(bootinfo_t* bootinfo)
 {
@@ -86,6 +95,10 @@ void init(bootinfo_t* bootinfo)
 
     syscall_init();
 
+    system_info.framebuffer = bootinfo->framebuffer;
+    system_info.screen_width = bootinfo->screen_width;
+    system_info.sreen_height = bootinfo->screen_height;
+
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
@@ -97,7 +110,11 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    char* argv[] = { "Hello", "There", "General Kenoby" };
+    char fb[16], sw[16], sh[16];
+    ulltoa(system_info.framebuffer, fb, 16);
+    ulltoa(system_info.screen_width, sw, 16);
+    ulltoa(system_info.sreen_height, sh, 16);
+    char* argv[] = { fb, sw, sh };
 
     size_t pid = run_executable("a:/bin/init.elf", 3, argv, ELF);
 
