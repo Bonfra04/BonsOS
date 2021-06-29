@@ -2,7 +2,7 @@ DIR_ROOT := .
 
 include $(DIR_ROOT)/scripts/config.mk
 
-.PHONY: all build bootloader kernel libk libc programs mkdir clean image
+.PHONY: all build bootloader kernel libk libc programs libusr mkdir clean image
 
 all: build
 
@@ -12,10 +12,10 @@ build: mkdir bootloader kernel programs image
 bootloader:
 	@make $(MAKE_FLAGS) --directory=$(DIR_BOOT)
 
-kernel: libk libc
+kernel: libk libc libusr
 	@make $(MAKE_FLAGS) --directory=$(DIR_KERNEL)
 
-libk: libc
+libk:
 	@make $(MAKE_FLAGS) --directory=$(DIR_LIBK)
 
 libc:
@@ -24,6 +24,9 @@ libc:
 
 programs:
 	@make $(MAKE_FLAGS) --directory=$(DIR_PROGRAMS)
+
+libusr:
+	@make $(MAKE_FLAGS) --directory=$(DIR_LIBUSR)
 
 mkdir:
 	@mkdir -p bin

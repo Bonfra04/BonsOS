@@ -25,6 +25,7 @@
         "kernel/Makefile": true,
         "libc/Makefile": true,
         "libk/Makefile": true,
+        "libusr/Makefile": true,
         "boot/Makefile": true,
         "programs/Makefile": true,
         "programs/*/Makefile": true,

@@ -13,7 +13,8 @@ build:
 		-ffreestanding -fno-asynchronous-unwind-tables -mcmodel=large \
 		./src/main.c -o ./obj/main.o
 	@$(LD) -nostdlib -T $(DIR_ROOT)/img-content/bin/elf.ld -o init.elf -s \
-		./obj/entry.o ./obj/main.o $(DIR_ROOT)/bin-int/libc/libc.a -z max-page-size=0x1000
+		./obj/entry.o ./obj/main.o $(DIR_ROOT)/bin-int/libc/libc.a $(DIR_ROOT)/bin-int/libusr/libusr.a\
+		-z max-page-size=0x1000
 
 mkdir:
 	@mkdir -p ./obj
@@ -21,3 +22,4 @@ mkdir:
 clean:
 	@rm -rf ./init.bin
 	@rm -rf ./obj
+

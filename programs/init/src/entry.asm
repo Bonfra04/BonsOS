@@ -4,6 +4,7 @@ section .text
     global _start
     extern main
     extern initialize_standard_library
+    extern initialize_user_library
 
 _start:
     ; preserve arguments
@@ -11,6 +12,7 @@ _start:
     push rsi
 
     call initialize_standard_library
+    call initialize_user_library
     
     ; restore arguments
     pop rsi
