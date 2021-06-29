@@ -1,5 +1,6 @@
 #include <memory/heap.h>
 #include <panic.h>
+#include <string.h>
 
 static heap_data_t* current_heap;
 
@@ -54,6 +55,7 @@ void* heap_malloc(size_t size)
                 newRegion->length = currentRegion->length - (size + sizeof(heap_region_t));
                 newRegion->previous_region = currentRegion;
                 newRegion->next_region = currentRegion->next_region;
+                newRegion->free = true;
 
                 currentRegion->next_region = newRegion;
                 currentRegion->length = size + sizeof(heap_region_t);
