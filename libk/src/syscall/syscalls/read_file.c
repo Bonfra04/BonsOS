@@ -4,7 +4,7 @@
 
 uint64_t syscall_read_file(const syscall_parameter_t* params)
 {
-    file_t* file = (file_t*)params->r8;
+    file_t* file = (file_t*)vmm_translate_vaddr((void*)params->r8);
     void* buffer = vmm_translate_vaddr((void*) params->r9);
     size_t length = params->r10;
     return fsys_read_file(file, buffer, length);
