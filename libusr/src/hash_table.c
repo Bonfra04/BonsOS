@@ -161,6 +161,51 @@ void* __hash_table_at(hash_table_t hash_table, void* key_ptr)
     return 0;
 }
 
+void __hash_table_erase(hash_table_t hash_table, void* key_ptr)
+{
+    hash_table_data_t* ptable = get_ptable(hash_table);
+    uint64_t slot = hash(key_ptr, ptable->key_size) % ptable->capacity;
+
+    entry_t* entry = ptable->entries[slot];
+    if(entry == 0)
+        return;
+
+    entry_t* prev;
+    size_t idx = 0;
+    while(entry != 0)
+    {
+        if(memcmp(entry->key, key_ptr, ptable->key_size) == 0)
+        {
+            // first item and no next entry
+            if(entry->next_entry == 0 && idx == 0)
+                ptable->entries[slot] = 0;
+
+            // first item with a next entry
+            if(entry->next_entry != 0 && idx == 0)
+                ptable->entries[slot] = entry->next_entry;
+
+            // last item
+            if(entry->next_entry == 0 && idx != 0)
+                prev->next_entry = 0;
+
+            // middle item
+            if(entry->next_entry != 0 && idx != 0)
+                prev->next_entry = entry->next_entry;
+
+            free(entry->key);
+            free(entry->value);
+            free(entry);
+
+            ptable->length--;
+            return;
+        }
+
+        prev = entry;
+        entry = prev->next_entry;
+        idx++;
+    }
+}
+
 size_t hash_table_size(hash_table_t hash_table)
 {
     hash_table_data_t* ptable = get_ptable(hash_table);
