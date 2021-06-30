@@ -2,10 +2,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Qemu Debug",
+            "name": "Qemu Debug - Kernel",
             "type": "gdb",
             "request": "attach",
             "executable": "${workspaceFolder}/bin/kernel/kernel.sys",
+            "target": "tcp::9000",
+            "remote": true,
+            "cwd": "${workspaceFolder}",
+            "gdbpath": "gdb",
+            "preLaunchTask": "run qemu (debug)",
+            "postDebugTask": "stop qemu debug",
+            "autorun": [    // path issues
+                "set remotetimeout 15",
+                "directory libk",
+                "directory libc",
+                "directory kernel"
+            ]
+        },
+        {
+            "name": "Qemu Debug - Init",
+            "type": "gdb",
+            "request": "attach",
+            "executable": "${workspaceFolder}/img-content/bin/init.elf",
             "target": "tcp::9000",
             "remote": true,
             "cwd": "${workspaceFolder}",

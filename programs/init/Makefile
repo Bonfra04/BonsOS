@@ -1,4 +1,5 @@
 DIR_ROOT := ../..
+
 CC := $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
 LD := $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-ld
 
@@ -7,12 +8,12 @@ LD := $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-ld
 all: clean mkdir build
 
 build:
-	@nasm -f elf64 ./src/entry.asm -o ./obj/entry.o
-	@$(CC) -std=gnu11 -c -I $(DIR_ROOT)/libc/include -Qn \
+	@nasm -f elf64 ./src/entry.asm -o ./obj/entry.o -F dwarf -g 
+	@$(CC) -std=gnu11 -c -I $(DIR_ROOT)/libc/include -Qn -g \
 		-m64 -mno-red-zone -mno-mmx -mfpmath=sse -masm=intel \
 		-ffreestanding -fno-asynchronous-unwind-tables -mcmodel=large \
 		./src/main.c -o ./obj/main.o
-	@$(LD) -nostdlib -T $(DIR_ROOT)/img-content/bin/elf.ld -o init.elf -s \
+	@$(LD) -nostdlib -T $(DIR_ROOT)/img-content/bin/elf.ld -o init.elf \
 		./obj/entry.o ./obj/main.o $(DIR_ROOT)/bin-int/libc/libc.a $(DIR_ROOT)/bin-int/libusr/libusr.a\
 		-z max-page-size=0x1000
 
