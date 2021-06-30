@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define get_pqueue(queue) (queue_t*)queue
+#define get_pqueue(queue) ((queue_data_t*)queue)
 
 typedef struct node
 {
@@ -11,56 +11,57 @@ typedef struct node
     void* value;
 } __attribute__ ((packed)) node_t;
 
-typedef struct queue
+typedef struct queue_data
 {
     node_t* front;
     node_t* back;
     size_t length;
     size_t elem_size;
-} queue_t;
+} queue_data_t;
 
-void* __queue_create(size_t elem_size)
+queue_t __queue_create(size_t elem_size)
 {
-    queue_t* queue = (queue_t*)malloc(sizeof(queue_t));
-    memset(queue, 0, sizeof(queue_t));
+    queue_data_t* queue = (queue_data_t*)malloc(sizeof(queue_data_t));
+    memset(queue, 0, sizeof(queue_data_t));
     queue->elem_size = elem_size;
+    return (queue_t)queue;
 }
 
-void queue_destroy(void* queue)
+void queue_destroy(queue_t queue)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     while(pqueue->length)
         queue_pop(queue);
     free(pqueue);
 }
 
-size_t queue_size(void* queue)
+size_t queue_size(queue_t queue)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     return pqueue->length;
 }
 
-bool queue_empty(void* queue)
+bool queue_empty(queue_t queue)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     return pqueue->length == 0;
 }
 
-void* queue_front(void* queue)
+void* queue_front(queue_t queue)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     return pqueue->front->value;
 }
 
-void* queue_back(void* queue)
+void* queue_back(queue_t queue)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     return pqueue->back->value;
 }
 
-void __queue_push(void* queue, const void* value_ptr)
+void __queue_push(queue_t queue, const void* value_ptr)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     node_t* node = (node_t*)malloc(sizeof(node_t));
     if(pqueue->back == 0)
     {
@@ -80,9 +81,9 @@ void __queue_push(void* queue, const void* value_ptr)
     pqueue->length++;
 }
 
-void queue_pop(void* queue)
+void queue_pop(queue_t queue)
 {
-    queue_t* pqueue = get_pqueue(queue);
+    queue_data_t* pqueue = get_pqueue(queue);
     if(pqueue->length == 0)
         return;
     
