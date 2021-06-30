@@ -24,6 +24,7 @@
 #include <x86/gdt.h>
 #include <syscall/syscall.h>
 #include <executable/executable.h>
+#include <filesystem/pipefs.h>
 
 #include "bootinfo.h"
 #include "dbg/dbg.h"
@@ -66,6 +67,9 @@ void init(bootinfo_t* bootinfo)
     size_t mem_2mball_size = (memorySize * 1024) + 0x200000 - (memorySize * 1024) % 0x200000;
     kernel_paging = paging_init(mem_2mball_size);
 
+    kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
+    heap_activate(&kernel_heap);
+
     screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
     renderer_init();
 
@@ -83,8 +87,7 @@ void init(bootinfo_t* bootinfo)
 
     disk_manager_init();
 
-    kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
-    heap_activate(&kernel_heap);
+    pipefs_mount(0);
 
     renderer_load_font("a:/fonts/zapvga16.psf");
 

@@ -3,6 +3,7 @@
 #include <filesystem/fat16.h>
 #include <filesystem/ttyfs.h>
 #include <filesystem/kbfs.h>
+#include <filesystem/pipefs.h>
 
 #define DEVICE_MAX 26
 
@@ -42,12 +43,14 @@ file_t fsys_open_file(const char* filename, const char* mode)
         return invalid;
 
     char* fname = (char*)filename;
-    char device = 'a';
+    char device;
     if (filename[1] == ':')
     {
         device = filename[0];
         fname += 2;
     }
+    else
+        return pipefs_open_file(0, filename, mode);
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
@@ -61,7 +64,13 @@ file_t fsys_open_file(const char* filename, const char* mode)
 
 bool fsys_close_file(file_t* file)
 {
-    if (!file || file->flags != FS_FILE)
+    if(!file)
+        return false;
+
+    if(file->flags == FS_PIPE)
+        return pipefs_close_file(0, file);
+
+    if(file->flags != FS_FILE)
         return false;
 
     file_system_t* fs = file_systems[file->device - 'a'];
@@ -77,7 +86,13 @@ size_t fsys_read_file(file_t* file, void* buffer, size_t length)
     if(file == (file_t*)FSYS_STDIN)
         return kbfs_read_file(0, file, buffer, length);
 
-    if (!file || file->flags != FS_FILE)
+    if(!file)
+        return 0;
+
+    if(file->flags == FS_PIPE)
+        return pipefs_read_file(0, file, buffer, length);
+
+    if(file->flags != FS_FILE)
         return 0;
 
     file_system_t* fs = file_systems[file->device - 'a'];
@@ -93,7 +108,13 @@ size_t fsys_write_file(file_t* file, void* buffer, size_t length)
     if(file == (file_t*)FSYS_STDOUT || file == (file_t*)FSYS_STDERR)
         return ttyfs_write_file(0, file, buffer, length);
 
-    if (!file || file->flags != FS_FILE)
+    if(!file)
+        return 0;
+
+    if(file->flags == FS_PIPE)
+        return pipefs_write_file(0, file, buffer, length);
+
+    if(file->flags != FS_FILE)
         return 0;
     
     file_system_t* fs = file_systems[file->device - 'a'];
@@ -110,12 +131,14 @@ bool fsys_create_file(const char* filename)
         return false;
 
     char* fname = (char*)filename;
-    char device = 'a';
+    char device;
     if (filename[1] == ':')
     {
         device = filename[0];
         fname += 2;
     }
+    else
+        return pipefs_create_file(0, filename);
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
@@ -131,12 +154,14 @@ bool fsys_delete_file(const char* filename)
         return false;
 
     char* fname = (char*)filename;
-    char device = 'a';
+    char device ;
     if (filename[1] == ':')
     {
         device = filename[0];
         fname += 2;
     }
+    else
+        return pipefs_delete_file(0, filename);
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
@@ -152,12 +177,14 @@ bool fsys_create_dir(const char* dirpath)
         return false;
 
     char* dpath = (char*)dirpath;
-    char device = 'a';
+    char device;
     if (dirpath[1] == ':')
     {
         device = dirpath[0];
         dpath += 2;
     }
+    else
+        return false;
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
@@ -173,12 +200,14 @@ bool fsys_delete_dir(const char* dirpath)
         return false;
 
     char* dpath = (char*)dirpath;
-    char device = 'a';
+    char device;
     if (dirpath[1] == ':')
     {
         device = dirpath[0];
         dpath += 2;
     }
+    else
+        return false;
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
@@ -241,12 +270,14 @@ bool fsys_exists_file(const char* filename)
         return false;
 
     char* fname = (char*)filename;
-    char device = 'a';
+    char device;
     if (filename[1] == ':')
     {
         device = filename[0];
         fname += 2;
     }
+    else
+        return pipefs_exists_file(0, filename);
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)
@@ -262,12 +293,14 @@ bool fsys_exists_dir(const char* dirpath)
         return false;
 
     char* dpath = (char*)dirpath;
-    char device = 'a';
+    char device;
     if (dirpath[1] == ':')
     {
         device = dirpath[0];
         dpath += 2;
     }
+    else
+        return false;
 
     file_system_t* fs = file_systems[device - 'a'];
     if (!fs)

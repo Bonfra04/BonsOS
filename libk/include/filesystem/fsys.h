@@ -4,9 +4,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define FS_INVALID     0b00
-#define FS_FILE        0b01
-#define FS_DIRECTORY   0b10
+#define FS_INVALID      0b00
+#define FS_FILE         0b01
+#define FS_DIRECTORY    0b10
+#define FS_PIPE         0b11
 
 #define FSYS_STDOUT 1
 #define FSYS_STDIN 2
