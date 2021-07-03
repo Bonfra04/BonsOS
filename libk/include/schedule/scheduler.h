@@ -80,3 +80,8 @@ void thread_terminate();
  * @brief stops the execution of the current process
  */
 void process_terminate();
+
+/**
+ * @brief skip the time period of this process
+ */
+void scheduler_force_skip();

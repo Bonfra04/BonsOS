@@ -30,7 +30,7 @@ static uint64_t bitmap_first_free()
 {
     for(uint64_t i = 0; i < max_pages / 32; i++)
         if(bitmap[i] != UINT32_MAX)
-            for(uint8_t j = 0; j < 32; j++)
+            for(uint64_t j = 0; j < 32; j++)
                 if(!(bitmap[i] & (1 << j)))
                     return i * 32 + j;
     return -1;
@@ -45,12 +45,12 @@ static uint64_t bitmap_first_frees(size_t size)
 
     for(uint64_t i = 0; i < max_pages / 32; i++)
         if(bitmap[i] != UINT32_MAX)
-            for(uint8_t j = 0; j < 32; j++)
+            for(uint64_t j = 0; j < 32; j++)
             {
-                uint32_t bit = 1 << j;
+                uint64_t bit = 1 << j;
                 if(!(bitmap[i] & bit))
                 {
-                    uint32_t startingBit = i * 32 + bit;
+                    uint64_t startingBit = i * 32 + j;
                     size_t free = 0;
                     for(size_t count = 0; count <= size; count++)
                     {
@@ -74,7 +74,7 @@ void pfa_init_region(uint64_t base_address, uint64_t region_length)
     while(pages--)
     {
         bitmap_unset(align++);
-        used_pages++;
+        used_pages--;
     }
 }
 
@@ -95,9 +95,9 @@ void pfa_init(void* bitmap_addr)
     bitmap = bitmap_addr;
 
     max_pages = memory_map.total_memory * 1024 / PFA_PAGE_SIZE;
-    used_pages = 0;
 
     // By default all memory is in use
+    used_pages = max_pages;
     memset(bitmap, 0xFF, max_pages / PFA_PAGES_PER_BYTE);
 
     for(uint32_t i = 0; i < memory_map.num_entries; i++)

@@ -4,6 +4,7 @@
 #include <x86/cpu.h>
 #include <dump.h>
 #include <stdio.h>
+#include <schedule/scheduler.h>
 
 static const char *exceptionstr[] =
 {
@@ -82,6 +83,8 @@ static void isr_fatal(const interrupt_context_t* context)
     printf("%s\n\n", exstr);
 
     dump_context(context);
+
+    printf("\nCurrent process: %llu", get_current_thread()->parent->pid);
 
     hang();
 }
