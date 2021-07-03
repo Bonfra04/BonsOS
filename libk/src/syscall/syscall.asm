@@ -98,9 +98,6 @@ syscall_handle:
     call rax
     mov [.return_val], rax
 
-    ; pop parameters
-    add rsp, 6 * 8  ; 6 qwords
-
     ; disable interrupts
     cli
 

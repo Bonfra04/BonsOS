@@ -51,7 +51,7 @@ static process_t* kernel_process;
 static void __attribute__((aligned(4096))) idle_task()
 {
     while(true)
-        asm("pause");
+        scheduler_force_skip();
 }
 
 static uint64_t stack_push8(uint64_t rsp, uint8_t value)
@@ -70,10 +70,10 @@ static uint64_t stack_push64(uint64_t rsp, uint64_t value)
 
 static void* create_stack(uint64_t rip, int argc, char* argv[], uint64_t* rsp)
 {
-    void* stack = vmm_alloc_page(PAGE_PRIVILEGE_USER);
+    void* stack = vmm_alloc_pages(PAGE_PRIVILEGE_USER, 4);
     void* ph_stack = vmm_translate_vaddr(stack);
 
-    uint64_t sp = (uint64_t)ph_stack + pfa_page_size();
+    uint64_t sp = (uint64_t)ph_stack + pfa_page_size() * 4;
 
     // push arguments
     for(int i = 0; i < argc; i++)
@@ -203,6 +203,7 @@ void scheduler_initialize()
 void schedule()
 {
     pit_register_callback(schedule_isr);
+    scheduler_force_skip();
 }
 
 size_t create_process(entry_point_t entry_point, int argc, char* argv[], size_t size)
@@ -261,7 +262,7 @@ bool attach_thread(size_t pid, entry_point_t entry_point, int argc, char* argv[]
 
     thread->parent = process;
     thread->stack_base = create_stack((uint64_t)entry_point, argc, argv, &thread->rsp);
-    thread->kernel_rsp = vmm_alloc_page(PAGE_PRIVILEGE_KERNEL) + pfa_page_size();
+    thread->kernel_rsp = vmm_alloc_pages(PAGE_PRIVILEGE_KERNEL, 4) + pfa_page_size() * 4;
 
     return true;
 }
@@ -310,8 +311,8 @@ void thread_terminate()
 
     vmm_set_paging(process->pagign);
 
-    vmm_free_page(thread->stack_base);
-    vmm_free_page(thread->kernel_rsp - pfa_page_size());
+    vmm_free_pages(thread->stack_base, 4);
+    vmm_free_pages(thread->kernel_rsp - pfa_page_size() * 4, 4);
     memset(thread, 0, sizeof(thread_t));
     process->thread_count--;
     if(process->thread_count == 0)
@@ -345,6 +346,10 @@ void process_terminate()
 
     atomic_end();
 
-    while(1)
-        asm("pause");
+    scheduler_force_skip();
+}
+
+inline void scheduler_force_skip()
+{
+    asm("int 0x20");
 }

@@ -129,7 +129,4 @@ void main(bootinfo_t* bootinfo)
 
     printf("Running OS...\n");
     schedule();
-
-    while(1)
-        asm("pause");
 }
