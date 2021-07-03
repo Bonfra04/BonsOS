@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <syscalls.h>
+
 typedef struct system_info
 {
     void* framebuffer;
@@ -21,7 +23,8 @@ int main(int argc, char* argv[])
 
     printf("%X, %X, %X", system_info.framebuffer, system_info.screen_width, system_info.sreen_height);
 
-    uint64_t sys(uint64_t rax, uint64_t r8, uint64_t r9, uint64_t r10, uint64_t r12, uint64_t r13);
-    sys(2, "a:/bin/desktop.elf", 1, 0, 0, 0);
+    char* args[] = { "Hello there" };
+
+    run_executable("a:/bin/desktop.elf", 1, args, ELF);
     return 0;
 }
