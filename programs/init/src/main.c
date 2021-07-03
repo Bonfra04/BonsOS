@@ -20,5 +20,8 @@ int main(int argc, char* argv[])
     system_info.sreen_height = strtoull(argv[2], 0, 16);
 
     printf("%X, %X, %X", system_info.framebuffer, system_info.screen_width, system_info.sreen_height);
+
+    uint64_t sys(uint64_t rax, uint64_t r8, uint64_t r9, uint64_t r10, uint64_t r12, uint64_t r13);
+    sys(2, "a:/bin/desktop.elf", 1, 0, 0, 0);
     return 0;
 }
