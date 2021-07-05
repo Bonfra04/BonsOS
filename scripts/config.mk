@@ -8,10 +8,11 @@ DIR_BOOT	:= $(DIR_ROOT)/boot
 DIR_KERNEL	:= $(DIR_ROOT)/kernel
 DIR_LIBK	:= $(DIR_ROOT)/libk
 DIR_LIBC	:= $(DIR_ROOT)/libc
+DIR_LIBUSR	:= $(DIR_ROOT)/libusr
 DIR_SCRIPTS	:= $(DIR_ROOT)/scripts
 DIR_PROGRAMS:= $(DIR_ROOT)/programs
 
-DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include
+DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libusr/include
 
 CC		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
 CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -Qn -g \
