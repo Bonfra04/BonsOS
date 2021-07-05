@@ -64,4 +64,5 @@ void syscall_init()
     syscall_register(7, syscall_file_open);
     syscall_register(8, syscall_file_close);
     syscall_register(9, syscall_file_remove);
+    syscall_register(10, syscall_map_mem);
 }

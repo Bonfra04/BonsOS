@@ -77,3 +77,11 @@ uint64_t syscall_file_close(const syscall_parameter_t* params);
  * @return success
  */
 uint64_t syscall_file_remove(const syscall_parameter_t* params);
+
+/**
+ * @brief maps a physical memory area to a virtual one
+ * @param[in] r8 physicall memory address
+ * @param[in] r9 size of the memory area in bytes
+ * @return virtual memory address
+ */
+uint64_t syscall_map_mem(const syscall_parameter_t* params);
