@@ -1,6 +1,7 @@
 {
     "configurations": [
         {
+            "intelliSenseMode": "gcc-x64",
             "name": "BonsOS",
             "includePath": [
                 "${workspaceFolder}/**",

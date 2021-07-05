@@ -4,7 +4,7 @@
         {
             "label": "run qemu (debug)",
             "type": "shell",
-            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -d int -D qemu.log -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial",
+            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -d int -D qemu.log -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial | echo .",
             "isBackground": true,
             "presentation": {
                 "clear": true,
@@ -90,7 +90,8 @@
             "label": "qemu monitor",
             "command": "./scripts/pipe_console.sh",
             "args": [
-                "/tmp/qemu-monitor"
+                "/tmp/qemu-monitor",
+                "| echo ."
             ],
             "isBackground": true,
             "presentation": {
@@ -122,7 +123,8 @@
             "label": "qemu serial",
             "command": "./scripts/pipe_console.sh",
             "args": [
-                "/tmp/qemu-serial"
+                "/tmp/qemu-serial",
+                "| echo ."
             ],
             "isBackground": true,
             "presentation": {

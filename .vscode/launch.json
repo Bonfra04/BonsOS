@@ -13,9 +13,10 @@
             "preLaunchTask": "run qemu (debug)",
             "postDebugTask": "stop qemu debug",
             "autorun": [    // path issues
-                "set remotetimeout 15",
+                "set remotetimeout 35",
                 "directory libk",
                 "directory libc",
+                "directory libusr",
                 "directory kernel"
             ]
         },
@@ -32,9 +33,27 @@
             "postDebugTask": "stop qemu debug",
             "autorun": [    // path issues
                 "set remotetimeout 15",
-                "directory libk",
                 "directory libc",
-                "directory kernel"
+                "directory libusr",
+                "directory programs/init"
+            ]
+        },
+        {
+            "name": "Qemu Debug - Desktop",
+            "type": "gdb",
+            "request": "attach",
+            "executable": "${workspaceFolder}/img-content/bin/desktop.elf",
+            "target": "tcp::9000",
+            "remote": true,
+            "cwd": "${workspaceFolder}",
+            "gdbpath": "gdb",
+            "preLaunchTask": "run qemu (debug)",
+            "postDebugTask": "stop qemu debug",
+            "autorun": [    // path issues
+                "set remotetimeout 15",
+                "directory libc",
+                "directory libusr",
+                "directory programs/desktop"
             ]
         }
     ],
