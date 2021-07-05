@@ -36,6 +36,7 @@ typedef struct system_info
     void* framebuffer;
     size_t screen_width;
     size_t sreen_height;
+    size_t screen_pitch;
 } system_info_t;
 
 typedef char symbol[];
@@ -101,6 +102,7 @@ void init(bootinfo_t* bootinfo)
     system_info.framebuffer = bootinfo->framebuffer;
     system_info.screen_width = bootinfo->screen_width;
     system_info.sreen_height = bootinfo->screen_height;
+    system_info.screen_pitch = bootinfo->screen_pitch;
 
     int bits = sizeof(void*) * 8;
     printf("Succesfully booted BonsOS %d bit.\n", bits);
@@ -113,13 +115,14 @@ void main(bootinfo_t* bootinfo)
     if(!execute_tests())
         return;
 
-    char fb[16], sw[16], sh[16];
+    char fb[16], sw[16], sh[16], sp[16];
     ulltoa(system_info.framebuffer, fb, 16);
     ulltoa(system_info.screen_width, sw, 16);
     ulltoa(system_info.sreen_height, sh, 16);
-    char* argv[] = { fb, sw, sh };
+    ulltoa(system_info.screen_pitch, sp, 16);
+    char* argv[] = { fb, sw, sh, sp };
 
-    size_t pid = run_executable("a:/bin/init.elf", 3, argv, ELF);
+    size_t pid = run_executable("a:/bin/init.elf", 4, argv, ELF);
 
     if(pid == 0)
     {
