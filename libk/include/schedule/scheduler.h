@@ -5,12 +5,20 @@
 #include <x86/cpu.h>
 #include <memory/heap.h>
 #include <memory/paging.h>
+#include <queue.h>
 
 #define MAX_THREADS 32
 
 typedef void(*entry_point_t)(void);
 
 typedef struct process process_t;
+
+typedef struct msg
+{
+    uint8_t id;
+    uint8_t data[31];
+    uint64_t sender;
+} __attribute__ ((packed)) msg_t;
 
 typedef struct thread
 {
@@ -28,6 +36,7 @@ typedef struct process
     size_t thread_count;
     size_t current_thread;
     thread_t threads[MAX_THREADS];
+    queue_t msg_queue;
 } __attribute__ ((packed))process_t;
 
 /**
@@ -85,3 +94,17 @@ void process_terminate();
  * @brief skip the time period of this process
  */
 void scheduler_force_skip();
+
+/**
+ * @brief enqueue a message to a process
+ * @param[in] pid id of the process
+ * @param[in] msg message to send
+ */
+void scheduler_enqueue_message(uint64_t pid, msg_t* msg);
+
+/**
+ * @brief fetch a message from the process queue
+ * @param[in] pid id of the process
+ * @param[out] msg address to store the message in
+ */
+void scheduler_fetch_message(uint64_t pid, msg_t* msg);

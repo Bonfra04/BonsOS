@@ -227,6 +227,8 @@ size_t create_process(entry_point_t entry_point, int argc, char* argv[], size_t 
     //void* pages = vmm_assign_pages(PAGE_PRIVILEGE_USER, size, entry_point);
     attach_thread(process->pid, pages, argc, argv);
 
+    process->msg_queue = queue_create(msg_t);
+
     return slot;
 }
 
@@ -327,6 +329,8 @@ void process_terminate()
 
     process_t* process = &(processes[current_process]);
 
+    queue_destroy(process->msg_queue);
+
     vmm_set_paging(process->pagign);
 
     for(size_t i = 0; i < MAX_THREADS; i++)
@@ -352,4 +356,24 @@ void process_terminate()
 inline void scheduler_force_skip()
 {
     asm("int 0x20");
+}
+
+mutex_t msg_mutex;
+
+void scheduler_enqueue_message(uint64_t pid, msg_t* msg)
+{
+    mutex_acquire(&msg_mutex);
+    process_t* process = find_process(pid);
+    queue_push(process->msg_queue, *msg);
+    mutext_release(&msg_mutex);
+}
+
+void scheduler_fetch_message(uint64_t pid, msg_t* msg)
+{
+    mutex_acquire(&msg_mutex);
+    process_t* process = find_process(pid);
+    msg_t* new_msg = queue_front(process->msg_queue);
+    memcpy(msg, new_msg, sizeof(msg_t));
+    queue_pop(process->msg_queue);
+    mutext_release(&msg_mutex);
 }

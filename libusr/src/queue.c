@@ -50,6 +50,8 @@ bool queue_empty(queue_t queue)
 void* queue_front(queue_t queue)
 {
     queue_data_t* pqueue = get_pqueue(queue);
+    if(pqueue->length == 0)
+        return 0;
     return pqueue->front->value;
 }
 

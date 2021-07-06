@@ -85,3 +85,18 @@ uint64_t syscall_file_remove(const syscall_parameter_t* params);
  * @return virtual memory address
  */
 uint64_t syscall_map_mem(const syscall_parameter_t* params);
+
+/**
+ * @brief send a message to another process
+ * @param[in] r8 pid of the process to send the message to
+ * @param[in] r9 pointer to the message
+ * @return ignored
+ */
+uint64_t syscall_msg_send(const syscall_parameter_t* params);
+
+/**
+ * @brief get a message from the queue, if no message is available zero is returned
+ * @param[out] r8 pointer to the message to populate
+ * @return pid of the sender
+ */
+uint64_t syscall_msg_fetch(const syscall_parameter_t* params);
