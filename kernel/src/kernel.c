@@ -25,6 +25,7 @@
 #include <syscall/syscall.h>
 #include <executable/executable.h>
 #include <filesystem/pipefs.h>
+#include <device/mouse.h>
 
 #include "bootinfo.h"
 #include "dbg/dbg.h"
@@ -79,6 +80,7 @@ void init(bootinfo_t* bootinfo)
 
     tty_init();
     kb_init();
+    mouse_init(bootinfo->screen_width, bootinfo->screen_height);
 
     enable_interrupts();
 

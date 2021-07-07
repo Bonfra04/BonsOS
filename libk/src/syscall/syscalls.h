@@ -100,3 +100,11 @@ uint64_t syscall_msg_send(const syscall_parameter_t* params);
  * @return pid of the sender
  */
 uint64_t syscall_msg_fetch(const syscall_parameter_t* params);
+
+/**
+ * @brief retrieves the absolute position of the mouse
+ * @param[out] r8 x coordinate
+ * @param[out] r9 y coordinate
+ * @return ignored
+ */
+uint64_t syscall_get_mouse(const syscall_parameter_t* params);

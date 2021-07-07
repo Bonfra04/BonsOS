@@ -22,3 +22,5 @@ void* map_mem(void* ph_mem, size_t size);
 
 void msg_send(uint64_t pid, msg_t* msg);
 uint64_t msg_fetch(msg_t* msg);
+
+void get_mouse(uint64_t* x, uint64_t* y);

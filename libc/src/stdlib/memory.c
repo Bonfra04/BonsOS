@@ -1,5 +1,9 @@
 #include <stdlib.h>
-#include <memory/heap.h>
+#ifdef KERNEL_BUILD
+    #include <memory/heap.h>
+#else
+    #include <heap.h>
+#endif
 
 void* malloc(size_t size)
 {

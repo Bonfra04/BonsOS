@@ -50,6 +50,9 @@ void screen_clear(int color)
 
 void screen_plot_pixel(size_t x, size_t y, int color)
 {
+    if(x >= screen_width || y >= screen_height)
+        return;
+
     uint32_t pixel_offset = y * screen_pitch + (x * (SCREEN_BPP / 8));
     *(uint32_t*)(pixel_offset + framebuffer) = color;
 }

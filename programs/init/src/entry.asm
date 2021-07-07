@@ -5,6 +5,7 @@ section .text
     extern main
     extern initialize_standard_library
     extern initialize_user_library
+    extern heap_init
 
 _start:
     ; preserve arguments
@@ -12,8 +13,9 @@ _start:
     push rsi
 
     call initialize_standard_library
-    ;call initialize_user_library
-    
+    call initialize_user_library
+    call heap_init
+
     ; restore arguments
     pop rsi
     pop rdi
