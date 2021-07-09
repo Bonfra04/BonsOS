@@ -61,6 +61,17 @@ void fill_rect(uint64_t x, uint64_t y, uint64_t width, uint64_t height, uint32_t
             renderer_put_pixel(_x, _y, color);
 }
 
+void draw_image(tga_t* image, uint64_t _x, uint64_t _y)
+{
+    for(int y = 0; y < image->height; y++)
+        for(int x = 0; x < image->width; x++)
+        {
+            uint32_t rgba = image->data[x + y * image->width];
+            if(rgba & 0xFF000000)
+                renderer_put_pixel(_x + x, _y + y, rgba);
+        }
+}
+
 inline void swap_buffers()
 {
     memcpy(display_info.framebuffer, backbuffer, display_info.height * display_info.pitch);
