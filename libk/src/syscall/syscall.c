@@ -68,4 +68,5 @@ void syscall_init()
     syscall_register(11, syscall_msg_send);
     syscall_register(12, syscall_msg_fetch);
     syscall_register(13, syscall_get_mouse);
+    syscall_register(14, syscall_is_key_pressed);
 }

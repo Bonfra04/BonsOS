@@ -108,3 +108,10 @@ uint64_t syscall_msg_fetch(const syscall_parameter_t* params);
  * @return ignored
  */
 uint64_t syscall_get_mouse(const syscall_parameter_t* params);
+
+/**
+ * @brief checks if a key is pressed
+ * @param[in] r8 key to check
+ * @return true if key is pressed, otherwise false
+ */
+uint64_t syscall_is_key_pressed(const syscall_parameter_t* params);
