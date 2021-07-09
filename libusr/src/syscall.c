@@ -7,6 +7,7 @@ uint64_t sys(uint64_t rax, uint64_t r8, uint64_t r9, uint64_t r10, uint64_t r12,
 #define SYSCALL_SEND_MSG 11
 #define SYSCALL_FETCH_MSG 12
 #define SYSCALL_GET_MOUSE 13
+#define SYSCALL_GET_KEY 14
 
 uint64_t run_executable(const char* path, int argc, char* argv[], executable_format_t format)
 {
@@ -31,4 +32,9 @@ uint64_t msg_fetch(msg_t* msg)
 void get_mouse(uint64_t* x, uint64_t* y)
 {
     sys(SYSCALL_GET_MOUSE, x, y, 0, 0, 0);
+}
+
+bool is_key_pressed(uint32_t key)
+{
+    return sys(SYSCALL_GET_KEY, key, 0, 0, 0, 0);
 }
