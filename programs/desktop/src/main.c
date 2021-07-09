@@ -40,17 +40,10 @@ void update()
     get_mouse(&mouse_x, &mouse_y);
 }
 
-uint32_t color = 0xFF33E6FF;
-
 void render()
 {
-    int height = display_height() / 20;
-    for(int x = 0; x < display_width(); x++)
-        for(int y = display_height() - height; y < display_height(); y++)
-            renderer_put_pixel(x, y, color);
+    int bar_height = display_height() / 20;
+    fill_rect(0, display_height() - bar_height, display_width(), bar_height, 0xFF33E6FF);
 
     draw_image(&cursor, mouse_x, mouse_y);
-
-    if(is_key_pressed(VK_MOUSE_LEFT))
-        color = 0xFFFFFFFF;
 }
