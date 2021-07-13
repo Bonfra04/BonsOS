@@ -17,7 +17,8 @@
                 "directory libk",
                 "directory libc",
                 "directory libusr",
-                "directory kernel"
+                "directory kernel",
+                "set output-radix 16"
             ]
         },
         {
@@ -32,10 +33,13 @@
             "preLaunchTask": "run qemu (debug)",
             "postDebugTask": "stop qemu debug",
             "autorun": [    // path issues
+                "add-symbol-file bin/kernel/kernel.sys",
                 "set remotetimeout 15",
                 "directory libc",
                 "directory libusr",
-                "directory programs/init"
+                "directory kernel",
+                "directory programs/init",
+                "set output-radix 16"
             ]
         },
         {
@@ -50,10 +54,34 @@
             "preLaunchTask": "run qemu (debug)",
             "postDebugTask": "stop qemu debug",
             "autorun": [    // path issues
+                "add-symbol-file bin/kernel/kernel.sys",
                 "set remotetimeout 15",
                 "directory libc",
                 "directory libusr",
-                "directory programs/desktop"
+                "directory kernel",
+                "directory programs/desktop",
+                "set output-radix 16"
+            ]
+        },
+        {
+            "name": "Qemu Debug - Taskbar",
+            "type": "gdb",
+            "request": "attach",
+            "executable": "${workspaceFolder}/img-content/bin/taskbar.elf",
+            "target": "tcp::9000",
+            "remote": true,
+            "cwd": "${workspaceFolder}",
+            "gdbpath": "gdb",
+            "preLaunchTask": "run qemu (debug)",
+            "postDebugTask": "stop qemu debug",
+            "autorun": [    // path issues
+                "add-symbol-file bin/kernel/kernel.sys",
+                "set remotetimeout 15",
+                "directory libc",
+                "directory libusr",
+                "directory kernel",
+                "directory programs/taskbar",
+                "set output-radix 16"
             ]
         }
     ],

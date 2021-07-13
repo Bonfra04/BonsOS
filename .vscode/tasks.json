@@ -2,9 +2,22 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "kill qemu",
+            "type": "shell",
+            "command": "pkill -f qemu",
+            "presentation": {
+                "echo": false,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
             "label": "run qemu (debug)",
             "type": "shell",
-            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -d int -D qemu.log -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial | echo .",
+            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial | echo .",
             "isBackground": true,
             "presentation": {
                 "clear": true,
@@ -16,8 +29,8 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "qemu monitor",
-                "qemu serial",
+                //"qemu monitor",
+                //"qemu serial",
                 "compile"
             ],
             "problemMatcher": [
@@ -42,10 +55,7 @@
             "label": "stop qemu debug",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "close current terminal",
-                "close current terminal",
-                "close current terminal",
-                "close current terminal"
+                "kill qemu"
             ],
             "problemMatcher": []
         },
