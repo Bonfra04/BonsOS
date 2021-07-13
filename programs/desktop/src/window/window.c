@@ -1,5 +1,7 @@
 #include "window.h"
 #include <string.h>
+#include <stdlib.h>
+#include <syscalls.h>
 
 static window_t windows[MAX_WINDOW];
 
@@ -48,8 +50,8 @@ void* window_resize(uint64_t window_id, size_t width, size_t height)
     window_t* window = &windows[window_id];
     if(window->framebuffer != NULL)
         free(window->framebuffer);
-    window->framebuffer = 1; //= malloc(width * height * sizeof(uint32_t));
-    //memset(window->framebuffer, 0xFF, width * height * sizeof(uint32_t));
+    window->framebuffer = map_mem(0, width * height * sizeof(uint32_t));
+    memset(window->framebuffer, 0, width * height * sizeof(uint32_t));
     window->width = width;
     window->height = height;
 

@@ -1,10 +1,11 @@
 #include "msg.h"
 #include "../window/window.h"
 
-#define MSG_CREATE_WND 1
-#define RSP_CREATE_WND 2
-#define MSG_RESIZE_WND 3
-#define RSP_RESIZE_WND 4
+#define MSG_CREATE_WND  1
+#define RSP_CREATE_WND  2
+#define MSG_RESIZE_WND  3
+#define RSP_RESIZE_WND  4
+#define MSG_MOVE_WND    5
 
 typedef struct create_wnd_msg
 {
@@ -27,6 +28,12 @@ typedef struct resize_wnd_rsp
     void* framebuffer;
 } __attribute__ ((packed)) resize_wnd_rsp_t;
 
+typedef struct move_wnd_msg
+{
+    uint64_t wnd_id;
+    size_t x, y;
+} __attribute__ ((packed)) move_wnd_msg_t;
+
 static void handle_create_wnd(uint64_t sender, msg_t* msg)
 {
     create_wnd_msg_t* create_wnd_msg = (create_wnd_msg_t*)msg->data;
@@ -43,8 +50,15 @@ static void handle_resize_wnd(uint64_t sender, msg_t* msg)
     msg_t response;
     response.id = RSP_RESIZE_WND;
     resize_wnd_rsp_t* resize_wnd_rsp = (resize_wnd_rsp_t*)response.data;
-    resize_wnd_rsp->framebuffer = window_resize(resize_wnd_msg->wnd_id, resize_wnd_msg->width, resize_wnd_msg->height);
+    void* fb = window_resize(resize_wnd_msg->wnd_id, resize_wnd_msg->width, resize_wnd_msg->height);
+    resize_wnd_rsp->framebuffer = map_mem(fb, 0);
     msg_send(sender, &response);
+}
+
+static void handle_move_wnd(uint64_t sender, msg_t* msg)
+{
+    move_wnd_msg_t* move_wnd_msg = (move_wnd_msg_t*)msg->data;
+    window_move(move_wnd_msg->wnd_id, move_wnd_msg->x, move_wnd_msg->y);
 }
 
 void msg_process(uint64_t sender, msg_t* msg)
@@ -56,6 +70,9 @@ void msg_process(uint64_t sender, msg_t* msg)
             break;
         case MSG_RESIZE_WND:
             handle_resize_wnd(sender, msg);
+            break;
+        case MSG_MOVE_WND:
+            handle_move_wnd(sender, msg);
             break;
     }    
 }

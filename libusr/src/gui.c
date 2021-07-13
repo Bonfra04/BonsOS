@@ -3,10 +3,11 @@
 
 #define HOST_PID 2
 
-#define MSG_CREATE_WND 1
-#define RSP_CREATE_WND 2
-#define MSG_RESIZE_WND 3
-#define RSP_RESIZE_WND 4
+#define MSG_CREATE_WND  1
+#define RSP_CREATE_WND  2
+#define MSG_RESIZE_WND  3
+#define RSP_RESIZE_WND  4
+#define MSG_MOVE_WND    5
 
 typedef struct create_wnd_msg
 {
@@ -28,6 +29,12 @@ typedef struct resize_wnd_rsp
 {
     void* framebuffer;
 } __attribute__ ((packed)) resize_wnd_rsp_t;
+
+typedef struct move_wnd_msg
+{
+    uint64_t wnd_id;
+    size_t x, y;
+} __attribute__ ((packed)) move_wnd_msg_t;
 
 window_t create_window(const char* title, size_t width, size_t height, size_t x, size_t y, uint8_t flags)
 {
@@ -56,7 +63,14 @@ window_t create_window(const char* title, size_t width, size_t height, size_t x,
 
 void window_move(window_t window, size_t x, size_t y)
 {
-    return;
+    // send coords
+    msg_t msg;
+    move_wnd_msg_t* data = (move_wnd_msg_t*)&msg.data;
+    msg.id = MSG_MOVE_WND;
+    data->wnd_id = window.id;
+    data->x = x;
+    data->y = y;
+    msg_send(HOST_PID, &msg);
 }
 
 void* window_resize(window_t window, size_t width, size_t height)
@@ -75,7 +89,8 @@ void* window_resize(window_t window, size_t width, size_t height)
         msg_fetch(&msg);
     resize_wnd_rsp_t* rsp = (resize_wnd_rsp_t*)&msg.data;
 
-    return 0;//rsp->framebuffer;
+    void* fb = rsp->framebuffer;
+    return map_mem(fb, width * height * sizeof(uint32_t));
 }
 
 void window_set_title(window_t window, const char* title)

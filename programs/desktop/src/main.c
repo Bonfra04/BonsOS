@@ -54,8 +54,7 @@ void render()
         {
             for(size_t x = 0; x < window->width; x++)
                 for(size_t y = 0; y < window->height; y++)
-                    renderer_put_pixel(window->x + x, window->y + y, 0xFFFFFFFF);
-                    //renderer_put_pixel(window->x + x, window->y + y, ((uint32_t*)window->framebuffer)[x + y * window->width]);
+                    renderer_put_pixel(window->x + x, window->y + y, ((uint32_t*)window->framebuffer)[x + y * window->width]);
         }
     }
 }
