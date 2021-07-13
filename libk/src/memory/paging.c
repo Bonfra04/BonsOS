@@ -47,7 +47,7 @@ paging_data_t paging_init(size_t memsize)
     return main_data;
 }
 
-void paging_enable(paging_data_t data)
+inline __attribute__((always_inline)) void paging_enable(paging_data_t data)
 {
     asm volatile("mov cr3, %[addr]" : : [addr]"r"(data) : "memory");
 }

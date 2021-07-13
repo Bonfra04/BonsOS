@@ -9,13 +9,18 @@
 
 #define USER_PROCESS_BASE_ADDRESS 0x8000000000
 
+#define USER_STACK_SIZE 256
+
 #define MAX_POCESSES 32
 
 extern void schedule_isr(const interrupt_context_t* interrupt_context);
 
 typedef struct process_context
 {
-    uint64_t rip;
+    uint64_t ds;
+    uint64_t es;
+    uint64_t fs;
+    uint64_t gs;
 
     uint64_t rax;
     uint64_t rbx;
@@ -33,19 +38,16 @@ typedef struct process_context
     uint64_t r14;
     uint64_t r15;
 
-    uint64_t ds;
-    uint64_t es;
-    uint64_t fs;
-    uint64_t gs;
-
     uint64_t ss;
     uint64_t cs;
 
     uint64_t flags;
+    
+    uint64_t rip;
 } __attribute__ ((packed)) process_context_t;
 
 static process_t processes[MAX_POCESSES];
-static volatile size_t current_process;
+static size_t current_process;
 static process_t* kernel_process;
 
 static void __attribute__((aligned(4096))) idle_task()
@@ -68,12 +70,12 @@ static uint64_t stack_push64(uint64_t rsp, uint64_t value)
     return rsp;
 }
 
-static void* create_stack(uint64_t rip, int argc, char* argv[], uint64_t* rsp)
+static void* create_stack(paging_data_t paging_data, uint64_t rip, int argc, char* argv[], uint64_t* rsp)
 {
-    void* stack = vmm_alloc_pages(PAGE_PRIVILEGE_USER, 4);
-    void* ph_stack = vmm_translate_vaddr(stack);
+    void* stack = vmm_alloc_pages(paging_data, PAGE_PRIVILEGE_USER, USER_STACK_SIZE);
+    void* ph_stack = vmm_translate_vaddr(paging_data, stack);
 
-    uint64_t sp = (uint64_t)ph_stack + pfa_page_size() * 4;
+    uint64_t sp = (uint64_t)ph_stack + pfa_page_size() * USER_STACK_SIZE;
 
     // push arguments
     for(int i = 0; i < argc; i++)
@@ -151,20 +153,31 @@ void set_thread_paging(size_t cr3)
     process->pagign = (paging_data_t)cr3;
 }
 
-static thread_t* run_thread(size_t proc, size_t thread)
+static thread_t* run_thread(size_t proc, size_t thread_id)
 {
     current_process = proc;
-    processes[proc].current_thread = thread;
-    paging_enable(processes[proc].pagign);
-    tss_set_kstack(processes[proc].threads[thread].kernel_rsp);
-    return &(processes[proc].threads[thread]);
+    processes[proc].current_thread = thread_id;
+    thread_t* thread = &(processes[proc].threads[thread_id]);
+    tss_set_kstack(thread->kernel_rsp);
+
+    void* tmp = vmm_translate_vaddr(processes[proc].pagign, thread->rsp);
+    
+    extern paging_data_t kernel_paging; 
+    if(thread->syscalling)
+        paging_enable(kernel_paging);
+    else
+        paging_enable(processes[proc].pagign);
+
+    return thread;
 }
 
 // used in schedule_isr.asm
 thread_t* get_next_thread()
 {
+    extern paging_data_t kernel_paging;
+    paging_enable(kernel_paging);
     if(current_process == -1)
-        return run_thread(0, 0);
+        return run_thread(0, 0); // process 0 thread 0
 
     for(size_t i = processes[current_process].current_thread + 1; i < MAX_THREADS; i++)
         if(processes[current_process].threads[i].parent)
@@ -218,16 +231,14 @@ size_t create_process(entry_point_t entry_point, int argc, char* argv[], size_t 
     process->current_thread = 0;
     process->pagign = paging_create();
 
-    vmm_set_paging(process->pagign);
-
     void* pages = (void*)USER_PROCESS_BASE_ADDRESS;
     for(size_t i = 0; i < size; i++)
         paging_attach_4kb_page(process->pagign, entry_point + pfa_page_size() * i, pages + pfa_page_size() * i, PAGE_PRIVILEGE_USER);
 
+    process->msg_queue = queue_create(msg_t);
+
     //void* pages = vmm_assign_pages(PAGE_PRIVILEGE_USER, size, entry_point);
     attach_thread(process->pid, pages, argc, argv);
-
-    process->msg_queue = queue_create(msg_t);
 
     return slot;
 }
@@ -260,11 +271,9 @@ bool attach_thread(size_t pid, entry_point_t entry_point, int argc, char* argv[]
 
     process->thread_count++;
 
-    vmm_set_paging(process->pagign);
-
     thread->parent = process;
-    thread->stack_base = create_stack((uint64_t)entry_point, argc, argv, &thread->rsp);
-    thread->kernel_rsp = vmm_alloc_pages(PAGE_PRIVILEGE_KERNEL, 4) + pfa_page_size() * 4;
+    thread->stack_base = create_stack(process->pagign, (uint64_t)entry_point, argc, argv, &thread->rsp);
+    thread->kernel_rsp = vmm_alloc_pages(process->pagign, PAGE_PRIVILEGE_KERNEL, 4) + pfa_page_size() * 4;
 
     return true;
 }
@@ -306,48 +315,45 @@ bool create_kernel_task(entry_point_t entry_point)
 
 void thread_terminate()
 {
-    atomic_start();
-
     process_t* process = &(processes[current_process]);
     thread_t* thread = &(process->threads[process->current_thread]);
 
-    vmm_set_paging(process->pagign);
+    vmm_free_pages(process->pagign, thread->stack_base, USER_STACK_SIZE);
+    vmm_free_pages(process->pagign, thread->kernel_rsp - pfa_page_size() * 4, 4);
 
-    vmm_free_pages(thread->stack_base, 4);
-    vmm_free_pages(thread->kernel_rsp - pfa_page_size() * 4, 4);
+    atomic_start();
     memset(thread, 0, sizeof(thread_t));
     process->thread_count--;
+    
     if(process->thread_count == 0)
         process_terminate();
 
     atomic_end();
+
+    scheduler_force_skip();
 }
 
 void process_terminate()
 {
-    atomic_start();
-
     process_t* process = &(processes[current_process]);
 
     queue_destroy(process->msg_queue);
 
-    vmm_set_paging(process->pagign);
-
+    atomic_start();
     for(size_t i = 0; i < MAX_THREADS; i++)
         if(process->threads[i].parent)
         {
             thread_t* thread = &(process->threads[i]);
-            vmm_free_page(thread->stack_base);
-            vmm_free_page(thread->kernel_rsp - pfa_page_size());
+            vmm_free_pages(process->pagign, thread->stack_base, USER_STACK_SIZE);
+            vmm_free_pages(process->pagign, thread->kernel_rsp - pfa_page_size() * 4, 4);
             memset(thread, 0, sizeof(thread_t));
             process->thread_count--;
         }
+    vmm_destroy(process->pagign);
+
     memset(process, 0, sizeof(process_t));
     process->pid = -1;
     current_process = -1;
-
-    vmm_destroy();
-
     atomic_end();
 
     scheduler_force_skip();
@@ -358,13 +364,13 @@ inline void scheduler_force_skip()
     asm("int 0x20");
 }
 
-mutex_t msg_mutex;
+static mutex_t msg_mutex;
 
 void scheduler_enqueue_message(uint64_t pid, msg_t* msg)
 {
     mutex_acquire(&msg_mutex);
     process_t* process = find_process(pid);
-    queue_push(process->msg_queue, *msg);
+    __queue_push(process->msg_queue, msg);
     mutext_release(&msg_mutex);
 }
 
@@ -373,7 +379,20 @@ void scheduler_fetch_message(uint64_t pid, msg_t* msg)
     mutex_acquire(&msg_mutex);
     process_t* process = find_process(pid);
     msg_t* new_msg = queue_front(process->msg_queue);
-    memcpy(msg, new_msg, sizeof(msg_t));
+    if(new_msg == 0)
+        memset(msg, 0, sizeof(msg_t));
+    else
+        memcpy(msg, new_msg, sizeof(msg_t));
     queue_pop(process->msg_queue);
     mutext_release(&msg_mutex);
+}
+
+inline void scheduler_toggle_syscall_state()
+{
+    ((thread_t*)get_current_thread())->syscalling = !get_current_thread()->syscalling;
+}
+
+inline paging_data_t get_current_process_paging()
+{
+    return get_current_thread()->parent->pagign;
 }

@@ -30,14 +30,16 @@ static void combine_free_regions(heap_region_t* a, heap_region_t* b)
 
 void heap_init()
 {
-    base_address = map_mem(NULL, 0x1000);
-    size = size;
+    size = 0x1000 * 256;
+    base_address = map_mem(NULL, size);
+    memset(base_address, 0, size);
     first_region = base_address;
     first_region->length = size;
     first_region->next_region = 0;
     first_region->previous_region = 0;
     first_region->free = true;
 }
+
 void* heap_malloc(size_t size)
 {
     heap_region_t* currentRegion = first_region;

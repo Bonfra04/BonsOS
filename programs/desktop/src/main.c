@@ -5,16 +5,20 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "msg/msg.h"
+#include "window/window.h"
 
+void init();
 void update();
 void render();
-void init();
 
 int main(int argc, char* argv[])
 {
     renderer_init((void*)strtoull(argv[0], 0, 16), strtoull(argv[1], 0, 16), strtoull(argv[2], 0, 16), strtoull(argv[3], 0, 16));
 
     init();
+
+    run_executable("a:/bin/taskbar.elf", 0, 0, ELF);
 
     while(1)
     {
@@ -27,23 +31,31 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-static tga_t cursor;
-
 void init()
 {
-    tga_load(&cursor, "a:/assets/cursor.tga");
+    windows_init();
 }
 
-static uint64_t mouse_x, mouse_y;
 void update()
 {
-    get_mouse(&mouse_x, &mouse_y);
+    msg_t msg;
+    uint64_t sender = msg_fetch(&msg);
+    if(sender != 0)
+        msg_process(sender, &msg);
 }
 
 void render()
 {
-    int bar_height = display_height() / 20;
-    fill_rect(0, display_height() - bar_height, display_width(), bar_height, 0xFF33E6FF);
-
-    draw_image(&cursor, mouse_x, mouse_y);
+    window_t* windows = get_windows();
+    for(size_t i = 0; i < MAX_WINDOW; i++)
+    {
+        window_t* window = &windows[i];
+        if(window->id != -1 && window->framebuffer != NULL)
+        {
+            for(size_t x = 0; x < window->width; x++)
+                for(size_t y = 0; y < window->height; y++)
+                    renderer_put_pixel(window->x + x, window->y + y, 0xFFFFFFFF);
+                    //renderer_put_pixel(window->x + x, window->y + y, ((uint32_t*)window->framebuffer)[x + y * window->width]);
+        }
+    }
 }

@@ -7,14 +7,7 @@
 #define PML_ADDRESS (0xFFFFFFFFFFull << 12)
 #define PML_MANUAL_ALLOC (0b111ull << 9)
 
-static paging_data_t paging_data;
-
-void vmm_set_paging(paging_data_t data)
-{
-    paging_data = data;
-}
-
-void vmm_destroy()
+void vmm_destroy(paging_data_t paging_data)
 {
     // deallocates everything
     for(uint16_t pml4_off = 1; pml4_off < 512; pml4_off++)
@@ -33,13 +26,13 @@ void vmm_destroy()
     paging_destroy(paging_data);
 }
 
-void* vmm_translate_vaddr(void* vaddr)
+void* vmm_translate_vaddr(paging_data_t paging, void* vaddr)
 {
     size_t mod = (uint64_t)vaddr % pfa_page_size();
-    return paging_get_ph(paging_data, vaddr) + mod;
+    return paging_get_ph(paging, vaddr) + mod;
 }
 
-void* vmm_alloc_page(page_privilege_t privilege)
+void* vmm_alloc_page(paging_data_t paging_data, page_privilege_t privilege)
 {
     uint64_t* pml4 = (uint64_t*)paging_data;
     // skip 0th pml4 cause i feel like it
@@ -86,7 +79,7 @@ void* vmm_alloc_page(page_privilege_t privilege)
     return 0;
 }
 
-void vmm_free_page(void* page)
+void vmm_free_page(paging_data_t paging_data, void* page)
 {
     uint64_t pml4_offset = ((uint64_t)page >> 39) & 0x01FF;
     uint64_t pdp_offset = ((uint64_t)page >> 30) & 0x01FF;
@@ -99,7 +92,7 @@ void vmm_free_page(void* page)
     paging_populate_node(paging_data, pml4_offset, pdp_offset, pd_offset, pt_offset, 0);
 }
 
-void* vmm_alloc_pages(page_privilege_t privilege, size_t count)
+void* vmm_alloc_pages(paging_data_t paging_data, page_privilege_t privilege, size_t count)
 {
     size_t found = 0;
     uint16_t candidate_pml4;
@@ -132,9 +125,10 @@ void* vmm_alloc_pages(page_privilege_t privilege, size_t count)
 
     alloc: {}
     uint64_t vt_addr;
+    void* pages = pfa_alloc_pages(count);
     for(size_t i = 0; i < count; i++)
     {
-        void* ph_addr = pfa_alloc_page();
+        void* ph_addr = pages + i * pfa_page_size();
         uint64_t entry = (uint64_t)ph_addr | PML_PRESENT | PML_READWRITE | PML_MANUAL_ALLOC | privilege;
         paging_populate_node(paging_data, candidate_pml4, candidate_pdp, candidate_pd, candidate_pt, entry);
         
@@ -163,7 +157,7 @@ void* vmm_alloc_pages(page_privilege_t privilege, size_t count)
     return (void*)vt_addr;
 }
 
-void* vmm_assign_pages(page_privilege_t privilege, size_t count, void* ph_addr)
+void* vmm_assign_pages(paging_data_t paging_data, page_privilege_t privilege, size_t count, void* ph_addr)
 {
     size_t found = 0;
     uint16_t candidate_pml4;
@@ -227,7 +221,7 @@ void* vmm_assign_pages(page_privilege_t privilege, size_t count, void* ph_addr)
     return (void*)vt_addr;
 }
 
-void* vmm_realloc_pages(page_privilege_t privilege, size_t count, void* vt_addr)
+void* vmm_realloc_pages(paging_data_t paging_data, page_privilege_t privilege, size_t count, void* vt_addr)
 {
     uint64_t pml4_offset = ((uint64_t)vt_addr >> 39) & 0x01FF;
     uint64_t pdp_offset = ((uint64_t)vt_addr >> 30) & 0x01FF;
@@ -271,13 +265,13 @@ void* vmm_realloc_pages(page_privilege_t privilege, size_t count, void* vt_addr)
     return base_addr;
 }
 
-void vmm_free_pages(void* pages, size_t count)
+void vmm_free_pages(paging_data_t paging_data, void* pages, size_t count)
 {
     for(size_t i = 0; i < count; i++)
     {
         void* ph_addr = paging_get_ph(paging_data, pages);
         pfa_free_page(ph_addr);
-        vmm_free_page(pages);
+        vmm_free_page(paging_data, pages);
         pages += pfa_page_size();
     }
 }

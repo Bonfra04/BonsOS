@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
     uint64_t desktop_manager_pid = run_desktop_manager(&system_info);
 
-    // tmp
-    while(1);
+    while(1)
+        asm("pause"); // my code sucks
     return 0;
 }

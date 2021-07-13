@@ -2,6 +2,7 @@
 #include <memory/memory_map.h>
 #include <string.h>
 #include <stdbool.h>
+#include <panic.h>
 
 #define PFA_PAGE_SIZE 0x1000
 #define PFA_PAGES_PER_BYTE 8
@@ -116,12 +117,18 @@ uint64_t pfa_get_bitmap_size()
 void* pfa_alloc_page()
 {
     if(pfa_get_free_pages() < 1)
+    {
+        kenrel_panic("OUT OF MEMORY");
         return 0; // out of memory
+    }
 
     uint64_t frame = bitmap_first_free();
 
     if(frame == -1)
+    {
+        kenrel_panic("OUT OF MEMORY");
         return 0; // out of memory
+    }
 
     bitmap_set(frame);
 
@@ -138,12 +145,18 @@ void pfa_free_page(void* page)
 void* pfa_alloc_pages(size_t size)
 {
     if(pfa_get_free_pages() < size)
+    {
+        kenrel_panic("OUT OF MEMORY");
         return 0; // not enough memory
+    }
 
     uint64_t frame = bitmap_first_frees(size);
 
     if(frame == -1)
+    {
+        kenrel_panic("OUT OF MEMORY");
         return 0; // not enough memory
+    }
 
     for(size_t i = 0; i < size; i++)
         bitmap_set(frame + i);

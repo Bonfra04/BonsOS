@@ -49,7 +49,7 @@ void syscall_init()
     wrmsr(MSR_IA32_LSTAR, (uint64_t)syscall_handle);
 
     // Write the CPU flag mask used during SYSCALL.
-    wrmsr(MSR_IA32_FMASK, 0);
+    wrmsr(MSR_IA32_FMASK, UINT32_MAX);
 
     for(size_t i = 0; i < MAX_SYSCALL; i++)
         syscalls[i] = empty_syscall;

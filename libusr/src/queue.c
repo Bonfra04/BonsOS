@@ -65,7 +65,10 @@ void __queue_push(queue_t queue, const void* value_ptr)
 {
     queue_data_t* pqueue = get_pqueue(queue);
     node_t* node = (node_t*)malloc(sizeof(node_t));
-    if(pqueue->back == 0)
+    if(node == NULL)
+        return;
+
+    if(pqueue->front == 0)
     {
         pqueue->back = node;
         pqueue->front = node;

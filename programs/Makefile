@@ -7,3 +7,4 @@ include $(DIR_ROOT)/scripts/config.mk
 all: 
 	@make $(MAKE_FLAGS) --directory=./init
 	@make $(MAKE_FLAGS) --directory=./desktop
+	@make $(MAKE_FLAGS) --directory=./taskbar

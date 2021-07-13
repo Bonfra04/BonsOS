@@ -5,7 +5,7 @@
 
 uint64_t syscall_msg_send(const syscall_parameter_t* params)
 {
-    msg_t* msg_addr = (msg_t*)vmm_translate_vaddr((void*)params->r9);
+    msg_t* msg_addr = (msg_t*)vmm_translate_vaddr(get_current_thread()->parent->pagign, (void*)params->r9);
     msg_t msg;
     memcpy((void*)&msg, (void*)msg_addr, sizeof(msg_t) - sizeof(uint64_t));
     msg.sender = get_current_thread()->parent->pid;

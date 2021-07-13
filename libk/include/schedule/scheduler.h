@@ -25,8 +25,8 @@ typedef struct thread
     uint64_t rsp;
     void* stack_base;
     void* kernel_rsp;
-    heap_data_t heap;
     process_t* parent;
+    bool syscalling;
 } __attribute__ ((packed)) thread_t;
 
 typedef struct process
@@ -108,3 +108,7 @@ void scheduler_enqueue_message(uint64_t pid, msg_t* msg);
  * @param[out] msg address to store the message in
  */
 void scheduler_fetch_message(uint64_t pid, msg_t* msg);
+
+void scheduler_toggle_syscall_state();
+
+paging_data_t get_current_process_paging();
