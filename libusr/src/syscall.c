@@ -36,5 +36,5 @@ void get_mouse(uint64_t* x, uint64_t* y)
 
 bool is_key_pressed(uint32_t key)
 {
-    return sys(SYSCALL_GET_KEY, key, 0, 0, 0, 0);
+    return sys(SYSCALL_GET_KEY, key, 0, 0, 0, 0) != false;
 }
