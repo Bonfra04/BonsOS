@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "events/event.h"
 #include "msg/msg.h"
 #include "window/window.h"
 
@@ -31,9 +32,12 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+static bool mouse_state[3];
+
 void init()
 {
     windows_init();
+    memset(mouse_state, 0, sizeof(mouse_state));
 }
 
 void update()
@@ -42,6 +46,17 @@ void update()
     uint64_t sender = msg_fetch(&msg);
     if(sender != 0)
         msg_process(sender, &msg);
+
+    window_t* active = window_get_focused();
+    
+    if(is_key_pressed(VK_MOUSE_LEFT) != mouse_state[0])
+    {
+        mouse_state[0] = !mouse_state[0];
+        if(mouse_state[0])
+            event_send(active, EVENT_MOUSE_LEFT_DOWN);
+        else
+            event_send(active, EVENT_MOUSE_LEFT_UP);
+    }
 }
 
 void render()

@@ -7,6 +7,7 @@
 
 typedef struct window
 {
+    uint64_t owner;
     uint64_t id;
     size_t x, y;
     size_t width, height;
@@ -17,9 +18,11 @@ typedef struct window
 
 void windows_init();
 
-uint64_t window_create(uint64_t flags);
+uint64_t window_create(uint64_t owner, uint64_t flags);
 void window_move(uint64_t window_id, size_t x, size_t y);
 void* window_resize(uint64_t window_id, size_t width, size_t height);
 void window_set_title(uint64_t window_id, const char* title);
-
+void window_focus(uint64_t window_id);
+const window_t* window_get_focused();
 window_t* get_windows();
+

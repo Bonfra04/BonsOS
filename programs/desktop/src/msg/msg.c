@@ -1,11 +1,14 @@
 #include "msg.h"
 #include "../window/window.h"
+#include "../renderer/renderer.h"
 
 #define MSG_CREATE_WND  1
 #define RSP_CREATE_WND  2
 #define MSG_RESIZE_WND  3
 #define RSP_RESIZE_WND  4
 #define MSG_MOVE_WND    5
+#define MSG_SCREEN_SIZE 6
+#define RSP_SCREEN_SIZE 7
 
 typedef struct create_wnd_msg
 {
@@ -34,13 +37,18 @@ typedef struct move_wnd_msg
     size_t x, y;
 } __attribute__ ((packed)) move_wnd_msg_t;
 
+typedef struct screen_size_rsp
+{
+    size_t width, height;
+} __attribute__ ((packed)) screen_size_rsp_t;
+
 static void handle_create_wnd(uint64_t sender, msg_t* msg)
 {
     create_wnd_msg_t* create_wnd_msg = (create_wnd_msg_t*)msg->data;
     msg_t response;
     response.id = RSP_CREATE_WND;
     create_wnd_rsp_t* create_wnd_rsp = (create_wnd_rsp_t*)response.data;
-    create_wnd_rsp->wnd_id = window_create(create_wnd_msg->flags);
+    create_wnd_rsp->wnd_id = window_create(sender, create_wnd_msg->flags);
     msg_send(sender, &response);
 }
 
@@ -61,6 +69,16 @@ static void handle_move_wnd(uint64_t sender, msg_t* msg)
     window_move(move_wnd_msg->wnd_id, move_wnd_msg->x, move_wnd_msg->y);
 }
 
+static void handle_screen_size(uint64_t sender)
+{
+    msg_t response;
+    response.id = RSP_SCREEN_SIZE;
+    screen_size_rsp_t* screen_size_rsp = (screen_size_rsp_t*)response.data;
+    screen_size_rsp->width = display_width();
+    screen_size_rsp->height = display_height();
+    msg_send(sender, &response);
+}
+
 void msg_process(uint64_t sender, msg_t* msg)
 {
     switch (msg->id)
@@ -73,6 +91,9 @@ void msg_process(uint64_t sender, msg_t* msg)
             break;
         case MSG_MOVE_WND:
             handle_move_wnd(sender, msg);
+            break;
+        case MSG_SCREEN_SIZE:
+            handle_screen_size(sender);
             break;
     }    
 }

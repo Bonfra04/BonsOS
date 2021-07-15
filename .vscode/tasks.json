@@ -11,7 +11,8 @@
                 "focus": false,
                 "panel": "shared",
                 "showReuseMessage": false,
-                "clear": false
+                "clear": true,
+                "close": true
             }
         },
         {
@@ -25,7 +26,8 @@
                 "revealProblems": "never",
                 "reveal": "silent",
                 "panel": "dedicated",
-                "echo": false
+                "echo": false,
+                "close": true
             },
             "dependsOrder": "sequence",
             "dependsOn": [

@@ -4,13 +4,15 @@
 #include <syscalls.h>
 
 static window_t windows[MAX_WINDOW];
+static window_t* focused;
 
 void windows_init()
 {
     memset(windows, -1, sizeof(window_t) * MAX_WINDOW);
+    focused = NULL;
 }
 
-uint64_t window_create(uint64_t flags)
+uint64_t window_create(uint64_t owner, uint64_t flags)
 {
     window_t* window = NULL;
     for(size_t i = 0; i < MAX_WINDOW; i++)
@@ -23,6 +25,7 @@ uint64_t window_create(uint64_t flags)
     if(window == NULL)
         return -1;
 
+    window->owner = owner;
     window->flags = flags;
     window->x = 0;
     window->y = 0;
@@ -30,6 +33,8 @@ uint64_t window_create(uint64_t flags)
     window->height = 0;
     window->framebuffer = 0;
     memset(window->title, 0, sizeof(window->title));
+
+    focused = window;
 
     return window->id;
 }
@@ -69,4 +74,16 @@ void window_set_title(uint64_t window_id, const char* title)
 window_t* get_windows()
 {
     return windows;
+}
+
+void window_focus(uint64_t window_id)
+{
+    if(window_id >= MAX_WINDOW)
+        return;
+    focused = &windows[window_id];
+}
+
+inline const window_t* window_get_focused()
+{
+    return focused;
 }
