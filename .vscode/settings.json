@@ -38,7 +38,9 @@
     "git.ignoreLimitWarning": true,
     "debug.allowBreakpointsEverywhere": true,
     "files.associations": {
+        "*.s": "nasm",
         "*.make": "makefile",
         "*.h": "c",
+        "*.asm": "nasm"
     }
 }

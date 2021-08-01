@@ -4,7 +4,7 @@
         {
             "label": "kill qemu",
             "type": "shell",
-            "command": "pkill -f qemu",
+            "command": "pkill -f qemu 2>/dev/null",
             "presentation": {
                 "echo": false,
                 "reveal": "never",
@@ -18,7 +18,7 @@
         {
             "label": "run qemu (debug)",
             "type": "shell",
-            "command": "qemu-system-x86_64 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial | echo .",
+            "command": "qemu-system-x86_64 -d int -D qemu.log -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -S -gdb tcp::9000 -monitor pipe:/tmp/qemu-monitor -serial pipe:/tmp/qemu-serial | echo .",
             "isBackground": true,
             "presentation": {
                 "clear": true,

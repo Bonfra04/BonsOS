@@ -23,7 +23,9 @@ all:
 	@$(AS) $(ASFLAGS) -Wno-all src/vbr.asm -o $(DIR_TARGET)/vbr.bin
 
 	@echo "$(TAG) Assembling loader.asm"
-	@$(AS) -f elf64 -Wno-all src/loader.asm -o $(DIR_OBJ)/boot/loader.o
-	@$(LD) -nostdlib -o $(DIR_TARGET)/loader.bin $(DIR_OBJ)/boot/loader.o -T boot.ld
+	@$(AS) $(ASFLAGS) -Wno-all src/loader.asm -o $(DIR_TARGET)/loader.bin
+
+	@echo "$(TAG) Assembling smp_trmp.asm"
+	@$(AS) $(ASFLAGS) -Wno-all src/smp_trmp.asm -o $(DIR_ROOT)/img-content/bin/smp_trmp.bin
 	
 	@echo "$(TAG) $(SUCCESS)"

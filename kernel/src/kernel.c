@@ -18,19 +18,20 @@
 #include <filesystem/fsys.h>
 #include <filesystem/ttyfs.h>
 #include <graphics/renderer.h>
-#include <schedule/scheduler.h>
-#include <device/pit.h>
+#include <smp/scheduler.h>
 #include <memory/paging.h>
 #include <x86/gdt.h>
 #include <syscall/syscall.h>
 #include <executable/executable.h>
 #include <filesystem/pipefs.h>
 #include <device/mouse.h>
+#include <acpi/acpi.h>
+#include <smp/smp.h>
+#include <interrupt/apic.h>
+#include <acpi/acpi.h>
 
 #include "bootinfo.h"
 #include "dbg/dbg.h"
-
-#include "unit_tests/unit_test.h"
 
 typedef struct system_info
 {
@@ -53,36 +54,41 @@ void init(bootinfo_t* bootinfo)
     extern symbol __bss_start_addr, __bss_size;
     memset((void*)__bss_start_addr, 0, (size_t)__bss_size);
 
-    extern void initialize_standard_library();
-    initialize_standard_library();
-
-    gdt_init();
-
     // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
     uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull;
     memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
     // After the stack
-    pfa_init((void*)0x00D00001);
+    extern symbol __kernel_stack_top;
+    pfa_init((void*)__kernel_stack_top);
     // Deinit the region the kernel/stack/bitmap is in as its in use
     pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
 
     size_t mem_2mball_size = (memorySize * 1024) + 0x200000 - (memorySize * 1024) % 0x200000;
     kernel_paging = paging_init(mem_2mball_size);
 
+    gdt_init();
+
+    extern void initialize_standard_library();
+    initialize_standard_library();
+
     kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
     heap_activate(&kernel_heap);
 
     screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
     renderer_init();
+    tty_init();
+    
+    acpi_init();
 
     interrupts_init();
     exceptions_init();
 
-    tty_init();
     kb_init();
     mouse_init(bootinfo->screen_width, bootinfo->screen_height);
 
     enable_interrupts();
+
+    apic_init();
 
     dbg_init();
 
@@ -94,12 +100,11 @@ void init(bootinfo_t* bootinfo)
 
     renderer_load_font("a:/fonts/zapvga16.psf");
 
-    pit_initialize();
-    pit_reset_counter(1, PIT_OCW_COUNTER_0, PIT_OCW_MODE_SQUAREWAVEGEN);
-
-    scheduler_initialize();
-
+    scheduler_init();
+    
     syscall_init();
+
+    smp_init();
 
     system_info.framebuffer = bootinfo->framebuffer;
     system_info.screen_width = bootinfo->screen_width;
@@ -113,9 +118,6 @@ void init(bootinfo_t* bootinfo)
 void main(bootinfo_t* bootinfo)
 {
     init(bootinfo);
-
-    if(!execute_tests())
-        return;
 
     char fb[16], sw[16], sh[16], sp[16];
     ulltoa(system_info.framebuffer, fb, 16);
@@ -133,5 +135,5 @@ void main(bootinfo_t* bootinfo)
     }
 
     printf("Running OS...\n");
-    schedule();
+    scheduler_start();
 }
