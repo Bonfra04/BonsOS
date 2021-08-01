@@ -95,7 +95,7 @@ void pfa_init(void* bitmap_addr)
 {
     bitmap = bitmap_addr;
 
-    max_pages = memory_map.total_memory * 1024 / PFA_PAGE_SIZE;
+    max_pages = memory_map.total_memory / PFA_PAGE_SIZE;
 
     // By default all memory is in use
     used_pages = max_pages;
@@ -107,11 +107,13 @@ void pfa_init(void* bitmap_addr)
 
     //first page is always set. This insures allocs cant be 0
     bitmap_set(0);
+
+    pfa_deinit_region(0, (size_t)bitmap_addr + pfa_get_bitmap_size());
 }
 
 uint64_t pfa_get_bitmap_size()
 {
-    return memory_map.total_memory * 1024 / PFA_PAGE_SIZE / (sizeof(uint32_t) * 8);
+    return memory_map.total_memory / PFA_PAGE_SIZE / (sizeof(uint32_t) * 8);
 }
 
 void* pfa_alloc_page()

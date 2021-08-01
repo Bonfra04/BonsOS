@@ -31,9 +31,9 @@ LDFLAGS	:= -nostdlib -z max-page-size=0x1000
 
 MAKE_FLAGS := --no-print-directory
 
-BLUE	:= \033[1;34m
-YELLOW	:= \033[1;33m
-NORMAL	:= \033[0m
+BLUE	:= $$(tput setaf 4)$$(tput bold)
+YELLOW	:= $$(tput setaf 3)
+NORMAL	:= $$(tput sgr0)
 
 SUCCESS	:= $(YELLOW)SUCCESS$(NORMAL)
 

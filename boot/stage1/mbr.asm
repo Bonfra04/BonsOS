@@ -45,8 +45,9 @@ lowStart:
     jmp error.noBootablePartition
 
 .CKPTFound:
-    mov word [PToff], bx    ; Save Offset
     add bx, 0x08            ; Increment Base to LBA Address
+    mov ax, word [bx]       ; Save Offset
+    mov word [PToff], ax
 
 .ReadVBR:
     mov dl, byte [bootDrive]    ; Bootdrive
