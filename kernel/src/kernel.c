@@ -48,23 +48,22 @@ heap_data_t kernel_heap;
 
 static system_info_t system_info;
 
-void init(bootinfo_t* bootinfo)
+void init(const bootinfo_t* bootinfo)
 {
-    // zero out bss
+    // zero out bss (TODO: move to bootloader)
     extern symbol __bss_start_addr, __bss_size;
     memset((void*)__bss_start_addr, 0, (size_t)__bss_size);
 
-    // First MB + number of KB above 1MB + 64 * number of 64KB blocks above 16MB
-    uint64_t memorySize = 1024 + (uint64_t)bootinfo->memorySizeLow + (uint64_t)bootinfo->memorySizeHigh * 64ull;
-    memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, memorySize);
-    // After the stack
-    extern symbol __kernel_stack_top;
-    pfa_init((void*)__kernel_stack_top);
-    // Deinit the region the kernel/stack/bitmap is in as its in use
-    pfa_deinit_region(0, 0x00D00000 + pfa_get_bitmap_size());
+    extern void initialize_standard_library();
+    initialize_standard_library();
 
-    size_t mem_2mball_size = (memorySize * 1024) + 0x200000 - (memorySize * 1024) % 0x200000;
-    kernel_paging = paging_init(mem_2mball_size);
+    gdt_init();
+
+    extern symbol __kernel_end_addr;
+    memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, bootinfo->memory_size);
+    pfa_init((void*)__kernel_end_addr);
+
+    kernel_paging = paging_init(bootinfo->memory_size);
 
     gdt_init();
 
@@ -115,7 +114,7 @@ void init(bootinfo_t* bootinfo)
     printf("Succesfully booted BonsOS %d bit.\n", bits);
 }
 
-void main(bootinfo_t* bootinfo)
+void main(const bootinfo_t* bootinfo)
 {
     init(bootinfo);
 

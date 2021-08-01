@@ -1,3 +1,5 @@
+SHELL=/bin/bash
+
 #----------------------------------------------------------------------------
 #    DIR_ROOT        The root directory of the project
 #    LIB_NAME        The name of the library produced by this makefile
@@ -5,11 +7,11 @@
 #	 LIB_DEPS		 The paths to the dependencies of this project
 #	 PREPROC		 List of prepocessor definitions
 #
+#	 CRT0			 The source file for crt0.asm
+#
 #	 RUNNABLE		 The path of the binary file if wanted
 #	 LD_FILE		 The path of the linker file 		(if RUNNABLE)
 #----------------------------------------------------------------------------
-
-include $(DIR_ROOT)/scripts/config.mk
 
 # Recursively find files from the current working directory that match param1.
 findfiles	= $(patsubst ./%,%,$(shell find . -name $(1)))
@@ -19,10 +21,17 @@ findfiles	= $(patsubst ./%,%,$(shell find . -name $(1)))
 # param2.
 outputdirs	= $(addprefix $(dir $(1)/), $(sort $(dir $(2))))
 
+#filter out param2 from param1
+filter		= $(shell IFS=' ' read -r -a array <<< "$(1)"; echo "$${array[@]/${2}}")
+
 DIR_LIB_BUILD	:= $(DIR_OBJ)/$(LIB_NAME)
 DIR_LIB_OUTPUT	:= $(DIR_BIN)/$(LIB_NAME)
 
 ASM_FILES		:= $(call findfiles,'*.asm')
+ifdef CRT0
+ASM_FILES 		:= $(shell IFS=' ' read -r -a array <<< "$(ASM_FILES)"; echo "$${array[@]/$(CRT0)}")
+CRT0_OBJ		:= $(DIR_LIB_BUILD)/${CRT0}.o
+endif
 C_FILES			:= $(call findfiles,'*.c')
 CODE_FILES		:= $(ASM_FILES) $(C_FILES)
 
@@ -34,7 +43,7 @@ LIB_FILE		:= $(DIR_LIB_BUILD)/$(LIB_NAME).a
 
 TAG	:= $(BLUE)[$(LIB_NAME)]$(NORMAL)
 
-.PHONY: all mkdir link
+.PHONY: all mkdir link crt
 
 all: mkdir link $(POST_BUILD_RULE)
 	@echo "$(TAG) $(SUCCESS)"
@@ -45,15 +54,21 @@ ifdef RUNNABLE
 	@mkdir -p $(DIR_LIB_OUTPUT)
 endif
 
-link: $(OBJ_FILES)
+link: crt $(OBJ_FILES)
 ifdef RUNNABLE
 	@echo "$(TAG) Linking $(notdir $(RUNNABLE))"
-	@$(LD) $(LDFLAGS) -T $(LD_FILE) -o $(RUNNABLE) $(OBJ_FILES) --start-group $(LIB_DEPS) --end-group
+	@$(LD) $(LDFLAGS) -T $(LD_FILE) -o $(RUNNABLE) $(CRT0_OBJ) $(OBJ_FILES) --start-group $(LIB_DEPS) --end-group
 	@chmod a-x $(RUNNABLE)
 else
 	@echo "$(TAG) Archiving $(notdir $(LIB_FILE))"
 	@rm -f $(LIB_FILE)
-	@ar cqs $(LIB_FILE) $(OBJ_FILES)
+	@ar cqs $(LIB_FILE) $(CRT0_OBJ) $(OBJ_FILES)
+endif
+
+crt:
+ifdef CRT0
+	@echo "$(TAG) Assembling ${CRT0}"
+	@$(AS) $(ASFLAGS) ${CRT0} -o $(CRT0_OBJ)
 endif
 
 $(OBJ_FILES_ASM): $(DIR_LIB_BUILD)/%_asm.o: %.asm

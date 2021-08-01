@@ -1,4 +1,5 @@
 DIR_ROOT		:= ..
+include $(DIR_ROOT)/scripts/config.mk
 
 ifdef kernel
 LIB_NAME		:= libc

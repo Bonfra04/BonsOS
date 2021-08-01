@@ -31,8 +31,7 @@ GetRootInfo:
     mul word [bpb_SectorsPerFAT]        ; sectors used by FATs
     add ax, word [bpb_ReservedSectors]  ; reserved sectors
     mov cx, ax                          ; move into cx
-    mov ax, word [partition_offset]
-    add cx, word [eax + 8]              ; offset from partition information
+    add cx, word [partition_offset]     ; add partition offset
 
     ; compute size of root directory in sectors and store in "ax" 
     mov ax, 32                          ; 32 byte directory entry
@@ -67,8 +66,7 @@ LoadFAT:
     mov ax, word [bpb_SectorsPerFAT]    ; number of FATs
 
     ; compute location of FAT and store in "ecx"
-    mov cx, word [partition_offset]
-    mov cx, word [ecx + 8]              ; offset from partition information
+    mov cx, word [partition_offset]     ; add partition offset
     add cx, word [bpb_ReservedSectors]
 
     ; read FAT into memory at FAT_SEG

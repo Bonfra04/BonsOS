@@ -27,6 +27,7 @@
         "libk/Makefile": true,
         "libusr/Makefile": true,
         "boot/Makefile": true,
+        "boot/stage2/Makefile": true,
         "programs/Makefile": true,
         "programs/*/Makefile": true,
 
