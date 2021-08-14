@@ -22,6 +22,7 @@ uint64_t run_desktop_manager(system_info_t* system_info)
     ulltoa(system_info->screen_pitch, sp, 16);
     char* argv[] = { fb, sw, sh, sp };
 
+    printf("Launching desktop manager\n");
     return run_executable("a:/bin/desktop.elf", 4, argv, ELF);
 }
 
@@ -35,6 +36,7 @@ int main(int argc, char* argv[])
 
     uint64_t desktop_manager_pid = run_desktop_manager(&system_info);
 
+    printf("Intialization sequence terminated\n");
     while(1)
         asm("pause"); // my code sucks
     return 0;

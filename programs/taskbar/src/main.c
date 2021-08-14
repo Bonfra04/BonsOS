@@ -34,4 +34,9 @@ int main()
             for(int y = 0; y < height; y++)
                 ((uint32_t*)window.framebuffer)[y * width + x] = color;
     } while(cycle_events(event_handler));
+
+    while(1)
+        asm("pause");
+
+    return 0;
 }

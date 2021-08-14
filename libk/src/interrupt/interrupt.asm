@@ -5,6 +5,7 @@ section .text
 
     global isr_dispatcher
     global isr_dispatcher_special
+    global restore_context
 
 ;-----------------------------------------------------------------------------
 ; ISR.Dispatcher
@@ -81,6 +82,7 @@ isr_dispatcher:
 
         ; Restore general-purpose registers.
 
+restore_context:
         pop rax
         mov ds, rax
         pop rax

@@ -20,4 +20,4 @@
 #define SYS_REMOVE(filename) sys(9, (uint64_t)filename, 0, 0, 0, 0)
 #endif
 
-uint64_t sys(uint64_t rax, uint64_t r8, uint64_t r9, uint64_t r10, uint64_t r12, uint64_t r13);
+uint64_t sys(uint64_t id, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4);

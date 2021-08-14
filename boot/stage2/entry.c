@@ -68,7 +68,7 @@ void main(uint8_t boot_drive, uint16_t partition_offset)
         return;
     }
 
-    size_t mem_siz = memory_size() / (1024*1024) + (memory_size() % (1024*1024) != 0);
+    size_t mem_siz = memory_size() / (1024 * 1024) + (memory_size() % (1024 * 1024) != 0);
     low_mem_size = memory_lower_size();
     tty_printf("Detected %llu mib of memory\n", mem_siz);
 
@@ -93,7 +93,7 @@ void main(uint8_t boot_drive, uint16_t partition_offset)
 
     bootinfo.memoryMapAddress = &memory_map;
     bootinfo.memoryMapEntries = memory_num_entries();
-    bootinfo.memory_size = memory_size();
+    bootinfo.memory_size = mem_siz * 1024 * 1024;
     bootinfo.bootDevice = boot_drive;
     bootinfo.screen_width = vesa_descriptor.width;
     bootinfo.screen_height = vesa_descriptor.height;

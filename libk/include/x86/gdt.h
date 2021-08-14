@@ -13,6 +13,8 @@
  */
 void gdt_init();
 
+void gdt_install();
+
 /**
  * @brief Sets the stack pointer in the tss
  */
@@ -21,4 +23,5 @@ void tss_set_kstack(void* stack_top);
 /**
  * @brief Gets the current tss stack ponter
  */
+void* __tss_get_kstack(); //inline version
 void* tss_get_kstack();

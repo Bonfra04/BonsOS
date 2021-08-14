@@ -5,11 +5,11 @@
 
 typedef struct syscall_parameters
 {
-    uint64_t r8;
-    uint64_t r9;
-    uint64_t r10;
-    uint64_t r12;
-    uint64_t r13;
+    uint64_t arg0;
+    uint64_t arg1;
+    uint64_t arg2;
+    uint64_t arg3;
+    uint64_t arg4;
 } __attribute__((packed)) syscall_parameter_t;
 
 typedef uint64_t(*syscall_t)(const syscall_parameter_t*);

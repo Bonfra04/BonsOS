@@ -1,6 +1,7 @@
 #include <x86/gdt.h>
 #include <stdint.h>
 #include <string.h>
+#include <smp/atomic.h>
 
 #define GDT_PRESENT (1 << 7)
 #define GDT_PRIV_KERNEL (0 << 5)
@@ -109,8 +110,14 @@ void gdt_init()
     gdtr.size = sizeof(GDT) - 1;
     gdtr.offset = (uint64_t)&GDT;
 
+    gdt_install();
+}
+
+void gdt_install()
+{
+    locked_write(&GDT.tss_desc[0].access, TSS_PRESENT | TSS_PRIV_KERNEL | TSS_FREE);
     asm volatile("lgdt %[addr]" : : [addr]"m"(gdtr) : "memory");
-    asm volatile("mov ax, 0x28 \n ltr ax");
+    asm volatile("mov rax, 0x28 \n ltr ax");
 }
 
 void tss_set_kstack(void* stack_top)
@@ -118,7 +125,12 @@ void tss_set_kstack(void* stack_top)
     tss.RSP0 = (uint64_t)stack_top;
 }
 
-void* tss_get_kstack()
+inline __attribute__((always_inline)) void* __tss_get_kstack()
 {
     return (void*)tss.RSP0;
+}
+
+void* tss_get_kstack()
+{
+    return __tss_get_kstack();
 }

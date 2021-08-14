@@ -11,12 +11,14 @@ section .text
     extern tss_get_kstack
     extern paging_get_ph
     extern scheduler_toggle_syscall_state
-    extern get_current_process_paging
+    extern scheduler_get_current_paging
 
-; screw up: r15, r14, r11, rax, rbx, rcx 
+; save context before calling, nothing is granted to be preserved
 syscall_handle:
-    mov r15, rsp    ; save rsp
-    mov r14, rax    ; save syscall id
+    mov rbp, rsp    ; save rsp
+    mov rbx, rax    ; save syscall id
+    mov r10, rcx    ; save return addr
+    ; preserve rcx(retaddr) and r11(flags)
 
 .switch_context:
 
@@ -41,29 +43,17 @@ syscall_handle:
     call paging_get_ph      ; rax contains physical kstack base
     add rax, KSTACK_SIZE    ; rax contains physical kstack top
     mov rsp, rax            ; set new stack
-    
+
     ; enter syscall mode
     call scheduler_toggle_syscall_state
 
-    push rax
-    push rbx
-    push rcx    ; return addr
-    push rdx
-    push rsi
-    push rdi
-    push rbp
-    push r8
-    push r9
-    push r10
+.save_context:
+    push r10    ; return addr
     push r11    ; flags
-    push r12
-    push r13
-    push r14
-    push r15
 
 .call_handler:
     ; get function address
-    mov rax, r14
+    mov rax, rbx
     cmp rax, 32 ; temporary max syscall id
     jg .restore_context
     mov rax, [syscalls + 8 * rax]   ; rax=ISR address
@@ -71,11 +61,10 @@ syscall_handle:
     sti
 
     ; set parameters
-    push r13 ; r13
-    push r12 ; r12
-    push r10 ; r10
-    push r9  ; r9
-    push r8  ; r8
+    push r12
+    push r13
+    push r14
+    push r15
 
     ; System V ABI requires direction flag to be cleared on function entry.
     cld
@@ -85,48 +74,36 @@ syscall_handle:
 
     ; call handler
     call rax
-    mov rbx, rax
+    mov rbx, rax    ; save return value
 
     ; pop parameters
-    add rsp, 8 * 5 ; 5 qwords
+    add rsp, 8 * 4 ; 4 qwords
     
 .restore_context:
     cli
 
+    pop r11     ; flags
+    pop r10     ; return addr
+
     ; exit syscall mode
     call scheduler_toggle_syscall_state 
 
-    pop r15
-    pop r14
-    pop r13
-    pop r12
-    pop r11     ; flags 
-    pop r10
-    pop r9
-    pop r8
-    pop rbp
-    pop rdi
-    pop rsi
-    pop rdx
-    pop rcx     ; return addr
-    ;pop rbx    ; used for return value
-    pop rax
-
     ; switch to process paging
-    call get_current_process_paging
+    call scheduler_get_current_paging ; qua si sminchia rcx return address per sysret
     mov cr3, rax
 
     ; restore rsp
-    mov rsp, r15
+    mov rsp, rbp
 
     ; restore segments
-    mov rax, SELECTOR_USER_DATA
+    mov rax, SELECTOR_USER_DATA | 3
     mov ds, rax
     mov es, rax
     mov fs, rax
     mov gs, rax
 
     mov rax, rbx ; set return value
+    mov rcx, r10
     o64 sysret
 
 section .bss

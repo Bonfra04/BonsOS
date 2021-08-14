@@ -1,10 +1,7 @@
 #include <interrupt/interrupt.h>
 #include <stdint.h>
 #include <x86/gdt.h>
-
-#define ICW1_INIT 0x10
-#define ICW1_ICW4 0x01
-#define ICW4_8086 0x01
+#include <interrupt/apic.h>
 
 // Special interrupts
 #define EX_NMI 0x02
@@ -49,32 +46,9 @@ isr_handler_t isr_handlers[256];
 extern void isr_dispatcher();
 extern void isr_dispatcher_special();
 
-static void remap_pic()
-{
-    // int PICs
-    outportb(PIC_CMD_MASTER, ICW1_INIT | ICW1_ICW4);
-    outportb(PIC_CMD_SLAVE, ICW1_INIT | ICW1_ICW4);
-
-    // set PICs offsets
-    outportb(PIC_DATA_MASTER, 0x20);
-    outportb(PIC_DATA_SLAVE, 0x28);
-
-    // set PICs correspondings
-    outportb(PIC_DATA_MASTER, 4);
-    outportb(PIC_DATA_SLAVE, 2);
-
-    // set PICs in 8086 mode
-    outportb(PIC_DATA_MASTER, ICW4_8086);
-    outportb(PIC_DATA_SLAVE, ICW4_8086);
-
-    // diable all ISRs
-    outportb(PIC_DATA_MASTER, 0xFF);
-    outportb(PIC_DATA_SLAVE, 0xFF);
-}
-
 void interrupts_init()
 {
-    remap_pic();
+    pic_init();
 
     for(int i = 0; i < 256; i++)
     {
@@ -116,6 +90,11 @@ void interrupts_init()
             idt[i].flags = 0b1000111000000000;
     }
 
+    idt_install();
+}
+
+void idt_install()
+{
     // load idt
     idtr.limit = sizeof(idt) - 1;
     idtr.offset = (uint64_t)&idt;

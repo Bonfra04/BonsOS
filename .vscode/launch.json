@@ -2,23 +2,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Qemu Debug - Bootloader",
-            "type": "gdb",
-            "request": "attach",
-            "target": "tcp::9000",
-            "remote": true,
-            "cwd": "${workspaceFolder}/boot/stage2",
-            "gdbpath": "gdb",
-            "preLaunchTask": "run qemu (debug)",
-            "postDebugTask": "stop qemu debug",
-            "autorun": [
-                "set output-radix 16",
-                "set remotetimeout 35",
-                "add-symbol-file ${workspaceFolder}/bin/boot/loader.dbg"
-                // "set architecture i386:x64-32",
-            ]
-        },
-        {
             "name": "Qemu Debug - Kernel",
             "type": "gdb",
             "request": "attach",
@@ -36,7 +19,24 @@
                 "directory libusr",
                 "directory kernel",
                 "directory kernel/src",
-                "set output-radix 16"
+                "set output-radix 16",
+            ]
+        },
+        {
+            "name": "Qemu Debug - Bootloader",
+            "type": "gdb",
+            "request": "attach",
+            "target": "tcp::9000",
+            "remote": true,
+            "cwd": "${workspaceFolder}/boot/stage2",
+            "gdbpath": "gdb",
+            "preLaunchTask": "run qemu (debug)",
+            "postDebugTask": "stop qemu debug",
+            "autorun": [
+                "set output-radix 16",
+                "set remotetimeout 35",
+                "add-symbol-file ${workspaceFolder}/bin/boot/loader.dbg"
+                // "set architecture i386:x64-32",
             ]
         },
         {

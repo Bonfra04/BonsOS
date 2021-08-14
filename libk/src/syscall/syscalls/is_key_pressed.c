@@ -5,7 +5,7 @@
 
 uint64_t syscall_is_key_pressed(const syscall_parameter_t* params)
 {
-    uint32_t key = (uint32_t)params->r8;
+    uint32_t key = (uint32_t)params->arg0;
     if(key <= 0xFF)
         return kb_is_key_down((uint8_t)key);
     else

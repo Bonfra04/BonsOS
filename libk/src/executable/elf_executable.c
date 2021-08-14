@@ -1,6 +1,6 @@
 #include <executable/executable.h>
 #include <stddef.h>
-#include <schedule/scheduler.h>
+#include <smp/scheduler.h>
 #include <memory/page_frame_allocator.h>
 #include <string.h>
 
@@ -69,5 +69,5 @@ size_t run_elf_executable(void* address, int argc, char* argv[], size_t num_page
     memcpy(new_addr, address + 0x1000, (num_pages - 1) * pfa_page_size());
     pfa_free_pages(address, num_pages);
 
-    return create_process(new_addr, argc, argv, size);
+    return scheduler_create_process(new_addr, argc, argv, size, 0); // decide core
 }

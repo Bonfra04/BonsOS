@@ -29,6 +29,7 @@
 #include <smp/smp.h>
 #include <interrupt/apic.h>
 #include <acpi/acpi.h>
+#include <smp/lts.h>
 
 #include "bootinfo.h"
 #include "dbg/dbg.h"
@@ -103,6 +104,7 @@ void init(const bootinfo_t* bootinfo)
     
     syscall_init();
 
+    lts_init();
     smp_init();
 
     system_info.framebuffer = bootinfo->framebuffer;

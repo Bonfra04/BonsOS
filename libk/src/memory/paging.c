@@ -170,7 +170,7 @@ static bool attach_page(paging_data_t data, void* physical_addr, void* virtual_a
     if(size)
     {
         if(pd[pd_offset] & PML_PRESENT)
-        return false; // page altready exists
+            return false; // page altready exists
 
         pd[pd_offset] = (PML_PRESENT | PML_READWRITE | PML_SIZE) | privilege | (PML_GLOBAL * global);
         PML_UPDATE_ADDRESS(pd[pd_offset], (uint64_t)physical_addr);

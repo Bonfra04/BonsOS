@@ -17,6 +17,8 @@ void outportd(uint16_t port, uint32_t value);
 
 void port_wait();
 
+void port_delay(uint64_t cycles);
+
 #ifdef __cplusplus
 }
 #endif

@@ -2,12 +2,7 @@
 
 #include <x86/cpu.h>
 #include <x86/ports.h>
-
-#define PIC_CMD_MASTER  0x20
-#define PIC_CMD_SLAVE   0xA0
-#define PIC_DATA_MASTER 0x21
-#define PIC_DATA_SLAVE  0xA1
-#define PIC_CMD_EOI     0x20
+#include <interrupt/pic.h>
 
 #define ISR_DONE() { outportb(PIC_CMD_SLAVE, PIC_CMD_EOI); outportb(PIC_CMD_MASTER, PIC_CMD_EOI); }
 
@@ -34,6 +29,7 @@ extern "C" {
 #endif
 
 void interrupts_init();
+void idt_install();
 
 void isr_set(int interrupt, isr_handler_t handler);
 void irq_enable(uint8_t irq);

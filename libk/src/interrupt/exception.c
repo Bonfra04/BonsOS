@@ -4,7 +4,9 @@
 #include <x86/cpu.h>
 #include <dump.h>
 #include <stdio.h>
-#include <schedule/scheduler.h>
+#include <smp/scheduler.h>
+#include <interrupt/apic.h>
+#include <smp/atomic.h>
 
 static const char *exceptionstr[] =
 {
@@ -84,7 +86,10 @@ static void isr_fatal(const interrupt_context_t* context)
 
     dump_context(context);
 
-    printf("\nCurrent process: %llu", get_current_thread()->parent->pid);
+    const thread_t* thread = scheduler_current_thread();
+
+    printf("\nThread: %llX:%llX", locked_read(&thread->parent->pid), locked_read(&thread->parent->current_thread));
+    printf("\nCore: %d", (int)lapic_get_id());
 
     hang();
 }
