@@ -84,10 +84,10 @@ static const thread_t* run_next_thread()
 
 static uint64_t __attribute__ ((aligned(16))) stack[1024];
 
-// extern void scheduler_isr(const interrupt_context_t* context);
 static __attribute__((naked)) void scheduler_isr(const interrupt_context_t* context)
 {
-    extern paging_data_t kernel_paging; 
+    extern paging_data_t kernel_paging;
+
     if(current_process != -1) 
     {
         register process_t* process = &get_process(current_process);
@@ -131,6 +131,8 @@ static void* create_stack(paging_data_t paging_data, uint64_t rip, int argc, cha
 
     uint64_t sp = (uint64_t)ph_stack + pfa_page_size() * THREAD_STACK_SIZE;
 
+    char* trans_argv[argc];
+
     // push arguments
     for(int i = 0; i < argc; i++)
     {
@@ -144,12 +146,12 @@ static void* create_stack(paging_data_t paging_data, uint64_t rip, int argc, cha
         for(int j = len - 1; j >= 0; j--)
             sp = stack_push8(sp, argv[i][j]);
 
-        argv[i] = (uint64_t)stack + (sp - (uint64_t)ph_stack);
+        trans_argv[i] = (uint64_t)stack + (sp - (uint64_t)ph_stack);
     }
 
     // push pointer to arguments
     for(int i = argc - 1; i >= 0; i--)
-        sp = stack_push64(sp, (uint64_t)argv[i]);
+        sp = stack_push64(sp, (uint64_t)trans_argv[i]);
     uint64_t argv_ptr = sp;
 
     // push context
@@ -346,12 +348,18 @@ bool scheduler_attach_thread(size_t pid, entry_point_t entry_point, int argc, ch
             break;
         }
 
-    process->thread_count++;
+    void* kstack_base = pfa_alloc_pages(THREAD_STACK_SIZE);
 
     thread->parent = process;
     thread->syscalling = false;
-    thread->kernel_rsp = pfa_alloc_pages(THREAD_STACK_SIZE);
+    thread->kernel_rsp = kstack_base + pfa_page_size() * THREAD_STACK_SIZE;
     thread->stack_base = create_stack(process->pagign, (uint64_t)entry_point, argc, argv, &thread->rsp);
+
+    // vmm_assign_pages(process->pagign, PAGE_PRIVILEGE_KERNEL, THREAD_STACK_SIZE, kstack_base);
+
+    paging_map(process->pagign, kstack_base, kstack_base, THREAD_STACK_SIZE * pfa_page_size(), PAGE_PRIVILEGE_KERNEL);
+
+    process->thread_count++;
 
     mutext_release(&scheduler_mutex);
     return true;

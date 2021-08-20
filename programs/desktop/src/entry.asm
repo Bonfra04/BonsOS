@@ -7,7 +7,6 @@ section .text
     extern initialize_user_library
 
 _start:
-    jmp $
     ; preserve arguments
     push rdi
     push rsi
