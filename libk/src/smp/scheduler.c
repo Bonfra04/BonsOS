@@ -16,11 +16,12 @@
 #define THREAD_STACK_SIZE 256
 #define MAX_PROCESSES 256 * 2
 
-static process_t processes[256][MAX_PROCESSES];
-static uint64_t current_processes[256];
-#define current_process (uint64_t)(locked_read(&current_processes[lapic_get_id()]))
-#define current_process_set(process) locked_write(&current_processes[lapic_get_id()], process)
+static _Atomic process_t processes[256][MAX_PROCESSES];
+static _Atomic uint64_t current_processes[256];
+
+#define current_process (current_processes[lapic_get_id()])
 #define get_process(index) (processes[lapic_get_id()][index])
+
 static mutex_t scheduler_mutex;
 
 #define USER_PROCESS_BASE_ADDRESS 0x8000000000
@@ -34,7 +35,7 @@ static void __attribute__((aligned(4096))) idle_task()
 static uint64_t find_slot()
 {
     for(uint64_t i = 0; i < MAX_PROCESSES; i++)
-        if(locked_read(&get_process(i).thread_count) == 0)
+        if(get_process(i).thread_count == 0)
             return i;
 
     kenrel_panic("out of process slot");
@@ -53,10 +54,10 @@ static process_t* find_process(size_t pid)
 
 static thread_t* run_thread(size_t proc, size_t thread_id)
 {
-    current_process_set(proc);
+    current_process = proc;
     process_t* process = &get_process(proc);
 
-    locked_write(&process->current_thread, thread_id);
+    process->current_thread = thread_id;
     thread_t* thread = &process->threads[thread_id];
     tss_set_kstack(thread->kernel_rsp);
 
@@ -70,42 +71,36 @@ static const thread_t* run_next_thread()
 
     process_t* procs = processes[lapic_get_id()];
 
-    for(uint64_t i = locked_read(&procs[current_process].current_thread) + 1; i < MAX_THREADS; i++)
-        if(locked_read(&procs[current_process].threads[i].parent))
+    for(uint64_t i = procs[current_process].current_thread + 1; i < MAX_THREADS; i++)
+        if(procs[current_process].threads[i].parent)
             return run_thread(current_process, i); 
 
     for(size_t i = current_process + 1; i < MAX_PROCESSES; i++)
         for(size_t j = 0; j < MAX_THREADS; j++)
-            if(locked_read(&procs[i].threads[j].parent) != 0)
+            if(procs[i].threads[j].parent != 0)
                 return run_thread(i, j);
 
     return run_thread(0, 0);
 }
 
-static uint64_t __attribute__ ((aligned(16))) stack[1024];
-
 static __attribute__((naked)) void scheduler_isr(const interrupt_context_t* context)
 {
     extern paging_data_t kernel_paging;
 
-    if(current_process != -1) 
+    if(locked_read(&current_process) != -1) 
     {
         register process_t* process = &get_process(current_process);
         asm volatile ("mov %0, rsp" : "=r"(process->threads[process->current_thread].rsp) : : "memory");
-        register uint64_t rsp = process->threads[process->current_thread].rsp;
-        asm volatile("mov rsp, %[addr]" : : [addr]"r"(&stack[1023]) : "memory");
         asm volatile("mov cr3, %[addr]" : : [addr]"r"(kernel_paging) : "memory");
-        rsp = (void*)paging_get_ph(process->pagign, (void*)rsp);
-        asm volatile("mov rsp, %[addr]" : : [addr]"r"(rsp) : "memory");
         process->threads[process->current_thread].rsp += 9 * 8; // remove stack frame
     }
     register thread_t* thread = run_next_thread();
     LAPIC_ISR_DONE();
-    asm volatile("mov rsp, %[addr]" : : [addr]"r"(locked_read(&thread->rsp)) : "memory");
-    if(locked_read(&thread->syscalling))
+    asm volatile("mov rsp, %[addr]" : : [addr]"r"(thread->rsp) : "memory");
+    if(thread->syscalling)
         asm volatile("mov cr3, %[addr]" : : [addr]"r"(kernel_paging) : "memory");
     else
-        asm volatile("mov cr3, %[addr]" : : [addr]"r"(locked_read(&thread->parent->pagign)) : "memory");
+        asm volatile("mov cr3, %[addr]" : : [addr]"r"(thread->parent->pagign) : "memory");
     asm volatile("jmp restore_context");
 }
 
@@ -190,6 +185,10 @@ void scheduler_prepare()
 {
     mutex_acquire(&scheduler_mutex);
 
+    cpu_lts_t lts;
+    lts.kernel_stack = pfa_alloc_pages(4);
+    lts_init(&lts);
+
     extern paging_data_t kernel_paging;    
     uint8_t core_id = lapic_get_id();
 
@@ -200,7 +199,7 @@ void scheduler_prepare()
     memset(processes[core_id][0].threads, 0, sizeof(processes[core_id][0].threads));
     processes[core_id][0].msg_queue = queue_create(msg_t);
 
-    current_process_set(-1);
+    current_process = -1;
 
     mutext_release(&scheduler_mutex);
 
@@ -220,7 +219,7 @@ bool create_kernel_task(entry_point_t entry_point)
 
     process_t* kernel_process = &get_process(0);
 
-    if(locked_read(&kernel_process->thread_count) >= MAX_THREADS)
+    if(kernel_process->thread_count >= MAX_THREADS)
     {
         mutext_release(&scheduler_mutex);
         return false;
@@ -272,7 +271,7 @@ inline const thread_t* scheduler_current_thread()
     if(current_process == -1)
         return 0;
     process_t* process = &get_process(current_process);
-    return &process->threads[locked_read(&process->current_thread)];
+    return &process->threads[process->current_thread];
 }
 
 static mutex_t msg_mutex;
@@ -342,7 +341,7 @@ bool scheduler_attach_thread(size_t pid, entry_point_t entry_point, int argc, ch
 
     thread_t* thread;
     for(size_t i = 0; i < MAX_THREADS; i++)
-        if(locked_read(&process->threads[i].parent) == 0)
+        if(process->threads[i].parent == 0)
         {
             thread = &(process->threads[i]);
             break;
@@ -367,5 +366,5 @@ bool scheduler_attach_thread(size_t pid, entry_point_t entry_point, int argc, ch
 
 paging_data_t scheduler_get_current_paging()
 {
-    return locked_read(&get_process(current_process).pagign);
+    return get_process(current_process).pagign;
 }
