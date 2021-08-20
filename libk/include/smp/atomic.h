@@ -4,7 +4,7 @@
 
 #define locked_write(addr, val) __atomic_store_n(addr, val, __ATOMIC_SEQ_CST)
 
-typedef volatile unsigned char mutex_t;
+typedef volatile _Atomic unsigned char mutex_t;
 
 /**
  * @brief waits for a mutex to be released, then locks it and return 
