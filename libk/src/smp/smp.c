@@ -11,6 +11,7 @@
 #include <x86/gdt.h>
 #include <smp/atomic.h>
 #include <memory/page_frame_allocator.h>
+#include <syscall/syscall.h>
 
 #define TRAMPOLINE_ADDRESS 0x8000
 
@@ -94,6 +95,7 @@ static void core_entry()
     asm("mov rsp, %0" :: "r"(stack));
     gdt_install();
     idt_install();
+    syscall_enable();
     scheduler_prepare();
     asm("sti");
 

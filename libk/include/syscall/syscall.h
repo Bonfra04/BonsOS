@@ -15,7 +15,7 @@ typedef struct syscall_parameters
 typedef uint64_t(*syscall_t)(const syscall_parameter_t*);
 
 /**
- * @brief initializie system calls
+ * @brief initializie system calls (auto calls enable)
  */
 void syscall_init();
 
@@ -25,3 +25,8 @@ void syscall_init();
  * @param[in] systemcall function pointer to the system call handler
  */
 void syscall_register(size_t id, syscall_t systemcall);
+
+/**
+ * @brief enable system calls
+ */
+void syscall_enable();

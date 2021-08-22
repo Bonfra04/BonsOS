@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <smp/atomic.h>
+#include <interrupt/apic.h>
 
 #define GDT_PRESENT (1 << 7)
 #define GDT_PRIV_KERNEL (0 << 5)
@@ -70,11 +71,11 @@ typedef struct tss_entry
 struct
 {
     gdt_descriptor_t gdt_desc[5];
-    tss_descriptor_t tss_desc[1];
+    tss_descriptor_t tss_desc[2];
 } __attribute__ ((packed)) GDT __attribute__ ((aligned(8)));
 
 static gdtr_t gdtr;
-static tss_entry_t tss;
+static tss_entry_t tss[256];
 
 void gdt_init()
 {
@@ -96,17 +97,6 @@ void gdt_init()
     GDT.gdt_desc[SELECTOR_USER_CODE / 8].access = GDT_PRESENT | GDT_PRIV_USER | GDT_TYPE | GDT_EXEC | GDT_READ_WRITE;
     GDT.gdt_desc[SELECTOR_USER_CODE / 8].limit_high_flags = GDT_64BIT;
 
-    memset(&tss, 0, sizeof(tss_entry_t));
-    tss.IOPB_offset = sizeof(tss_entry_t);
-
-    uint64_t base = (uint64_t)&tss;
-    GDT.tss_desc[0].limit_low = sizeof(tss_entry_t) - 1;
-    GDT.tss_desc[0].base_low = base & 0xFFFF;
-    GDT.tss_desc[0].base_middle = (base >> 16) & 0xFF;
-    GDT.tss_desc[0].access = TSS_PRESENT | TSS_PRIV_KERNEL | TSS_FREE;
-    GDT.tss_desc[0].base_high = (base >> 24) & 0xFF;
-    GDT.tss_desc[0].base_highest = base >> 32;
-
     gdtr.size = sizeof(GDT) - 1;
     gdtr.offset = (uint64_t)&GDT;
 
@@ -115,19 +105,31 @@ void gdt_init()
 
 void gdt_install()
 {
-    locked_write(&GDT.tss_desc[0].access, TSS_PRESENT | TSS_PRIV_KERNEL | TSS_FREE);
+    uint8_t id = lapic_get_id();
+
+    memset(&tss[id], 0, sizeof(tss_entry_t));
+    tss[id].IOPB_offset = sizeof(tss_entry_t);
+
+    uint64_t base = (uint64_t)&tss[id];
+    GDT.tss_desc[id].limit_low = sizeof(tss_entry_t) - 1;
+    GDT.tss_desc[id].base_low = base & 0xFFFF;
+    GDT.tss_desc[id].base_middle = (base >> 16) & 0xFF;
+    GDT.tss_desc[id].access = TSS_PRESENT | TSS_PRIV_KERNEL | TSS_FREE;
+    GDT.tss_desc[id].base_high = (base >> 24) & 0xFF;
+    GDT.tss_desc[id].base_highest = base >> 32;
+
     asm volatile("lgdt %[addr]" : : [addr]"m"(gdtr) : "memory");
-    asm volatile("mov rax, 0x28 \n ltr ax");
+    asm volatile("mov rax, %[val] \n ltr ax" : : [val]"r"(0x28 + sizeof(tss_descriptor_t) * id) : "memory");
 }
 
 void tss_set_kstack(void* stack_top)
 {
-    tss.RSP0 = (uint64_t)stack_top;
+    tss[lapic_get_id()].RSP0 = (uint64_t)stack_top;
 }
 
 inline __attribute__((always_inline)) void* __tss_get_kstack()
 {
-    return (void*)tss.RSP0;
+    return (void*)tss[lapic_get_id()].RSP0;
 }
 
 void* tss_get_kstack()

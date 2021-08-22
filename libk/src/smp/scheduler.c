@@ -10,7 +10,7 @@
 #include <memory/page_frame_allocator.h>
 #include <smp/lts.h>
 
-#define _PID(core_id, local_pid) (((core_id) << 56) | (local_pid))
+#define _PID(core_id, local_pid) ((((uint64_t)core_id) << 56ull) | (local_pid))
 #define PID(local_pid) _PID(lapic_get_id(), local_pid)
 
 #define THREAD_STACK_SIZE 256
@@ -32,13 +32,13 @@ static void __attribute__((aligned(4096))) idle_task()
         scheduler_force_skip();
 }
 
-static uint64_t find_slot()
+static uint64_t find_slot(uint8_t core)
 {
     for(uint64_t i = 0; i < MAX_PROCESSES; i++)
-        if(get_process(i).thread_count == 0)
+        if(processes[core][i].thread_count == 0)
             return i;
 
-    kenrel_panic("out of process slot");
+    kenrel_panic("out of process slot for core #%d", (int)core);
 
     return -1;
 }
@@ -280,7 +280,8 @@ void scheduler_enqueue_message(uint64_t pid, msg_t* msg)
 {
     mutex_acquire(&msg_mutex);
     process_t* process = find_process(pid);
-    __queue_push(process->msg_queue, msg);
+    if(process->pid != 0)
+        __queue_push(process->msg_queue, msg);
     mutext_release(&msg_mutex);
 }
 
@@ -306,10 +307,10 @@ uint64_t scheduler_create_process(entry_point_t entry_point, int argc, char* arg
 {
     mutex_acquire(&scheduler_mutex);
 
-    uint64_t lpid = find_slot();
-    uint64_t pid = PID(lpid);
+    uint64_t lpid = find_slot(core);
+    uint64_t pid = _PID(core, lpid);
 
-    process_t* process = &get_process(lpid);
+    process_t* process = &processes[core][lpid];
     process->pid = pid;
     process->thread_count = 0;
     process->current_thread = -1;
@@ -349,14 +350,11 @@ bool scheduler_attach_thread(size_t pid, entry_point_t entry_point, int argc, ch
 
     void* kstack_base = pfa_alloc_pages(THREAD_STACK_SIZE);
 
-    thread->parent = process;
     thread->syscalling = false;
     thread->kernel_rsp = kstack_base + pfa_page_size() * THREAD_STACK_SIZE;
     thread->stack_base = create_stack(process->pagign, (uint64_t)entry_point, argc, argv, &thread->rsp);
-
-    // vmm_assign_pages(process->pagign, PAGE_PRIVILEGE_KERNEL, THREAD_STACK_SIZE, kstack_base);
-
     paging_map(process->pagign, kstack_base, kstack_base, THREAD_STACK_SIZE * pfa_page_size(), PAGE_PRIVILEGE_KERNEL);
+    thread->parent = process;
 
     process->thread_count++;
 

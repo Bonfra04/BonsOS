@@ -29,7 +29,6 @@
 #include <smp/smp.h>
 #include <interrupt/apic.h>
 #include <acpi/acpi.h>
-#include <smp/lts.h>
 
 #include "bootinfo.h"
 #include "dbg/dbg.h"
@@ -65,8 +64,6 @@ void init(const bootinfo_t* bootinfo)
     pfa_init((void*)__kernel_end_addr);
 
     kernel_paging = paging_init(bootinfo->memory_size);
-
-    gdt_init();
 
     extern void initialize_standard_library();
     initialize_standard_library();
@@ -104,7 +101,6 @@ void init(const bootinfo_t* bootinfo)
     
     syscall_init();
 
-    lts_init();
     smp_init();
 
     system_info.framebuffer = bootinfo->framebuffer;
@@ -137,4 +133,6 @@ void main(const bootinfo_t* bootinfo)
 
     printf("Running OS...\n");
     scheduler_start();
+    while(1)
+        asm("pause");
 }

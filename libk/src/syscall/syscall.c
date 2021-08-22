@@ -30,6 +30,30 @@ void syscall_register(size_t id, syscall_t systemcall)
 
 void syscall_init()
 {
+    for(size_t i = 0; i < MAX_SYSCALL; i++)
+        syscalls[i] = empty_syscall;
+
+    syscall_register(0, syscall_process_terminate);
+    syscall_register(1, syscall_thread_terminate);
+    syscall_register(2, syscall_process_execute);
+    syscall_register(3, syscall_read_file);
+    syscall_register(4, syscall_write_file);
+    syscall_register(5, syscall_seek_file);
+    syscall_register(6, syscall_tell_file);
+    syscall_register(7, syscall_file_open);
+    syscall_register(8, syscall_file_close);
+    syscall_register(9, syscall_file_remove);
+    syscall_register(10, syscall_map_mem);
+    syscall_register(11, syscall_msg_send);
+    syscall_register(12, syscall_msg_fetch);
+    syscall_register(13, syscall_get_mouse);
+    syscall_register(14, syscall_is_key_pressed);
+
+    syscall_enable();
+}
+
+void syscall_enable()
+{
     // Request the CPU's extended features.
     registers4_t regs;
     cpuid(0x80000001, &regs);
@@ -50,23 +74,4 @@ void syscall_init()
 
     // Write the CPU flag mask used during SYSCALL.
     wrmsr(MSR_IA32_FMASK, UINT32_MAX);
-
-    for(size_t i = 0; i < MAX_SYSCALL; i++)
-        syscalls[i] = empty_syscall;
-
-    syscall_register(0, syscall_process_terminate);
-    syscall_register(1, syscall_thread_terminate);
-    syscall_register(2, syscall_process_execute);
-    syscall_register(3, syscall_read_file);
-    syscall_register(4, syscall_write_file);
-    syscall_register(5, syscall_seek_file);
-    syscall_register(6, syscall_tell_file);
-    syscall_register(7, syscall_file_open);
-    syscall_register(8, syscall_file_close);
-    syscall_register(9, syscall_file_remove);
-    syscall_register(10, syscall_map_mem);
-    syscall_register(11, syscall_msg_send);
-    syscall_register(12, syscall_msg_fetch);
-    syscall_register(13, syscall_get_mouse);
-    syscall_register(14, syscall_is_key_pressed);
 }

@@ -23,6 +23,7 @@
 #define SPURIOUS_ISR 0xFF
 
 static lapic_callback_t callbacks[256];
+static bool initialized = false;
 
 static void lapic_timer_isr(interrupt_context_t* context)
 {
@@ -61,6 +62,8 @@ inline uint32_t lapic_read(uint16_t reg)
 
 inline uint8_t lapic_get_id()
 {
+    if(!initialized)
+        return 0;
     return (uint8_t)(lapic_read(LAPIC_REG_ID) >> 24);
 }
 
@@ -80,6 +83,7 @@ void apic_init()
     // register timer handler
     isr_set(TIMER_ISR, lapic_timer_isr);
     apic_setup();
+    initialized = true;
 }
 
 void apic_setup()

@@ -38,9 +38,6 @@ syscall_handle:
     mov rsp, .tmp_stack_top
     call tss_get_kstack
     sub rax, KSTACK_SIZE
-    mov rsi, rax
-    ; rdi already contains the process paging
-    call paging_get_ph      ; rax contains physical kstack base
     add rax, KSTACK_SIZE    ; rax contains physical kstack top
     mov rsp, rax            ; set new stack
 

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define WM_PID 2
+#define WM_PID ((1ull << 56ull) | 2ull)
 
 #define WND_FLAGS_DEFAULT   0b00000000
 #define WND_NO_DECORATIONS  0b00000001
