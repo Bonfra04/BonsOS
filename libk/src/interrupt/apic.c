@@ -4,6 +4,7 @@
 #include <memory/paging.h>
 #include <string.h>
 #include <smp/atomic.h>
+#include <device/pit.h>
 
 #define IA32_APIC_BASE_MSR 0x1B
 #define LAPIC_MEM_SIZE 0x3F4
@@ -24,6 +25,7 @@
 
 static lapic_callback_t callbacks[256];
 static bool initialized = false;
+static _Atomic uint32_t ticks_in_10ms;
 
 static void lapic_timer_isr(interrupt_context_t* context)
 {
@@ -36,16 +38,35 @@ static void lapic_timer_isr(interrupt_context_t* context)
     LAPIC_ISR_DONE();
 }
 
+static uint32_t calibrate()
+{
+    pit_prepare_one_shot(100);
+    
+    lapic_write(LAPIC_TIMER_INITCNT, 0xFFFFFFFF);
+
+    uint64_t tsc_start = rdtsc();
+    
+    pit_wait_one_shot();
+
+    uint64_t rsc_end = rdtsc();
+
+    return 0xFFFFFFFF - lapic_read(LAPIC_TIMER_CURRCNT);
+}
+
 static void lapic_timer_init()
 {
     // set and enable timer handler
     lapic_write(LAPIC_REG_LVT_TIMER, TIMER_ISR | TIMER_MODE_PERIODIC);
 
     // set timer divider
-    lapic_write(LAPIC_REG_TIMER_DIV, TIMER_DIV_2);
+    lapic_write(LAPIC_REG_TIMER_DIV, TIMER_DIV_16);
+
+    if(lapic_get_id() == 0)
+        ticks_in_10ms = calibrate();
+    uint64_t apic_rate = ticks_in_10ms / 10;
 
     // set timer initial count
-    lapic_write(LAPIC_REG_TIMER_INITIAL, 0xFFFFFF);
+    lapic_write(LAPIC_TIMER_INITCNT, apic_rate);
 }
 
 inline void lapic_write(uint16_t reg, uint32_t value)

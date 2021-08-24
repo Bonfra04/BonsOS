@@ -76,9 +76,10 @@ static const thread_t* run_next_thread()
             return run_thread(current_process, i); 
 
     for(size_t i = current_process + 1; i < MAX_PROCESSES; i++)
-        for(size_t j = 0; j < MAX_THREADS; j++)
-            if(procs[i].threads[j].parent != 0)
-                return run_thread(i, j);
+        if(procs[i].thread_count > 0)
+            for(size_t j = 0; j < MAX_THREADS; j++)
+                if(procs[i].threads[j].parent != 0)
+                    return run_thread(i, j);
 
     return run_thread(0, 0);
 }
