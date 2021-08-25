@@ -11,8 +11,8 @@
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
             "preLaunchTask": "run qemu (debug)",
-            "postDebugTask": "stop qemu debug",
-            "autorun": [    // path issues
+            "postDebugTask": "kill qemu",
+            "autorun": [
                 "set remotetimeout 35",
                 "directory libk",
                 "directory libc",
@@ -31,12 +31,11 @@
             "cwd": "${workspaceFolder}/boot/stage2",
             "gdbpath": "gdb",
             "preLaunchTask": "run qemu (debug)",
-            "postDebugTask": "stop qemu debug",
+            "postDebugTask": "kill qemu",
             "autorun": [
                 "set output-radix 16",
                 "set remotetimeout 35",
                 "add-symbol-file ${workspaceFolder}/bin/boot/loader.dbg"
-                // "set architecture i386:x64-32",
             ]
         },
         {
@@ -49,8 +48,8 @@
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
             "preLaunchTask": "run qemu (debug)",
-            "postDebugTask": "stop qemu debug",
-            "autorun": [    // path issues
+            "postDebugTask": "kill qemu",
+            "autorun": [
                 "add-symbol-file bin/kernel/kernel.sys",
                 "set remotetimeout 15",
                 "directory libk",
@@ -71,8 +70,8 @@
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
             "preLaunchTask": "run qemu (debug)",
-            "postDebugTask": "stop qemu debug",
-            "autorun": [    // path issues
+            "postDebugTask": "kill qemu",
+            "autorun": [
                 "add-symbol-file bin/kernel/kernel.sys",
                 "set remotetimeout 15",
                 "directory libk",
@@ -93,8 +92,8 @@
             "cwd": "${workspaceFolder}",
             "gdbpath": "gdb",
             "preLaunchTask": "run qemu (debug)",
-            "postDebugTask": "stop qemu debug",
-            "autorun": [    // path issues
+            "postDebugTask": "kill qemu",
+            "autorun": [
                 "add-symbol-file bin/kernel/kernel.sys",
                 "set remotetimeout 15",
                 "directory libk",
