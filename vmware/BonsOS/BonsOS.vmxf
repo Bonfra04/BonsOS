@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<Foundry>
-<VM>
-<VMId type="string">52 c9 14 5b 7c 46 e9 c4-9c 3c 1b 23 50 10 2e 79</VMId>
-<ClientMetaData>
-<clientMetaDataAttributes/>
-<HistoryEventList/></ClientMetaData>
-<vmxPathName type="string">BonsOS.vmx</vmxPathName></VM><tools-install-info><installError>0</installError><updateCounter>3</updateCounter></tools-install-info></Foundry>
