@@ -43,12 +43,8 @@ static uint32_t calibrate()
     pit_prepare_one_shot(100);
     
     lapic_write(LAPIC_TIMER_INITCNT, 0xFFFFFFFF);
-
-    uint64_t tsc_start = rdtsc();
     
     pit_wait_one_shot();
-
-    uint64_t rsc_end = rdtsc();
 
     return 0xFFFFFFFF - lapic_read(LAPIC_TIMER_CURRCNT);
 }
