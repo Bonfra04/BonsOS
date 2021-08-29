@@ -30,16 +30,16 @@ static void process_packet()
     int16_t dx = packet[1] - 256 * xNeg;
     int16_t dy = -(packet[2] - 256 * yNeg);
 
-    if(mouse_y + dy <= 0)
+    if((int64_t)mouse_y + dy <= 0)
         mouse_y = 1;
-    else if(mouse_y + dy >= bound_y)
+    else if((int64_t)mouse_y + dy >= bound_y)
         mouse_y = bound_y - 1;
     else
         mouse_y += dy;
 
-    if(mouse_x + dx <= 0)
+    if((int64_t)mouse_x + dx <= 0)
         mouse_x = 1;
-    else if(mouse_x + dx >= bound_x)
+    else if((int64_t)mouse_x + dx >= bound_x)
         mouse_x = bound_x - 1;
     else
         mouse_x += dx;

@@ -13,11 +13,11 @@ void init();
 void update();
 void render();
 
+static tga_t cursor_tga;
+
 int main(int argc, char* argv[])
 {
-    renderer_init((void*)strtoull(argv[0], 0, 16), strtoull(argv[1], 0, 16), strtoull(argv[2], 0, 16), strtoull(argv[3], 0, 16));
-
-    init();
+    init((void*)strtoull(argv[0], 0, 16), strtoull(argv[1], 0, 16), strtoull(argv[2], 0, 16), strtoull(argv[3], 0, 16));
 
     run_executable("a:/bin/taskbar.elf", 0, 0, ELF);
 
@@ -34,10 +34,14 @@ int main(int argc, char* argv[])
 
 static bool mouse_state[3];
 
-void init()
+void init(void* framebuffer, size_t width, size_t height, size_t pitch)
 {
+    renderer_init(framebuffer, width, height, pitch);
+    
     windows_init();
     memset(mouse_state, 0, sizeof(mouse_state));
+
+    tga_load(&cursor_tga, "a:/assets/cursor.tga");
 }
 
 void update()
@@ -72,4 +76,8 @@ void render()
                     renderer_put_pixel(window->x + x, window->y + y, ((uint32_t*)window->framebuffer)[x + y * window->width]);
         }
     }
+
+    uint64_t mx, my;
+    get_mouse(&mx, &my);
+    draw_image(&cursor_tga, mx, my);
 }
