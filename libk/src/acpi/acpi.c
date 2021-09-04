@@ -1,6 +1,7 @@
 #include <acpi/acpi.h>
 #include <string.h>
 #include <panic.h>
+#include <memory/paging.h>
 
 static rsdp_descriptor_t* rsdp;
 static rsdt_decriptor_t* rsdt;
@@ -20,13 +21,20 @@ static void find_rsdp()
     // validate
     if(rsdp == 0)
         kenrel_panic("ACPI RSDP not found");
-    if(rsdp->revision != 0x0)
-        kenrel_panic("Only ACPI 1.0 is supported");
+
+    extern paging_data_t kernel_paging;
+    paging_map(kernel_paging, rsdp, rsdp, sizeof(rsdp_descriptor_20_t), PAGE_PRIVILEGE_KERNEL);
 }
 
 static void find_rsdt()
 {
-    rsdt = (rsdt_decriptor_t*)rsdp->rsdt_address;
+    if(rsdp->revision == 0x0) // acpi < 2.0
+        rsdt = (rsdt_decriptor_t*)rsdp->rsdt_address;
+    else // acpi >= 2.0
+        rsdt = ((rsdp_descriptor_20_t*)rsdp)->xsdt_address;
+
+    extern paging_data_t kernel_paging;
+    paging_map(kernel_paging, rsdt, rsdt, sizeof(rsdt_decriptor_t), PAGE_PRIVILEGE_KERNEL);
 }
 
 void acpi_init()

@@ -11,6 +11,15 @@ typedef struct rsdp_descriptor
     uint32_t rsdt_address;
 } __attribute__ ((packed)) rsdp_descriptor_t;
 
+typedef struct rsdp_descriptor_20
+{
+    rsdp_descriptor_t first_part;
+    uint32_t length;
+    uint64_t xsdt_address;
+    uint8_t extended_checksum;
+    uint8_t reserved[3];
+} __attribute__ ((packed)) rsdp_descriptor_20_t;
+
 typedef struct sdt_header
 {
   char signature[4];
