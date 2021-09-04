@@ -82,7 +82,7 @@ void pfa_init_region(uint64_t base_address, uint64_t region_length)
 void pfa_deinit_region(uint64_t base_address, uint64_t region_length)
 {
     uint64_t align = base_address / PFA_PAGE_SIZE;
-    uint64_t pages = region_length / PFA_PAGE_SIZE + 1;
+    uint64_t pages = region_length / PFA_PAGE_SIZE + (region_length % PFA_PAGE_SIZE != 0) + 1;
 
     while(align <= max_pages && pages--)
     {
@@ -113,7 +113,7 @@ void pfa_init(void* bitmap_addr)
 
 uint64_t pfa_get_bitmap_size()
 {
-    return memory_map.total_memory / PFA_PAGE_SIZE / (sizeof(uint32_t) * 8);
+    return max_pages / (sizeof(uint32_t) * 8);
 }
 
 void* pfa_alloc_page()
