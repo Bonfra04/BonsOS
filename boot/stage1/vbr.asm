@@ -18,7 +18,7 @@ boot:
 .jumpToSecondStage:
     mov si, word [partition_offset]
     mov dl, byte [bpb_DriveNumber]
-    jmp 0 : Mem.Loader2 + 0x100             ; Far jump to the loaded file
+    jmp 0 : Mem.Loader2              ; Far jump to the loaded file
 
 partition_offset dw 0x0000
 ImageName db "LOADER  BIN"          ; Filename of the second stage bootloader [8 chars name] + [3 chars extension] padded with space

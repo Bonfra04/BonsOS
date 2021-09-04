@@ -1,6 +1,7 @@
 #include "a20.h"
 #include "../lib/stdint.h"
 #include "realmode.h"
+#include "ports.h"
 
 static bool a20_enabled()
 {
@@ -20,13 +21,16 @@ bool a20_enable()
     if(a20_enabled())
         return true;
 
-    rm_regs_t regs;
-
     // try with BIOS
-    regs.eax = 0x2403;
+    rm_regs_t regs = { 0 };
+    regs.eax = 0x2401;
     rm_int(0x15, &regs, &regs);
-    if(regs.eax != 0x00)
-        return false;
+
+    if(a20_enabled())
+        return true;
+
+    extern void a20_kb();
+    a20_kb();
 
     if(a20_enabled())
         return true;

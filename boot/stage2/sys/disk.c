@@ -31,8 +31,7 @@ static void read_sector(uint32_t lba, uint8_t count, void* address)
     regs.esi = (uint32_t)&packet;
     regs.eax = 0x42 << 8;
     regs.edx = drive;
-    regs.edi = 0xFAFA;
-    rm_int(0x13, &regs, &o);
+    rm_int(0x13, &regs, &regs);
 }
 
 void disk_init(uint8_t _drive)

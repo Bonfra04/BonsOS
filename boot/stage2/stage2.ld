@@ -3,7 +3,7 @@ ENTRY(load)
 
 SECTIONS
 {
-    . = 0x7E00 + 0x100;
+    . = 0x7E00;
 
     .text :
     {
