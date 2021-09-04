@@ -7,6 +7,9 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/libc/include/",
                 "${workspaceFolder}/libk/include/"
+            ],
+            "defines": [
+                "BONSOS"
             ]
         }
     ],

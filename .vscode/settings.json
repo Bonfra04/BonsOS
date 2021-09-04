@@ -3,6 +3,7 @@
         // Git
         ".gitignore": true,
         ".gitattributes": true,
+        ".gitmodules": true,
 
         // Output files and dirs
         "bin/": true,

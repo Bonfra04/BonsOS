@@ -30,7 +30,7 @@ static void combine_free_regions(heap_region_t* a, heap_region_t* b)
 
 void heap_init()
 {
-    size = 0x1000 * 256;
+    size = 0x1000 * 256 * 20;
     base_address = map_mem(NULL, size);
     memset(base_address, 0, size);
     first_region = base_address;

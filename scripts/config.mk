@@ -12,10 +12,11 @@ DIR_LIBUSR	:= $(DIR_ROOT)/libusr
 DIR_SCRIPTS	:= $(DIR_ROOT)/scripts
 DIR_PROGRAMS:= $(DIR_ROOT)/programs
 
-DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libusr/include
+DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libusr/include -I $(DIR_ROOT)/Rund/include
 
 CC		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
 CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -Qn -g \
+			-D BONSOS \
 			-m64 -mno-red-zone -mno-mmx -mfpmath=sse -masm=intel \
 			-ffreestanding -fno-asynchronous-unwind-tables -mcmodel=large \
 			-Wall -Wextra \

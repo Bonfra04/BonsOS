@@ -61,10 +61,10 @@
             ]
         },
         {
-            "name": "Qemu Debug - Desktop",
+            "name": "Qemu Debug - Windows Manager",
             "type": "gdb",
             "request": "attach",
-            "executable": "${workspaceFolder}/img-content/bin/desktop.elf",
+            "executable": "${workspaceFolder}/img-content/bin/wndmng.elf",
             "target": "tcp::9000",
             "remote": true,
             "cwd": "${workspaceFolder}",
@@ -78,7 +78,7 @@
                 "directory libc",
                 "directory libusr",
                 "directory kernel",
-                "directory programs/desktop",
+                "directory programs/wndmng",
                 "set output-radix 16"
             ]
         },

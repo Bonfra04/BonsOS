@@ -2,7 +2,7 @@ DIR_ROOT := .
 
 include $(DIR_ROOT)/scripts/config.mk
 
-.PHONY: all build bootloader kernel libk libc programs libusr mkdir clean image
+.PHONY: all build bootloader kernel libk libc programs rund libusr mkdir clean image
 
 all: build
 
@@ -22,11 +22,14 @@ libc:
 	@make $(MAKE_FLAGS) --directory=$(DIR_LIBC) kernel=1
 	@make $(MAKE_FLAGS) --directory=$(DIR_LIBC)
 
-programs:
+programs: rund
 	@make $(MAKE_FLAGS) --directory=$(DIR_PROGRAMS)
 
 libusr:
 	@make $(MAKE_FLAGS) --directory=$(DIR_LIBUSR)
+
+rund:
+	@make $(MAKE_FLAGS) --directory=$(DIR_ROOT)/Rund PLATFORM=BONSOS
 
 mkdir:
 	@mkdir -p bin

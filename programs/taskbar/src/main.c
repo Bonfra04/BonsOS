@@ -1,39 +1,59 @@
 #include <gui.h>
 #include <syscalls.h>
-
-static uint32_t color;
+#include <rund.h>
 
 void event_handler(uint64_t wnd_id, uint8_t event_id)
 {
     switch(event_id)
     {
-        case EVENT_MOUSE_LEFT_DOWN:
-            color = 0xFF00FF00;
-            break;
-        case EVENT_MOUSE_LEFT_UP:
-            color = 0xFFFF0000;
-            break;
         default:
             default_event_handler(wnd_id, event_id);
             break;
     }
 }
 
+void render(const window_t* window)
+{
+    for(int x = 0; x < window->width; x++)
+        for(int y = 0; y < window->height; y++)
+            ((uint32_t*)window->framebuffer)[y * window->width + x] = 0xFFFFFFFF;
+}
+
 int main()
 {
-    uint64_t width = display_width();
-    uint64_t height = display_height() / 25;
+    size_t width = display_width();
+    size_t height = display_height();// / 25;
     uint64_t x = 0, y = display_height() - height;
-    window_t window = window_create("taskbar", width, height, x, y, WND_NO_DECORATIONS);
 
-    color = 0xFFFFFFFF;
+    rund_app_t app = {
+        "Taskbar",
+        x, y,
+        width, height,
+        Row(
+			list(
+				Container(NULL, 100, 100, ContainerDec{ .color = 0x00FF00 }),
+				Expanded(
+					Container(NULL, ContainerDec{ .color = 0x0000FF }),
+					Flex(1)
+				),
+				Expanded(
+					Container(NULL, ContainerDec{ .color = 0xFFFF00 }),
+					Flex(2)
+				),
+				Expanded(
+					Container(NULL, ContainerDec{ .color = 0xFFFFFF }),
+					Flex(3)
+				),
+				Align(
+					Container(NULL, 100, 100, ContainerDec{ .color = 0xFF006F }),
+					Alignment(0.0f, 1.0f)
+				),
+				Container(NULL, 100, 100)
+			)
+		)
+    };
 
-    do
-    {
-        for(int x = 0; x < width; x++)
-            for(int y = 0; y < height; y++)
-                ((uint32_t*)window.framebuffer)[y * width + x] = color;
-    } while(cycle_events(event_handler));
+    run_app(&app);
 
     while(1)
         asm("pause");

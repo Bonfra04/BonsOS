@@ -140,7 +140,7 @@ size_t display_height()
     return rsp->height;
 }
 
-bool cycle_events(event_handler_t handler)
+bool cycle_events(window_event_handler_t handler)
 {
     msg_t msg;
     uint64_t sender = msg_fetch(&msg);

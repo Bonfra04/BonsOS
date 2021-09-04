@@ -32,7 +32,7 @@ void* window_resize(window_t window, size_t width, size_t height);
 void window_set_title(window_t window, const char* title);
 window_t window_create(const char* title, size_t width, size_t height, size_t x, size_t y, uint8_t flags);
 
-typedef void(*event_handler_t)(uint64_t wnd_id, uint8_t event_id);
+typedef void(*window_event_handler_t)(uint64_t wnd_id, uint8_t event_id);
 
-bool cycle_events(event_handler_t handler);
+bool cycle_events(window_event_handler_t handler);
 void default_event_handler(uint64_t wnd_id, uint8_t event_id);

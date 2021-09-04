@@ -61,6 +61,14 @@ void update()
         else
             event_send(active, EVENT_MOUSE_LEFT_UP);
     }
+    if(is_key_pressed(VK_MOUSE_RIGHT) != mouse_state[1])
+    {
+        mouse_state[1] = !mouse_state[1];
+        if(mouse_state[1])
+            event_send(active, EVENT_MOUSE_RIGHT_DOWN);
+        else
+            event_send(active, EVENT_MOUSE_RIGHT_UP);
+    }
 }
 
 void render()
