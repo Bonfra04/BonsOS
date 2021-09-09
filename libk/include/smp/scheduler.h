@@ -29,7 +29,7 @@ typedef struct thread
 typedef struct process
 {
     size_t pid;
-    paging_data_t pagign;
+    paging_data_t paging;
     size_t thread_count;
     size_t current_thread;
     thread_t threads[MAX_THREADS];

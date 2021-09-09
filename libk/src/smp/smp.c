@@ -63,6 +63,7 @@ static void detect_cores(const rsdt_decriptor_t* rsdt)
     for(size_t i = 0; i < entries; i++)
     {
         sdt_header_t* header = (sdt_header_t*)rsdt->addresses[i];
+        paging_map_global(header, header, sizeof(sdt_header_t), PAGE_PRIVILEGE_KERNEL);
         if(!strncmp(header->signature, "APIC", 4))
         {
             madt_descriptor_t* madt = (madt_descriptor_t*)(header);

@@ -22,8 +22,7 @@ static void find_rsdp()
     if(rsdp == 0)
         kenrel_panic("ACPI RSDP not found");
 
-    extern paging_data_t kernel_paging;
-    paging_map(kernel_paging, rsdp, rsdp, sizeof(rsdp_descriptor_20_t), PAGE_PRIVILEGE_KERNEL);
+    paging_map_global(rsdp, rsdp, sizeof(rsdp_descriptor_20_t), PAGE_PRIVILEGE_KERNEL);
 }
 
 static void find_rsdt()
@@ -33,8 +32,7 @@ static void find_rsdt()
     else // acpi >= 2.0
         rsdt = ((rsdp_descriptor_20_t*)rsdp)->xsdt_address;
 
-    extern paging_data_t kernel_paging;
-    paging_map(kernel_paging, rsdt, rsdt, sizeof(rsdt_decriptor_t), PAGE_PRIVILEGE_KERNEL);
+    paging_map_global(rsdt, rsdt, sizeof(rsdt_decriptor_t), PAGE_PRIVILEGE_KERNEL);
 }
 
 void acpi_init()

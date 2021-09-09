@@ -101,7 +101,7 @@ static __attribute__((naked)) void scheduler_isr(const interrupt_context_t* cont
     if(thread->syscalling)
         asm volatile("mov cr3, %[addr]" : : [addr]"r"(kernel_paging) : "memory");
     else
-        asm volatile("mov cr3, %[addr]" : : [addr]"r"(thread->parent->pagign) : "memory");
+        asm volatile("mov cr3, %[addr]" : : [addr]"r"(thread->parent->paging) : "memory");
     asm volatile("jmp restore_context");
 }
 
@@ -194,7 +194,7 @@ void scheduler_prepare()
     uint8_t core_id = lapic_get_id();
 
     processes[core_id][0].pid = PID(0); 
-    processes[core_id][0].pagign = kernel_paging;
+    processes[core_id][0].paging = kernel_paging;
     processes[core_id][0].thread_count = 0;
     processes[core_id][0].current_thread = 0;
     memset(processes[core_id][0].threads, 0, sizeof(processes[core_id][0].threads));
@@ -301,7 +301,8 @@ void scheduler_fetch_message(uint64_t pid, msg_t* msg)
 
 void scheduler_toggle_syscall_state()
 {
-    ((thread_t*)scheduler_current_thread())->syscalling = !scheduler_current_thread()->syscalling;
+    thread_t* thread = scheduler_current_thread();
+    thread->syscalling = !thread->syscalling;
 }
 
 uint64_t scheduler_create_process(entry_point_t entry_point, int argc, char* argv[], size_t size, uint8_t core)
@@ -315,11 +316,11 @@ uint64_t scheduler_create_process(entry_point_t entry_point, int argc, char* arg
     process->pid = pid;
     process->thread_count = 0;
     process->current_thread = -1;
-    process->pagign = paging_create();
+    process->paging = paging_create();
 
     void* pages = (void*)USER_PROCESS_BASE_ADDRESS;
     for(size_t i = 0; i < size; i++)
-        paging_attach_4kb_page(process->pagign, entry_point + pfa_page_size() * i, pages + pfa_page_size() * i, PAGE_PRIVILEGE_USER);
+        paging_attach_4kb_page(process->paging, entry_point + pfa_page_size() * i, pages + pfa_page_size() * i, PAGE_PRIVILEGE_USER);
 
     process->msg_queue = queue_create(msg_t);
 
@@ -353,8 +354,8 @@ bool scheduler_attach_thread(size_t pid, entry_point_t entry_point, int argc, ch
 
     thread->syscalling = false;
     thread->kernel_rsp = kstack_base + pfa_page_size() * THREAD_STACK_SIZE;
-    thread->stack_base = create_stack(process->pagign, (uint64_t)entry_point, argc, argv, &thread->rsp);
-    paging_map(process->pagign, kstack_base, kstack_base, THREAD_STACK_SIZE * pfa_page_size(), PAGE_PRIVILEGE_KERNEL);
+    thread->stack_base = create_stack(process->paging, (uint64_t)entry_point, argc, argv, &thread->rsp);
+    paging_map(process->paging, kstack_base, kstack_base, THREAD_STACK_SIZE * pfa_page_size(), PAGE_PRIVILEGE_KERNEL);
     thread->parent = process;
 
     process->thread_count++;
@@ -365,5 +366,5 @@ bool scheduler_attach_thread(size_t pid, entry_point_t entry_point, int argc, ch
 
 paging_data_t scheduler_get_current_paging()
 {
-    return get_process(current_process).pagign;
+    return get_process(current_process).paging;
 }
