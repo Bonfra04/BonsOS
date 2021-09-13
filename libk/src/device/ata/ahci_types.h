@@ -116,8 +116,8 @@ typedef struct hba_mem
 
 typedef struct hba_device
 {
-    hba_port_t* port;
-    hba_cmd_header_t* cmd_header;
+    volatile hba_port_t* port;
+    volatile hba_cmd_header_t* cmd_header;
     size_t lba_capacity;
 } hba_device_t;
 

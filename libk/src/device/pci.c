@@ -96,8 +96,12 @@ void pci_init()
                     switch (data.class)
                     {
                         case PCI_CLASS_ATA:
+                        {
+                            uint16_t command_r = pci_read_word(bus, dev, func, 0x4);
+                            pci_write_word(bus, dev, func, 0x4, command_r | (1 << 2));
                             ata_register_device(&data);
                             break;
+                        }
                     }
                 }
 }

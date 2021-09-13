@@ -20,7 +20,7 @@ void ata_init()
     ahci_init();
 }
 
-void ata_register_device(pci_device_t* device)
+void ata_register_device(const pci_device_t* device)
 {
     switch (device->sub_class)
     {

@@ -18,4 +18,4 @@
 
 void ata_init();
 
-void ata_register_device(pci_device_t* device);
+void ata_register_device(const pci_device_t* device);
