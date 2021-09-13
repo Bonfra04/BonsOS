@@ -283,11 +283,7 @@ bool sata_read(size_t device, uint64_t lba, uint8_t count, volatile void* addres
     if (spin == 1000000)
         return false;
 
-    printf("%d\n", slot);
-    printf("%X\n", hba_device->port->ci);
     hba_device->port->ci = 1 << slot;
-    uint32_t ci = hba_device->port->ci;
-    printf("%X\n", ci);
 
     // Wait for completion
     while (1)
@@ -299,16 +295,10 @@ bool sata_read(size_t device, uint64_t lba, uint8_t count, volatile void* addres
         if (hba_device->port->is & HBA_PxIS_TFES)   // Task file error
             return false;
     }
-    printf("%X\n", hba_device->port->ci);
 
     // Check again
     if (hba_device->port->is & HBA_PxIS_TFES)
         return false;
-
-    // for(int i = 0; i < UINT16_MAX* 100; i++);
-    printf("%x - ", (int)((volatile uint8_t*)address)[2]);
-    // for(int i = 0; i < UINT16_MAX * 100; i++);
-    printf("%x\n", (int)((volatile uint8_t*)address)[2]);
 
     return true;
 }
