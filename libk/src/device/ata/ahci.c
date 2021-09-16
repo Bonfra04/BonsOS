@@ -206,24 +206,23 @@ static bool port_reset(volatile hba_port_t* port)
     uint32_t fis_low = fis_address & 0xFFFFFFFFLL;
     uint32_t fis_high = (fis_address >> 32) & 0xFFFFFFFFLL;
 
-    stop_cmd(port);
-
-    memset((void*)cmd_address, 0, 1024);
+    memset((void*)cmd_address, 0, 0x1000);
     port->clb = cmd_low;
     port->clbu = cmd_high;
 
-    memset((void*)fis_address, 0, 256);
+    memset((void*)fis_address, 0, 0x1000);
     port->fb = fis_low;
     port->fbu = fis_high;
 
-    port->cmd &= HBA_PxCMD_FRE;
+    port->cmd |= HBA_PxCMD_FRE;
+    port->cmd |= HBA_PxCMD_SUD;
 
     // wait 1 ms
     pit_prepare_one_shot(100); 
     pit_wait_one_shot();
 
     uint64_t spin = 0;
-    while(((port->ssts & 0b111) != 3) && spin < 1000000)
+    while((port->ssts & HBA_PxSSTS_DET) != 3 && spin < 1000000)
         spin++;
 
     if(spin >= 1000000)
@@ -232,6 +231,8 @@ static bool port_reset(volatile hba_port_t* port)
     port->serr = 0xFFFFFFFF;
 
     while(port->tfd & HBA_PxTFD_STS_DRQ && port->tfd & HBA_PxTFD_STS_BSY);
+
+    port->is = 0;
 
     return true;
 }
