@@ -12,6 +12,12 @@
 #define HBA_PxCMD_FR    (1 << 14)
 #define HBA_PxCMD_CR    (1 << 15)
 
+#define HBA_PxTFD_STS_DRQ   (1 << 3)
+#define HBA_PxTFD_STS_BSY   (1 << 7)
+
+#define HBA_GHC_AE      (1 << 31)
+#define HBA_GHC_HR      (1 << 0)
+
 #define ATA_DEV_BUSY    (1 << 7)
 #define ATA_DEV_DRQ     (1 << 3)
 

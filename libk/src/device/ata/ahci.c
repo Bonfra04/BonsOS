@@ -6,6 +6,7 @@
 #include <memory/paging.h>
 #include <stdbool.h>
 #include "ahci_types.h"
+#include <device/pit.h>
 
 static hba_device_t devices[MAX_DEVICES];
 static size_t registered_devices;
@@ -192,6 +193,49 @@ size_t ahci_get_capacity(size_t device)
     return devices[device].lba_capacity;
 }
 
+static bool port_reset(volatile hba_port_t* port)
+{
+    uint64_t page0 = (uint64_t)pfa_alloc_page();
+    uint64_t page1 = (uint64_t)pfa_alloc_page();
+
+    uint64_t cmd_address = page0;
+    uint32_t cmd_low = cmd_address & 0xFFFFFFFFLL;
+    uint32_t cmd_high = (cmd_address >> 32) & 0xFFFFFFFFLL;
+
+    uint64_t fis_address = page1;
+    uint32_t fis_low = fis_address & 0xFFFFFFFFLL;
+    uint32_t fis_high = (fis_address >> 32) & 0xFFFFFFFFLL;
+
+    stop_cmd(port);
+
+    memset((void*)cmd_address, 0, 1024);
+    port->clb = cmd_low;
+    port->clbu = cmd_high;
+
+    memset((void*)fis_address, 0, 256);
+    port->fb = fis_low;
+    port->fbu = fis_high;
+
+    port->cmd &= HBA_PxCMD_FRE;
+
+    // wait 1 ms
+    pit_prepare_one_shot(100); 
+    pit_wait_one_shot();
+
+    uint64_t spin = 0;
+    while(((port->ssts & 0b111) != 3) && spin < 1000000)
+        spin++;
+
+    if(spin >= 1000000)
+        return false;
+
+    port->serr = 0xFFFFFFFF;
+
+    while(port->tfd & HBA_PxTFD_STS_DRQ && port->tfd & HBA_PxTFD_STS_BSY);
+
+    return true;
+}
+
 void ahci_register_pci_device(const pci_device_t* device)
 {
     uint32_t starting_device = registered_devices;
@@ -199,11 +243,38 @@ void ahci_register_pci_device(const pci_device_t* device)
     volatile hba_mem_t* hba_mem = (volatile hba_mem_t*)(uint64_t)device->base5;
     paging_map_global(hba_mem, hba_mem, sizeof(hba_mem_t), PAGE_PRIVILEGE_USER);
 
+    // enable ahci mode
+    hba_mem->ghc |= HBA_GHC_AE;
+
     for(int bit = 0; bit < 32; bit++)
         if(hba_mem->pi & (1 << bit)) // bit is set: device exists
         {
             volatile hba_port_t* port = &(hba_mem->ports[bit]);
-            
+
+            // make sure all ports are idle
+            port->cmd &= ~HBA_PxCMD_ST;
+            port->cmd &= ~HBA_PxCMD_CR;
+            port->cmd &= ~HBA_PxCMD_FR;
+            port->cmd &= ~HBA_PxCMD_FRE;
+        }
+
+    // standard AHCI reset
+    hba_mem->ghc |= HBA_GHC_HR;
+    while(hba_mem->ghc & HBA_GHC_HR)
+        asm("pause");
+
+    // enable ahci mode
+    hba_mem->ghc |= HBA_GHC_AE;
+
+    for(int bit = 0; bit < 32; bit++)
+        if(hba_mem->pi & (1 << bit)) // bit is set: device exists
+        {
+            volatile hba_port_t* port = &(hba_mem->ports[bit]);
+            bool device_connted = port_reset(port);
+
+            if(!device_connted)
+                continue;
+
             switch (check_type(port))
             {
             case AHCI_DEV_SATA:
@@ -219,6 +290,8 @@ void ahci_register_pci_device(const pci_device_t* device)
                     registered_devices++;
                 }
                 break;
+            default:
+                asm volatile ("pause");
             }
         }
 
