@@ -1,158 +1,12 @@
-#include <device/ata/ahci.h>
-#include <panic.h>
-#include <x86/ports.h>
-#include <memory/page_frame_allocator.h>
-#include <string.h>
-#include <memory/paging.h>
-#include <stdbool.h>
+
 #include "ahci_types.h"
-#include <device/pit.h>
+#include <device/ata/ahci.h>
+#include <memory/paging.h>
+#include <memory/page_frame_allocator.h>
+#include <panic.h>
 
 static hba_device_t devices[MAX_DEVICES];
 static size_t registered_devices;
-
-static void stop_cmd(volatile hba_port_t* port)
-{
-    // Clear ST (bit0) and FRE (bit4)
-    port->cmd &= ~HBA_PxCMD_ST;
-    port->cmd &= ~HBA_PxCMD_FRE;
- 
-    // Wait until FR (bit14), CR (bit15) are cleared
-    while((port->cmd & HBA_PxCMD_FR) || (port->cmd & HBA_PxCMD_CR));
-}
-
-static void start_cmd(volatile hba_port_t* port)
-{
-    // Wait until CR (bit15) is cleared
-    while (port->cmd & HBA_PxCMD_CR);
- 
-    // Set FRE (bit4) and ST (bit0)
-    port->cmd |= HBA_PxCMD_FRE;
-    port->cmd |= HBA_PxCMD_ST; 
-}
-
-static int find_cmdslot(volatile hba_port_t* port)
-{
-    // If not set in SACT and CI, the slot is free
-    uint32_t slots = (port->sact | port->ci);
-    for (int i = 0; i < 32; i++, slots >>= 1)
-        if ((slots & 1) == 0)
-            return i;
-    return -1;
-}
-
-static bool ahci_identify(hba_device_t* hba_device)
-{
-    volatile ahci_ident_t result;
-
-    hba_device->port->is = -1; // Clear pending interrupt bits
-    int slot = find_cmdslot(hba_device->port);
-
-    if(slot == -1)
-        return false;
-
-    volatile hba_cmd_header_t* cmd = &(hba_device->cmd_header[slot]);
-    cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
-    cmd->w = 0;
-    cmd->p = 1;
-    cmd->c = 1;
-
-    volatile hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)(((uint64_t)cmd->ctbau >> 32) | (uint64_t)cmd->ctba);
-    memset(cmdtable, 0, sizeof(hba_cmd_table_t));
-
-    cmdtable->prdt_entry[0].dba = (uint32_t)(uint64_t)&result;
-    cmdtable->prdt_entry[0].dbau = ((uint64_t)&result >> 32);
-    cmdtable->prdt_entry[0].dbc = 511;
-    cmdtable->prdt_entry[0].i = 1;
-
-    volatile fis_reg_h2d_t* cmdfis = (fis_reg_h2d_t*)(cmdtable->cfis);
-    memset(cmdfis, 0, sizeof(fis_reg_h2d_t));
-    cmdfis->fis_type = FIS_TYPE_REG_H2D;
-    cmdfis->command = ATA_CMD_IDENTIFY;
-    cmdfis->device = 0; // Master device
-    cmdfis->c = 1;
-
-    int spin = 0; // Spin lock timeout counter
-    while ((hba_device->port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
-        spin++;
-    if (spin == 1000000)
-        return false;
-
-    hba_device->port->ci = 1 << slot;
-
-    // Wait for completion
-    while (1)
-    {
-        // In some longer duration reads, it may be helpful to spin on the DPS bit 
-        // in the PxIS port field as well (1 << 5)
-        if (!(hba_device->port->ci & (1 << slot))) 
-            break;
-        if (hba_device->port->is & HBA_PxIS_TFES)   // Task file error
-            return false;
-    }
-
-    // Check again
-    if (hba_device->port->is & HBA_PxIS_TFES)
-        return false;
-
-    hba_device->lba_capacity = result.lba_capacity;
-
-    for(int i = 0; i < 40/2; i++)
-        if(((uint16_t*)result.model)[i])
-        {
-            char c1 = ((uint16_t*)result.model)[i];
-            char c2 = ((uint16_t*)result.model)[i] >> 8;
-            printf("%c%c", c2, c1);
-        }
-    printf("\n");
-
-    return true;
-}
-
-static void configure_device(hba_device_t* device)
-{
-    uint64_t page0 = (uint64_t)pfa_alloc_page();
-    uint64_t page1 = (uint64_t)pfa_alloc_page();
-    uint64_t page2 = (uint64_t)pfa_alloc_page();
-
-    uint64_t cmd_address = page0;
-    uint32_t cmd_low = cmd_address & 0xFFFFFFFFLL;
-    uint32_t cmd_high = (cmd_address >> 32) & 0xFFFFFFFFLL;
-
-    uint64_t fis_address = page0 + 1024;
-    uint32_t fis_low = fis_address & 0xFFFFFFFFLL;
-    uint32_t fis_high = (fis_address >> 32) & 0xFFFFFFFFLL;
-
-    stop_cmd(device->port);
-
-    device->port->clb = cmd_low;
-    device->port->clbu = cmd_high;
-    memset((void*)cmd_address, 0, 1024);
-
-    device->port->fb = fis_low;
-    device->port->fbu = fis_high;
-    memset((void*)fis_address, 0, 256);
-
-    device->cmd_header = (hba_cmd_header_t*)cmd_address;
-    for (int i = 0; i < 32; i++)
-    {
-        device->cmd_header[i].prdtl = 1;
-
-        uint64_t cmd_addr = i < 16 ? page1 : page2;
-        cmd_addr += 256 * (i % 16);
-
-        uint32_t cmd_addr_low = cmd_addr & 0xFFFFFFFFLL;
-        uint32_t cmd_addr_high = (cmd_addr >> 32) & 0xFFFFFFFFLL;
-
-        device->cmd_header[i].ctba = cmd_addr_low;
-        device->cmd_header[i].ctbau = cmd_addr_high;
-        memset((void*)cmd_addr, 0, 256);
-    }
-
-    start_cmd(device->port);
-
-    ahci_identify(device);
-}
 
 static int check_type(volatile hba_port_t* port)
 {
@@ -176,41 +30,78 @@ static int check_type(volatile hba_port_t* port)
     return AHCI_DEV_NULL;
 }
 
-void ahci_init()
+static uint8_t find_cmd_slot(hba_device_t* device)
 {
-    registered_devices = 0;
+    uint8_t cmd_slots = device->hba_mem->cap >> 8 & 0b11111;
+    for(uint8_t i = 0; i < cmd_slots; i++)
+        if(((device->port->sact | device->port->ci) & (1 << i)) == 0)
+            return i;
+    return -1;
 }
 
-size_t ahci_devices()
+static void send_cmd(hba_device_t* device, uint8_t cmd_slot)
 {
-    return registered_devices;
+    volatile hba_port_t* port = device->port;
+    while((port->tfd & (0x80 | 0x8)));
+
+    port->cmd &= ~HBA_PxCMD_ST;
+
+    while(port->cmd & HBA_PxCMD_CR);
+
+    port->cmd |= HBA_PxCMD_FRE | HBA_PxCMD_ST;
+    port->ci = 1 << cmd_slot;
+
+    while(port->ci & (1 << cmd_slot));
+
+    port->cmd = port->cmd & ~HBA_PxCMD_ST;
+    while(port->cmd & HBA_PxCMD_ST);
+    port->cmd = port->cmd & ~HBA_PxCMD_FRE;
 }
 
-size_t ahci_get_capacity(size_t device)
+static inline void enable_ahci_mode(volatile hba_mem_t* hba_mem)
 {
-    if(device >= registered_devices)
-        return -1;
-    return devices[device].lba_capacity;
+    hba_mem->ghc |= HBA_GHC_AE;
+}
+
+static void idle_ports(volatile hba_mem_t* hba_mem)
+{
+    for(uint8_t bit = 0; bit < 32; bit++)
+        if(hba_mem->pi & (1 << bit)) // bit is set: device exists
+        {
+            volatile hba_port_t* port = &(hba_mem->ports[bit]);
+
+            // make sure all ports are idle
+            port->cmd &= ~HBA_PxCMD_ST;
+            port->cmd &= ~HBA_PxCMD_CR;
+            port->cmd &= ~HBA_PxCMD_FR;
+            port->cmd &= ~HBA_PxCMD_FRE;
+        }
+}
+
+static void standard_ahci_reset(volatile hba_mem_t* hba_mem)
+{
+    // standard AHCI reset
+    hba_mem->ghc |= HBA_GHC_HR;
+    while(hba_mem->ghc & HBA_GHC_HR)
+        asm("pause");
 }
 
 static bool port_reset(volatile hba_port_t* port)
 {
     uint64_t page0 = (uint64_t)pfa_alloc_page();
-    uint64_t page1 = (uint64_t)pfa_alloc_page();
+    memset((void*)page0, 0, pfa_page_size());
 
     uint64_t cmd_address = page0;
     uint32_t cmd_low = cmd_address & 0xFFFFFFFFLL;
     uint32_t cmd_high = (cmd_address >> 32) & 0xFFFFFFFFLL;
 
-    uint64_t fis_address = page1;
+    uint64_t fis_address = page0 + 1024;
     uint32_t fis_low = fis_address & 0xFFFFFFFFLL;
     uint32_t fis_high = (fis_address >> 32) & 0xFFFFFFFFLL;
 
-    memset((void*)cmd_address, 0, 0x1000);
     port->clb = cmd_low;
     port->clbu = cmd_high;
 
-    memset((void*)fis_address, 0, 0x1000);
     port->fb = fis_low;
     port->fbu = fis_high;
 
@@ -237,35 +128,96 @@ static bool port_reset(volatile hba_port_t* port)
     return true;
 }
 
+static bool ahci_identify(hba_device_t* hba_device)
+{
+    volatile ahci_ident_t result;
+
+    uint8_t cmd_slot = find_cmd_slot(hba_device);
+    if(cmd_slot == -1)
+        return false;
+
+    volatile hba_cmd_header_t* cmd_hdr = &(hba_device->cmd_header[cmd_slot]);
+    cmd_hdr->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    cmd_hdr->w = 0;
+    cmd_hdr->prdtl = 1;
+
+    volatile hba_cmd_table_t* cmd_table = (volatile hba_cmd_table_t*)(((uint64_t)cmd_hdr->ctbau >> 32) | (uint64_t)cmd_hdr->ctba);
+    memset(cmd_table, 0, sizeof(hba_cmd_table_t));
+    cmd_table->prdt_entry[0].dba = (uint32_t)((uint64_t)&result & 0xFFFFFFFF);
+    cmd_table->prdt_entry[0].dbau = (uint32_t)(((uint64_t)&result >> 32) & 0xFFFFFFFF);
+    cmd_table->prdt_entry[0].dbc = 511;
+    cmd_table->prdt_entry[0].i = 1;
+
+    volatile fis_reg_h2d_t* cmd = (volatile fis_reg_h2d_t*)(cmd_table->cfis);
+    cmd->fis_type = FIS_TYPE_REG_H2D;
+    cmd->command = ATA_CMD_IDENTIFY;
+    cmd->device = 0;
+    cmd->c = 1;
+    cmd->pmport = 0;
+
+    send_cmd(hba_device, cmd_slot);
+
+     hba_device->lba_capacity = result.lba_capacity;
+
+    for(int i = 0; i < 40/2; i++)
+        if(((uint16_t*)result.model)[i])
+        {
+            char c1 = ((uint16_t*)result.model)[i];
+            char c2 = ((uint16_t*)result.model)[i] >> 8;
+            printf("%c%c", c2, c1);
+        }
+    printf("\n");
+
+    return true;
+}
+
+static bool configure_device(hba_device_t* device)
+{
+    uint64_t page1 = (uint64_t)pfa_alloc_page();
+    uint64_t page2 = (uint64_t)pfa_alloc_page();
+    memset((void*)page1, 0, pfa_page_size());
+    memset((void*)page2, 0, pfa_page_size());
+
+    uint64_t cmd_address = (uint64_t)device->port->clb | ((uint64_t)device->port->clbu >> 32ull);
+    device->cmd_header = (hba_cmd_header_t*)cmd_address;
+
+    for (int i = 0; i < 32; i++)
+    {
+        device->cmd_header[i].prdtl = 1;
+
+        uint64_t cmd_addr = i < 16 ? page1 : page2;
+        cmd_addr += 256 * (i % 16);
+
+        uint32_t cmd_addr_low = cmd_addr & 0xFFFFFFFFull;
+        uint32_t cmd_addr_high = (cmd_addr >> 32) & 0xFFFFFFFFull;
+
+        device->cmd_header[i].ctba = cmd_addr_low;
+        device->cmd_header[i].ctbau = cmd_addr_high;
+    }
+
+    return ahci_identify(device);
+}
+
+void ahci_init()
+{
+    registered_devices = 0;
+}
+
 void ahci_register_pci_device(const pci_device_t* device)
 {
     uint32_t starting_device = registered_devices;
 
     volatile hba_mem_t* hba_mem = (volatile hba_mem_t*)(uint64_t)device->base5;
-    paging_map_global(hba_mem, hba_mem, sizeof(hba_mem_t), PAGE_PRIVILEGE_USER);
+    extern paging_data_t kernel_paging;
+    paging_map(kernel_paging, hba_mem, hba_mem, sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL);
 
-    // enable ahci mode
-    hba_mem->ghc |= HBA_GHC_AE;
+    enable_ahci_mode(hba_mem);
 
-    for(int bit = 0; bit < 32; bit++)
-        if(hba_mem->pi & (1 << bit)) // bit is set: device exists
-        {
-            volatile hba_port_t* port = &(hba_mem->ports[bit]);
+    idle_ports(hba_mem);
 
-            // make sure all ports are idle
-            port->cmd &= ~HBA_PxCMD_ST;
-            port->cmd &= ~HBA_PxCMD_CR;
-            port->cmd &= ~HBA_PxCMD_FR;
-            port->cmd &= ~HBA_PxCMD_FRE;
-        }
+    standard_ahci_reset(hba_mem);
 
-    // standard AHCI reset
-    hba_mem->ghc |= HBA_GHC_HR;
-    while(hba_mem->ghc & HBA_GHC_HR)
-        asm("pause");
-
-    // enable ahci mode
-    hba_mem->ghc |= HBA_GHC_AE;
+    enable_ahci_mode(hba_mem);
 
     for(int bit = 0; bit < 32; bit++)
         if(hba_mem->pi & (1 << bit)) // bit is set: device exists
@@ -285,14 +237,16 @@ void ahci_register_pci_device(const pci_device_t* device)
 
                     hba_device_t hba_device;
                     hba_device.port = port;
+                    hba_device.hba_mem = hba_mem;
 
-                    devices[registered_devices] = hba_device;
-                    configure_device(&(devices[registered_devices]));
-                    registered_devices++;
+                    bool configured = configure_device(&hba_device);
+                    if(configured)
+                    {
+                        devices[registered_devices] = hba_device;
+                        registered_devices++;
+                    }
                 }
                 break;
-            default:
-                asm volatile ("pause");
             }
         }
 
@@ -303,148 +257,68 @@ void ahci_register_pci_device(const pci_device_t* device)
     }
 }
 
-bool sata_read(size_t device, uint64_t lba, uint8_t count, volatile void* address)
+inline size_t ahci_devices()
+{
+    return registered_devices;
+}
+
+inline size_t ahci_get_capacity(size_t device)
+{
+    return device >= registered_devices ? -1 : devices[device].lba_capacity;
+}
+
+static bool ahci_rw(size_t device, uint64_t lba, size_t count, void* address, bool write)
 {
     if(device >= registered_devices)
         return false;
-
     hba_device_t* hba_device = &(devices[device]);
 
-    hba_device->port->is = -1; // Clear pending interrupt bits
-    int slot = find_cmdslot(hba_device->port);
+    uint8_t cmd_slot = find_cmd_slot(hba_device);
+    if(cmd_slot == -1)
+        return;
 
-    if(slot == -1)
-        return false;
+    volatile hba_cmd_header_t* cmd_hdr = &(hba_device->cmd_header[cmd_slot]);
+    cmd_hdr->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    cmd_hdr->w = 0;
+    cmd_hdr->prdtl = 1;
 
-    volatile hba_cmd_header_t* cmd = &(hba_device->cmd_header[slot]);
-    cmd += slot;
-    cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
-    cmd->w = 0;
-    cmd->prdtl = 1;
+    volatile hba_cmd_table_t* cmd_table = (volatile hba_cmd_table_t*)(((uint64_t)cmd_hdr->ctbau >> 32) | (uint64_t)cmd_hdr->ctba);
+    memset(cmd_table, 0, sizeof(hba_cmd_table_t));
+    cmd_table->prdt_entry[0].dba = (uint32_t)((uint64_t)address & 0xFFFFFFFF);
+    cmd_table->prdt_entry[0].dbau = (uint32_t)(((uint64_t)address >> 32) & 0xFFFFFFFF);
+    cmd_table->prdt_entry[0].dbc = (uint64_t)count * 512 - 1;
+    cmd_table->prdt_entry[0].i = 1;
 
-    volatile hba_cmd_table_t* cmdtable = (volatile hba_cmd_table_t*)(((uint64_t)cmd->ctbau >> 32) | (uint64_t)cmd->ctba);
-    memset((void*)cmdtable, 0, sizeof(hba_cmd_table_t) + (cmd->prdtl - 1) * sizeof(hba_prdt_entry_t));
-
-    cmdtable->prdt_entry[0].dba = (uint32_t)(uint64_t)address;
-    cmdtable->prdt_entry[0].dbau = ((uint64_t)address >> 32);
-    cmdtable->prdt_entry[0].dbc = ((uint64_t)count) * 512 - 1;
-    cmdtable->prdt_entry[0].i = 1;
-
-    volatile fis_reg_h2d_t* cmdfis = (volatile fis_reg_h2d_t*)(cmdtable->cfis);
-    memset((void*)cmdfis, 0, sizeof(fis_reg_h2d_t));
-    cmdfis->fis_type = FIS_TYPE_REG_H2D;
-    cmdfis->command = ATA_CMD_READ_DMA_EX;
-    cmdfis->device = 1 << 6;    // LBA mode
-    cmdfis->c = 1;  // Command
+    volatile fis_reg_h2d_t* cmd = (volatile fis_reg_h2d_t*)(cmd_table->cfis);
+    cmd->fis_type = FIS_TYPE_REG_H2D;
+    cmd->c = 1;
+    cmd->device = 1 << 6;
+    cmd->command = write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX;
 
     uint32_t lba_low = lba & 0xFFFFFFFFLL;
     uint32_t lba_high = (lba >> 32) & 0xFFFFFFFFLL;
 
-    cmdfis->lba0 = (uint8_t)lba_low;
-    cmdfis->lba1 = (uint8_t)(lba_low >> 8);
-    cmdfis->lba2 = (uint8_t)(lba_low >> 16);
-    cmdfis->lba3 = (uint8_t)(lba_low >> 24);
-    cmdfis->lba4 = (uint8_t)lba_high;
-    cmdfis->lba5 = (uint8_t)(lba_high >> 8);
+    cmd->lba0 = lba_low & 0xFF;
+    cmd->lba1 = lba_low >> 8 & 0xFF;
+    cmd->lba2 = lba_low >> 16 & 0xFF;
+    cmd->lba3 = lba_low >> 24 & 0xFF;
+    cmd->lba4 = lba_high & 0xFF;
+    cmd->lba5 = lba_high >> 8 & 0xFF;
  
-    cmdfis->countl = count & 0xFF;
-    cmdfis->counth = (count >> 8) & 0xFF;
+    cmd->countl = count & 0xFF;
+    cmd->counth = count >> 8 & 0xFF;
 
-    int spin = 0; // Spin lock timeout counter
-    while ((hba_device->port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
-        spin++;
-
-    if (spin == 1000000)
-        return false;
-
-    hba_device->port->ci = 1 << slot;
-
-    // Wait for completion
-    while (1)
-    {
-        // In some longer duration reads, it may be helpful to spin on the DPS bit 
-        // in the PxIS port field as well (1 << 5)
-        if ((hba_device->port->ci & (1 << slot)) == 0) 
-            break;
-        if (hba_device->port->is & HBA_PxIS_TFES)   // Task file error
-            return false;
-    }
-
-    // Check again
-    if (hba_device->port->is & HBA_PxIS_TFES)
-        return false;
+    send_cmd(hba_device, cmd_slot);
 
     return true;
 }
 
-bool sata_write(size_t device, uint64_t lba, uint8_t count, void* address)
+bool ahci_read(size_t device, uint64_t lba, uint8_t count, void* address)
 {
-    if(device >= registered_devices)
-        return false;
+    return ahci_rw(device, lba, count, address, false);
+}
 
-    volatile hba_device_t* hba_device = &(devices[device]);
-
-    hba_device->port->is = -1; // Clear pending interrupt bits
-    int slot = find_cmdslot(hba_device->port);
-
-    if(slot == -1)
-        return false;
-
-    volatile hba_cmd_header_t* cmd = &(hba_device->cmd_header[slot]);
-    cmd->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
-    cmd->w = 1;
-
-    volatile hba_cmd_table_t* cmdtable = (hba_cmd_table_t*)(((uint64_t)cmd->ctbau >> 32) | (uint64_t)cmd->ctba);
-    memset(cmdtable, 0, sizeof(hba_cmd_table_t) + (cmd->prdtl - 1) * sizeof(hba_prdt_entry_t));
-
-    cmdtable->prdt_entry[0].dba = (uint32_t)(uint64_t)address;
-    cmdtable->prdt_entry[0].dbau = ((uint64_t)address >> 32);
-    cmdtable->prdt_entry[0].dbc = (count * 512) - 1;
-    cmdtable->prdt_entry[0].i = 1;
-
-    volatile fis_reg_h2d_t* cmdfis = (fis_reg_h2d_t*)(cmdtable->cfis);
-
-    cmdfis->fis_type = FIS_TYPE_REG_H2D;
-    cmdfis->c = 1;  // Command
-    cmdfis->command = ATA_CMD_WRITE_DMA_EX;
-
-    uint32_t lba_low = lba & 0xFFFFFFFFLL;
-    uint32_t lba_high = (lba >> 32) & 0xFFFFFFFFLL;
-
-    cmdfis->lba0 = (uint8_t)lba_low;
-    cmdfis->lba1 = (uint8_t)(lba_low >> 8);
-    cmdfis->lba2 = (uint8_t)(lba_low >> 16);
-    cmdfis->device = 1 << 6;    // LBA mode
- 
-    cmdfis->lba3 = (uint8_t)(lba_low >> 24);
-    cmdfis->lba4 = (uint8_t)lba_high;
-    cmdfis->lba5 = (uint8_t)(lba_high >> 8);
- 
-    cmdfis->countl = count & 0xFF;
-    cmdfis->counth = (count >> 8) & 0xFF;
-
-    int spin = 0; // Spin lock timeout counter
-    while ((hba_device->port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
-        spin++;
-    if (spin == 1000000)
-        return false;
-
-    hba_device->port->ci = 1 << slot;
-
-    // Wait for completion
-    while (1)
-    {
-        // In some longer duration reads, it may be helpful to spin on the DPS bit 
-        // in the PxIS port field as well (1 << 5)
-        if (!(hba_device->port->ci & (1 << slot))) 
-            break;
-        if (hba_device->port->is & HBA_PxIS_TFES)   // Task file error
-            return false;
-    }
-
-    // Check again
-    if (hba_device->port->is & HBA_PxIS_TFES)
-        return false;
-
-    return true;
+bool ahci_write(size_t device, uint64_t lba, uint8_t count, void* address)
+{
+    return ahci_rw(device, lba, count, address, true);
 }

@@ -5,7 +5,7 @@
 
 uint64_t syscall_msg_send(const syscall_parameter_t* params)
 {
-    msg_t* msg_addr = (msg_t*)vmm_translate_vaddr(scheduler_current_thread()->parent->pagign, (void*)params->arg1);
+    msg_t* msg_addr = (msg_t*)vmm_translate_vaddr(scheduler_current_thread()->parent->paging, (void*)params->arg1);
     msg_t msg;
     memcpy((void*)&msg, (void*)msg_addr, sizeof(msg_t) - sizeof(uint64_t));
     msg.sender = scheduler_current_thread()->parent->pid;

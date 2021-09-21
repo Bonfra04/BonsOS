@@ -20,12 +20,12 @@ void disk_manager_init()
         disk->offset = 0;
         disk->length = ahci_get_capacity(i);
         disk->device = i;
-        disk->reader = sata_read;
-        disk->writer = sata_write;
+        disk->reader = ahci_read;
+        disk->writer = ahci_write;
         memset(&(disk->buffer), 0, 512);
 
         master_bootrecord_t* mbr = (master_bootrecord_t*)&(disk->buffer);
-        if(!sata_read(i, 0, 1, (void*)mbr))
+        if(!ahci_read(i, 0, 1, (void*)mbr))
         {
             registered_disks--;
             continue;
