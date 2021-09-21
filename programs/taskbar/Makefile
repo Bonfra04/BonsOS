@@ -1,6 +1,8 @@
 DIR_ROOT	:= ../..
 include $(DIR_ROOT)/scripts/config.mk
 
+include $(DIR_ROOT)/img-content/bin/flags.mk
+
 LIB_NAME		:= taskbar
 LD_FILE			:= $(DIR_ROOT)/img-content/bin/elf.ld
 LIB_DEPS		:= $(call libfile, libusr) $(call libfile, libc) $(call libfile, rund) 

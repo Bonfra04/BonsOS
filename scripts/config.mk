@@ -15,10 +15,10 @@ DIR_PROGRAMS:= $(DIR_ROOT)/programs
 DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libusr/include -I $(DIR_ROOT)/Rund/include
 
 CC		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
-CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -Qn -g \
+CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -g \
 			-D BONSOS \
-			-m64 -mno-red-zone -mno-mmx -mfpmath=sse -masm=intel \
-			-ffreestanding -fno-asynchronous-unwind-tables -mcmodel=large \
+			-mno-red-zone -mno-mmx -masm=intel \
+			-ffreestanding -mcmodel=large \
 			-Wall -Wextra \
 			-fplan9-extensions \
 			-Wno-misleading-indentation -Wno-parentheses -Wno-implicit-fallthrough -Wno-sign-compare -Wno-address-of-packed-member -Wno-int-in-bool-context
