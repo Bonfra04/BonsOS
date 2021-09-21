@@ -71,6 +71,27 @@ void update()
     }
 }
 
+void render_buffer(window_t* window)
+{
+    size_t width = window->width;
+    if(width + window->x > display_width())
+        width = display_width();
+    
+    size_t height = window->height;
+    if(height + window->y > display_height())
+        height = display_height();
+    
+    size_t w = window->width;
+    uint32_t* buffer = (uint32_t*)window->framebuffer;
+    for(size_t y = 0; y < height; y++)
+    {
+        size_t y_off = window->y + y;
+        for(size_t x = 0; x < width; x++)
+            renderer_put_pixel(window->x + x, y_off, buffer[y * w + x]);
+    }
+        
+}
+
 void render()
 {
     window_t* windows = get_windows();
@@ -78,11 +99,7 @@ void render()
     {
         window_t* window = &windows[i];
         if(window->id != -1 && window->framebuffer != NULL)
-        {
-            for(size_t x = 0; x < window->width; x++)
-                for(size_t y = 0; y < window->height; y++)
-                    renderer_put_pixel(window->x + x, window->y + y, ((uint32_t*)window->framebuffer)[x + y * window->width]);
-        }
+            render_buffer(window);
     }
 
     uint64_t mx, my;
