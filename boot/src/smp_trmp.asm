@@ -93,4 +93,4 @@ bits 64
     jmp qword [entry_point]
 
 %include "src/gdt.inc"
-%include "include/sse.inc"
+%include "src/sse.inc"
