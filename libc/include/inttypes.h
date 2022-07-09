@@ -156,15 +156,15 @@
 #define SCNxFAST64   SCNx64
 #define SCNxMAX      SCNx64
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct
 {
     intmax_t quot;
     intmax_t rem;
 } imaxdiv_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 intmax_t imaxabs(intmax_t n);
 imaxdiv_t imaxdiv(intmax_t numer, intmax_t denom);

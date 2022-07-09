@@ -174,6 +174,47 @@ const char* strstr(const char* str1, const char* str2)
     return NULL;
 }
 
+char* strtok (char* string, const char* delim) {
+    static char * index;
+
+    if (string != NULL)
+        index = string;
+    else
+        string = index;
+
+    if (*index == '\0')
+        return NULL;
+
+    while (*index != '\0') {
+        for (int i = 0; delim[i] != '\0'; i++)
+        {
+            if (*index == delim[i])
+            {
+                if (index == string)
+                {
+                    index++;
+                    string++;
+                }
+                else
+                {
+                    *index = '\0';
+                    break;
+                }
+            }
+        }
+
+        if (*index == '\0')
+        {
+            index++;
+            return string;
+        }
+
+        index++;
+    }
+
+    return string;
+}
+
 void* memset(void* bufptr, int value, size_t size)
 {
     unsigned char* buf = (unsigned char*) bufptr;

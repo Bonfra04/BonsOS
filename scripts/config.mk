@@ -8,20 +8,19 @@ DIR_BOOT	:= $(DIR_ROOT)/boot
 DIR_KERNEL	:= $(DIR_ROOT)/kernel
 DIR_LIBK	:= $(DIR_ROOT)/libk
 DIR_LIBC	:= $(DIR_ROOT)/libc
-DIR_LIBUSR	:= $(DIR_ROOT)/libusr
+DIR_LIBBONS	:= $(DIR_ROOT)/libbons
 DIR_SCRIPTS	:= $(DIR_ROOT)/scripts
-DIR_PROGRAMS:= $(DIR_ROOT)/programs
 
-DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libusr/include -I $(DIR_ROOT)/Rund/include
+DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libbons/include
 
 CC		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
-CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -g \
+CCFLAGS	:= -std=gnu17 $(DIRS_INCLUDE) -g \
 			-D BONSOS \
-			-mno-red-zone -mno-mmx -masm=intel \
+			-mno-red-zone -mno-mmx -mno-sse -masm=intel \
 			-ffreestanding -mcmodel=large \
 			-Wall -Wextra \
 			-fplan9-extensions \
-			-Wno-misleading-indentation -Wno-parentheses -Wno-implicit-fallthrough -Wno-sign-compare -Wno-address-of-packed-member -Wno-int-in-bool-context
+			-Wno-misleading-indentation -Wno-parentheses -Wno-implicit-fallthrough -Wno-sign-compare -Wno-address-of-packed-member -Wno-int-in-bool-context -Wno-override-init
 #-fms-extensions
 
 AS		:= nasm

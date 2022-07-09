@@ -1,11 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void __attribute__((noreturn)) __kernel_panic(const char* format, ...);
 
-void kenrel_panic(const char* message, ...);
-
-#ifdef __cplusplus
-}
-#endif
+#define kernel_panic(format, ...) __kernel_panic("%s:%d " format, __FILE__, __LINE__, ##__VA_ARGS__)

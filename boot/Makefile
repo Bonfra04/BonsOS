@@ -15,12 +15,8 @@ TAG 		:= $(BLUE)[boot]$(NORMAL)
 
 .PHONY: all mkdir stage1 stage2
 
-all: mkdir stage1 stage2 smp_trmp
+all: mkdir stage1 stage2
 	@echo "$(TAG) $(SUCCESS)"
-
-smp_trmp:
-	@echo "$(TAG) Assembling smp_trmp.asm"
-	@$(AS) $(ASFLAGS) -Wno-all src/smp_trmp.asm -o $(DIR_ROOT)/img-content/bin/smp_trmp.bin
 
 stage2:
 	@make $(MAKE_FLAGS) --directory=$(DIR_BOOT)/stage2

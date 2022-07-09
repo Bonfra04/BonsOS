@@ -1,90 +1,100 @@
 #include <memory/heap.h>
-#include <panic.h>
-#include <string.h>
+#include <memory/pfa.h>
+#include <alignment.h>
 
-static heap_data_t* current_heap;
+#include <stdint.h>
+#include <stdbool.h>
 
-static void combine_free_regions(heap_region_t* a, heap_region_t* b)
+typedef struct heap_region heap_region_t;
+typedef struct heap_region
 {
-    if(a < b)
-    {
-        a->length += b->length;
-        a->next_region = b->next_region;
-    }
-    else
-    {
-        b->length += a->length;
-        b->next_region = b->next_region;
-    }
+    uint64_t length;
+    heap_region_t* next_region;
+    heap_region_t* previous_region;
+    bool free;
+    uint8_t chunk_id;
+} heap_region_t;
+
+static void* base_address;
+static uint64_t size;
+static heap_region_t* first_region;
+
+void heap_init()
+{
+    base_address = pfa_alloc(1);
+    size = PFA_PAGE_SIZE;
+    first_region = base_address;
+
+    first_region->length = size;
+    first_region->next_region = NULL;
+    first_region->previous_region = NULL;
+    first_region->free = true;
+    first_region->chunk_id = 0;
 }
 
-heap_data_t heap_create(void* base_address, uint64_t size)
-{
-    heap_data_t heap;
-
-    heap.base_address = (uint64_t)base_address;
-    heap.size = size;
-    heap.first_region = base_address;
-    heap.first_region->length = size;
-    heap.first_region->next_region = 0;
-    heap.first_region->previous_region = 0;
-    heap.first_region->free = true;
-
-    return heap;
-}
-
-void heap_activate(heap_data_t* heap)
-{
-    current_heap = heap;
-}
 
 void* heap_malloc(size_t size)
 {
-    if(!current_heap)
-        kenrel_panic("No heap selected");
+    if(size == 0)
+        return NULL;
 
-    heap_region_t* currentRegion = current_heap->first_region;
+    heap_region_t* current_region = first_region;
 
-    while (currentRegion)
+    while(true)
     {
-        if(currentRegion->free && currentRegion->length >= size + sizeof(heap_region_t))
+        if(current_region->free && current_region->length >= size + sizeof(heap_region_t))
         {
-            if(currentRegion->length > size + sizeof(heap_region_t))
+            if(current_region->length > size + sizeof(heap_region_t))
             {
-                heap_region_t* newRegion = (heap_region_t*)((uint64_t)currentRegion + size + sizeof(heap_region_t));
-                newRegion->length = currentRegion->length - (size + sizeof(heap_region_t));
-                newRegion->previous_region = currentRegion;
-                newRegion->next_region = currentRegion->next_region;
-                newRegion->free = true;
+                heap_region_t* new_region = (heap_region_t*)((uint64_t)current_region + size + sizeof(heap_region_t));
+                new_region->length = current_region->length - (size + sizeof(heap_region_t));
+                new_region->previous_region = current_region;
+                new_region->next_region = current_region->next_region;
+                new_region->free = true;
+                new_region->chunk_id = current_region->chunk_id;
 
-                currentRegion->next_region = newRegion;
-                currentRegion->length = size + sizeof(heap_region_t);
+                current_region->next_region = new_region;
+                current_region->length = size + sizeof(heap_region_t);
             }
 
-            currentRegion->free = false;
-            return currentRegion + 1;
+            current_region->free = false;
+            return current_region + 1;
         }
+        else if(current_region->next_region == NULL)
+            break;
         else
-            currentRegion = currentRegion->next_region;
+            current_region = current_region->next_region;
     }
 
-    return 0;
+    heap_region_t* new_region = pfa_alloc(ALIGN_4K_UP(size + sizeof(heap_region_t)) / PFA_PAGE_SIZE);
+    new_region->length = ALIGN_4K_UP(size + sizeof(heap_region_t));
+    new_region->next_region = NULL;
+    new_region->previous_region = current_region;
+    new_region->free = true;
+    new_region->chunk_id = current_region->chunk_id + 1;
+
+    current_region->next_region = new_region;
+
+    return heap_malloc(size);
 }
 
 void heap_free(void* address)
 {
-    if(!current_heap)
-        kenrel_panic("No heap selected");
+    if(address == NULL)
+        return;
 
-    if((uint64_t)address < current_heap->base_address || (uint64_t)address > current_heap->base_address + current_heap->size)
-        return; // not this heap memory
+    heap_region_t* region = (heap_region_t*)address - 1;
+    region->free = true;
 
-    heap_region_t* currentRegion = (heap_region_t*)address - 1;
-    currentRegion->free = true;
+    if(region->previous_region != NULL && region->previous_region->free && region->chunk_id == region->previous_region->chunk_id)
+    {
+        region->previous_region->length += region->length;
+        region->previous_region->next_region = region->next_region;
+    }
 
-    if(currentRegion->previous_region && currentRegion->previous_region->free)
-        combine_free_regions(currentRegion, currentRegion->previous_region);
-
-    if(currentRegion->next_region && currentRegion->next_region->free)
-        combine_free_regions(currentRegion, currentRegion->next_region);
+    if(region->next_region != NULL && region->next_region->free && region->chunk_id == region->next_region->chunk_id)
+    {
+        region->length += region->next_region->length;
+        region->next_region = region->next_region->next_region;
+    }
 }

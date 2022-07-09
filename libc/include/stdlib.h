@@ -2,11 +2,10 @@
 
 #include <stddef.h>
 
-#define RAND_MAX 0xffffffff
+#define RAND_MAX 0xFFFFFFFF
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define EXIT_FAILURE 1
+#define EXIT_SUCCESS 0
 
 typedef struct
 {
@@ -26,44 +25,47 @@ typedef struct
     long long rem;
 } lldiv_t;
 
-double atof(const char* str);
 int atoi(const char* str);
-int atoui(const char* str);
 long atol(const char* str);
 long long atoll(const char* str);
-double strtod(const char* str, char** endptr);
-float strtof(const char* str, char** endptr);
+unsigned int atoui(const char* str);
+unsigned long atoul(const char* str);
+unsigned long long atoull(const char* str);
+
+int strtoi(const char* str, char** endptr, int base);
 long strtol(const char* str, char** endptr, int base);
-long double strtold(const char* str, char** endptr);
 long long strtoll(const char* str, char** endptr, int base);
+unsigned int strtoui(const char* str, char** endptr, int base);
 unsigned long strtoul(const char* str, char** endptr, int base);
 unsigned long long strtoull(const char* str, char** endptr, int base);
 
 char* itoa(int value, char* str, int base);
-char* uitoa(unsigned int value, char* str, int base);
 char* ltoa(long value, char* str, int base);
-char* ultoa(unsigned long value, char* str, int base);
 char* lltoa(long long value, char* str, int base);
+char* uitoa(unsigned int value, char* str, int base);
+char* ultoa(unsigned long value, char* str, int base);
 char* ulltoa(unsigned long long value, char* str, int base);
-
-char* ftoa(float value, char* str, int precision);
 
 int rand(void);
 void srand(unsigned int seed);
 
+void* calloc(size_t num, size_t size);
 void* malloc(size_t size);
 void free(void* ptr);
+void* realloc(void* ptr, size_t size);
+
+int atexit(void (*func)());
+void exit(int status);
+int at_quick_exit(void (*func)());
+void quick_exit(int status);
+void __attribute__((noreturn)) _Exit(int status);
 
 void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
 void qsort(void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
 
 int abs(int n);
-div_t div(int numer, int denom);
-long labs (long n);
-ldiv_t ldiv(long numer, long denom);
+long labs(long n);
 long long llabs(long long n);
+div_t div(int numer, int denom);
+ldiv_t ldiv(long numer, long denom);
 lldiv_t lldiv(long long numer, long long denom);
-
-#ifdef __cplusplus
-}
-#endif

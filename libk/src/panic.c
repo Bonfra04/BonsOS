@@ -1,21 +1,28 @@
 #include <panic.h>
-#include <device/tty.h>
+#include <log.h>
+#include <io/uart.h>
+#include <io/tty.h>
+#include <cpu.h>
+
 #include <stdarg.h>
 #include <stdio.h>
-#include <x86/cpu.h>
 
-void kenrel_panic(const char* format, ...)
+void __kernel_panic(const char* format, ...)
 {
-    asm("cli");
-    tty_set_textcolor(0xFFFFFF00, 0xFFFF0000); // yellow, red
-
-    char buffer[8 * 1024];
-
     va_list args;
     va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
 
-    fprintf(stderr, buffer);
-    for(;;);
+    char buff[1024];
+    vsnprintf(buff, sizeof(buff), format, args);
+
+    va_end(args);
+    
+    tty_set_textcolor(0xFFFF00, 0xFF0000);
+    kernel_log(buff);
+    
+    for(;;)
+    {
+        cli();
+        hlt();
+    }
 }

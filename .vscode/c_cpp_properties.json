@@ -4,13 +4,16 @@
             "intelliSenseMode": "gcc-x64",
             "name": "BonsOS",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/libc/include/",
-                "${workspaceFolder}/libk/include/"
+                "${workspaceFolder}/libc/include/*",
+                "${workspaceFolder}/libk/include/*",
+                "${workspaceFolder}/libbons/include/*"
             ],
             "defines": [
-                "BONSOS"
-            ]
+                "BONSOS",
+                "KERNEL_BUILD"
+            ],
+            "compilerArgs": [],
+            "cStandard": "gnu17"
         }
     ],
     "version": 4

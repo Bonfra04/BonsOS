@@ -30,7 +30,6 @@ char* strtok(char* str, const char* delimiters);
 void* memset(void* bufptr, int value, size_t size);
 size_t strlen(const char* str);
 
-void* memsetw(void* dst, int w, size_t num);
 char* strrev(char* str);
 char* strtoupper(char *str);
 

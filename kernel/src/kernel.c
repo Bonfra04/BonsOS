@@ -1,138 +1,115 @@
-#include <device/tty.h>
-#include <graphics/screen.h>
-#include <interrupt/interrupt.h>
-#include <interrupt/exception.h>
-#include <device/keyboard.h>
-#include <memory/memory_map.h>
-#include <memory/page_frame_allocator.h>
+#include <linker.h>
+#include <panic.h>
+#include <acpi.h>
+#include <cpu.h>
+
+#include <memory/gdt.h>
+#include <memory/mmap.h>
+#include <memory/pfa.h>
+#include <memory/paging.h>
+#include <memory/vmm.h>
 #include <memory/heap.h>
-#include <device/pci.h>
-#include <device/ata.h>
-#include <device/ata/ahci.h>
-#include <x86/cpu.h>
-#include <filesystem/fat16.h>
-#include <storage/disk_manager.h>
+
+#include <graphics/screen.h>
+#include <graphics/text_renderer.h>
+
+#include <io/uart.h>
+#include <io/tty.h>
+#include <io/keyboard.h>
+
+#include <interrupts/pic.h>
+#include <interrupts/idt.h>
+#include <interrupts/exceptions.h>
+#include <interrupts/ioapic.h>
+#include <interrupts/lapic.h>
+
+#include <pci/pci.h>
+
+#include <storage/storage.h>
+
+#include <fsys/fsys.h>
+#include <fsys/fat16/fat16.h>
+#include <log.h>
+
+#include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <filesystem/fsys.h>
-#include <filesystem/ttyfs.h>
-#include <graphics/renderer.h>
-#include <smp/scheduler.h>
-#include <memory/paging.h>
-#include <x86/gdt.h>
-#include <syscall/syscall.h>
-#include <executable/executable.h>
-#include <filesystem/pipefs.h>
-#include <device/mouse.h>
-#include <acpi/acpi.h>
-#include <smp/smp.h>
-#include <interrupt/apic.h>
-#include <acpi/acpi.h>
 
 #include "bootinfo.h"
-#include "dbg/dbg.h"
 
-typedef struct system_info
-{
-    void* framebuffer;
-    size_t screen_width;
-    size_t sreen_height;
-    size_t screen_pitch;
-} system_info_t;
-
-typedef char symbol[];
-
-paging_data_t kernel_paging;
-heap_data_t kernel_heap;
-
-static system_info_t system_info;
+#include <pci/ata/sata.h>
 
 void init(const bootinfo_t* bootinfo)
 {
-    // zero out bss (TODO: move to bootloader)
-    extern symbol __bss_start_addr, __bss_size;
-    memset((void*)__bss_start_addr, 0, (size_t)__bss_size);
+    // zero out bss
+    extern symbol_t __bss_start_addr, __bss_size;
+    memset((void*)__bss_start_addr, 0, (size_t)__bss_size); //  TODO: move to bootloader
 
-    extern void initialize_standard_library();
-    initialize_standard_library();
+    // install the gdt
+    gdt_install();
 
-    gdt_init();
+    // initialize uart protocol
+    uart_init();
 
-    extern symbol __kernel_end_addr;
-    memory_map_init(bootinfo->memoryMapEntries, (void*)(uint64_t)bootinfo->memoryMapAddress, bootinfo->memory_size);
-    pfa_init((void*)__kernel_end_addr);
+    // initialize physical memory
+    mmap_init(bootinfo->memoryMapEntries, ptr(bootinfo->memoryMapAddress), bootinfo->memory_size * 1024); // TODO: convert to bytes in the bootloader
+    pfa_init();
 
-    kernel_paging = paging_init(bootinfo->memory_size);
+    // initialize virtual memory
+    paging_init();
+    heap_init();
 
-    extern void initialize_standard_library();
-    initialize_standard_library();
-
-    kernel_heap = heap_create(pfa_alloc_page(), pfa_page_size());
-    heap_activate(&kernel_heap);
-
-    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, (void*)(uint64_t)bootinfo->framebuffer);
-    renderer_init();
-    tty_init();
+    // initialize graphics
+    screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, ptr(bootinfo->framebuffer));
+    text_renderer_init();
     
+    // initialize tty
+    tty_init();
+
+    // read the acpi tables
     acpi_init();
 
-    interrupts_init();
+    // interrupts
+    pic_disable();
+    idt_init();
+    idt_install();
     exceptions_init();
+    lapic_init();
+    lapic_setup();
+    ioapic_init();
+    sti();
 
-    kb_init();
-    mouse_init(bootinfo->screen_width, bootinfo->screen_height);
+    // keyboard and mouse
+    keyboard_init();
 
-    enable_interrupts();
-
-    apic_init();
-
-    dbg_init();
-
+    // pci devices
     pci_init();
 
-    disk_manager_init();
+    // storage abstraction
+    storage_init();
 
-    pipefs_mount(0);
-
-    renderer_load_font("a:/fonts/zapvga16.psf");
-
-    scheduler_init();
-    
-    syscall_init();
-
-    smp_init();
-
-    system_info.framebuffer = bootinfo->framebuffer;
-    system_info.screen_width = bootinfo->screen_width;
-    system_info.sreen_height = bootinfo->screen_height;
-    system_info.screen_pitch = bootinfo->screen_pitch;
-
-    int bits = sizeof(void*) * 8;
-    printf("Succesfully booted BonsOS %d bit.\n", bits);
+    // file system
+    fsys_init();
+    fsys_register(fat16_instantiate, PART_TYPE_FAT16);
+    fsys_auto_mount();
 }
 
 void main(const bootinfo_t* bootinfo)
 {
     init(bootinfo);
+    tty_print("BonsOS successfully booted\n");
 
-    char fb[16], sw[16], sh[16], sp[16];
-    ulltoa(system_info.framebuffer, fb, 16);
-    ulltoa(system_info.screen_width, sw, 16);
-    ulltoa(system_info.sreen_height, sh, 16);
-    ulltoa(system_info.screen_pitch, sp, 16);
-    char* argv[] = { fb, sw, sh, sp };
+    file_t f = fsys_open_file("1:/test/Sesso.txt", FSYS_READ);
 
-    size_t pid = run_executable("a:/bin/init.elf", 4, argv, ELF);
+    char buffer[20];
+    fsys_read_file(&f, buffer, 20);
+    kernel_log("%s", buffer);
 
-    if(pid == 0)
-    {
-        printf("Fatal error while loading core components.\n");
-        return;
-    }
+    fsys_delete_dir("1:/test");
 
-    printf("Running OS...\n");
-    scheduler_start();
-    while(1)
-        asm("pause");
+    kernel_log("%d\n", fsys_get_position(&f));
+
+    tty_print("All done\n");
+    exit(EXIT_SUCCESS);
 }
