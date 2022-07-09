@@ -15,7 +15,6 @@
         // Build files and dirs
         "scripts": true,
         "Makefile": true,
-        "libusr/Makefile": true,
         "boot/Makefile": true,
         "boot/stage2/Makefile": true,
         "kernel/Makefile": true,
@@ -25,6 +24,10 @@
 
         // Qemu log file
         "qemu.log": true,
+
+        // Git files
+        ".gitignore": true,
+        ".gitattributes": true,
     },
     "git.ignoreLimitWarning": true,
     "debug.allowBreakpointsEverywhere": true,
