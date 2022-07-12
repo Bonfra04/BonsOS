@@ -232,3 +232,17 @@ uint64_t storage_write(size_t id, size_t amount, const void* address)
 
     return byte_written;
 }
+
+uint64_t storage_seek_read(size_t id, size_t position, size_t amount, const void* address)
+{
+    if(!storage_seek(id, position))
+        return 0;
+    return storage_read(id, amount, address);
+}
+
+uint64_t storage_seek_write(size_t id, size_t position, size_t amount, const void* address)
+{
+    if(!storage_seek(id, position))
+        return 0;
+    return storage_write(id, amount, address);
+}

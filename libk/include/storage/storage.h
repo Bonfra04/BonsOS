@@ -104,3 +104,23 @@ uint64_t storage_read(size_t id, size_t amount, const void* address);
  * @return number of bytes written
  */
 uint64_t storage_write(size_t id, size_t amount, const void* address);
+
+/**
+ * @brief sets cursor to a specific position and reads bytes from a storage device
+ * @param[in] id the id of the device to read from
+ * @param[in] position the position to set the cursor to in bytes
+ * @param[in] amount the amount of bytes to read
+ * @param[out] address the buffer to read the bytes into
+ * @return number of bytes read
+ */
+uint64_t storage_seek_read(size_t id, size_t position, size_t amount, const void* address);
+
+/**
+ * @brief sets cursor to a specific position and writes bytes to a storage device
+ * @param[in] id the id of the device to write to
+ * @param[in] position the position to set the cursor to in bytes
+ * @param[in] amount the amount of bytes to write
+ * @param[out] address the buffer to write the bytes from
+ * @return number of bytes written
+ */
+uint64_t storage_seek_write(size_t id, size_t position, size_t amount, const void* address);
