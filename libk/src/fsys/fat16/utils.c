@@ -1,17 +1,41 @@
-#include <fsys/fsys.h>
+#include "fat16_utils.h"
 
 #include <string.h>
 #include <ctype.h>
 
-#include "fat16_types.h"
+fat16_entry_t* unpack_file(const file_t* file)
+{
+    return (fat16_entry_t*)file->fs_data;
+}
 
-void from_dos(char dos[8+3], char* name)
+file_t pack_file(fat16_entry_t entry)
+{
+    file_t file;
+    memset(&file, 0, sizeof(file_t));
+    *(fat16_entry_t*)(&file.fs_data) = entry;
+    return file;
+}
+
+bool get_next_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64_t* next_cluster)
+{
+    uint64_t addr = data->fat_offset + current_cluster * sizeof(uint16_t);
+    
+    if (current_cluster >= 0xFFF8 && current_cluster <= 0xFFFF)
+        return false;
+
+    return storage_seek_read(data->storage_id, data->offset + addr, sizeof(uint16_t), next_cluster) != sizeof(uint16_t);
+}
+
+void from_dos(char dos[8+3], char* name, uint8_t upplow_mask)
 {
     uint64_t advance = 0;
 
+    bool name_case = (upplow_mask >> 3) & 1;
+    bool ext_case = (upplow_mask >> 4) & 1;
+
     for(int i = 0; i < 8; i++)
         if(dos[i] != ' ')
-            name[advance++] = tolower(dos[i]);
+            name[advance++] = name_case ? tolower(dos[i]) : toupper(dos[i]);
         else
             break;
 
@@ -20,50 +44,53 @@ void from_dos(char dos[8+3], char* name)
 
     for(int i = 8; i < 11; i++)
         if(dos[i] != ' ')
-            name[advance++] = tolower(dos[i]);
+            name[advance++] = ext_case ? tolower(dos[i]) : toupper(dos[i]);
         else
             break;
 
     name[advance] = '\0';
 }
 
-file_t convert_entry(fat16_entry_t entry)
+size_t get_pos(const fat16_entry_t* entry)
 {
-    file_t file;
-    memset(&file, 0, sizeof(file_t));
-    
-    *(fat16_entry_t*)(&file.fs_data) = entry;
-
-    return file;
+    return entry->advance;
 }
 
-fat16_entry_t* convert_file(file_t* file)
+bool set_pos(const fat16_data_t* data, fat16_entry_t* entry, size_t position)
 {
-    return (fat16_entry_t*)file->fs_data;
-}
+    if(entry->type == FAT16_FILE && position > entry->length)
+        position = entry->length;
 
-bool get_next_cluster(fat16_data_t* data, uint64_t current_cluster, uint64_t* next_cluster)
-{
-    uint64_t addr = data->fat_offset + current_cluster * sizeof(uint16_t);
-    
-    if (current_cluster >= 0xFFF8 && current_cluster <= 0xFFFF)
-        return false;
+    uint64_t nclusters = position / data->bytes_per_cluster;
+    uint64_t offset = position % data->bytes_per_cluster;
 
-    if(!storage_seek(data->storage_id, data->offset + addr))
-        return false;
-    if(!storage_read(data->storage_id, sizeof(uint16_t), next_cluster))
-        return false;
+    entry->cluster = entry->first_cluster;
+
+    while(nclusters--)
+        if(!get_next_cluster(data, entry->cluster, &entry->cluster))
+        {
+            entry->error = true;
+            return false;
+        }
+
+    entry->cluster_offset = offset;
+    entry->advance = position;
+
+    entry->error = false;
 
     return true;
 }
 
-void direntry_to_fatentry(dir_entry_t* d, fat16_entry_t* entry)
+void direntry_to_fatentry(const direntry_t* d, fat16_entry_t* entry, uint64_t entry_addr)
 {
-    entry->first_cluster = d->first_cluster;
-    entry->type = d->flags & ENTRY_DIRECTORY ? FAT16_DIR : FAT16_FILE;
-    entry->first_cluster = d->first_cluster;
-    entry->length = d->file_size;
-    entry->cluster = d->first_cluster;
+    fat16_direntry_t dir = *(fat16_direntry_t*)(&d->fs_data);
+    entry->first_cluster = dir.dir_entry.first_cluster;
+    entry->type = dir.dir_entry.flags & ENTRY_DIRECTORY ? FAT16_DIR : FAT16_FILE;
+    entry->length = dir.dir_entry.file_size;
+    entry->cluster = dir.dir_entry.first_cluster;
+    entry->cluster_offset = 0;
     entry->advance = 0;
-    entry->bytes_read = 0;
+    entry->error = false;
+    entry->lfn = dir.lfn;
+    entry->entry_addr = entry_addr;
 }

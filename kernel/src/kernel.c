@@ -100,16 +100,21 @@ void main(const bootinfo_t* bootinfo)
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    file_t f = fsys_open_file("1:/test/Sesso.txt", FSYS_READ);
-
-    char buffer[20];
-    fsys_read_file(&f, buffer, 20);
-    kernel_log("%s", buffer);
-
-    fsys_delete_dir("1:/test");
-
-    kernel_log("%d\n", fsys_get_position(&f));
+    {
+        file_t d = fsys_open_dir("1:/test");
+        direntry_t e;
+        while(fsys_list_dir(&d, &e))
+            kernel_log("%s\n", e.name);
+    }
+    {
+        file_t f = fsys_open_file("1:/test/SEX.yml", FSYS_READ);
+        char buff[30];
+        buff[29] = '\0';
+        fsys_read_file(&f, buff, 30);
+        kernel_log("%s\n", buff);
+    }
 
     tty_print("All done\n");
+    storage_flush(0);
     exit(EXIT_SUCCESS);
 }

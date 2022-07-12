@@ -33,9 +33,7 @@ typedef struct fs_data
 
 typedef enum fsys_file_mode
 {
-    FSYS_READ, FSYS_READ_UPDATE,
-    FSYS_WRITE, FSYS_WRITE_UPDATE,
-    FSYS_APPEND, FSYS_APPEND_UPDATE
+    FSYS_READ, FSYS_WRITE, FSYS_APPEND,
 } fsys_file_mode_t;
 
 typedef struct file_system
@@ -48,7 +46,7 @@ typedef struct file_system
     bool (*close_file)(fs_data_t* fs, file_t* file);
 
     size_t (*read_file)(fs_data_t* fs, file_t* file, void* buffer, size_t length);
-    size_t (*write_file)(fs_data_t* fs, file_t* file, void* buffer, size_t length);
+    size_t (*write_file)(fs_data_t* fs, file_t* file, const void* buffer, size_t length);
 
     bool (*create_file)(fs_data_t* fs, const char* filename);
     bool (*delete_file)(fs_data_t* fs, const char* filename);
@@ -56,7 +54,7 @@ typedef struct file_system
     bool (*create_dir)(fs_data_t* fs, const char* dirpath);
     bool (*delete_dir)(fs_data_t* fs, const char* dirpath);
 
-    size_t (*get_position)(fs_data_t* fs, file_t* file);
+    size_t (*get_position)(fs_data_t* fs, const file_t* file);
     bool (*set_position)(fs_data_t* fs, file_t* file, size_t offset);
     
     bool (*exists_file)(fs_data_t* fs, const char* filename);
@@ -66,8 +64,8 @@ typedef struct file_system
     bool (*list_dir)(fs_data_t* fs, file_t* dir, direntry_t* entry);
     bool (*close_dir)(fs_data_t* fs, file_t* dir);
 
-    bool (*error)(fs_data_t* fs, file_t* file);
-    bool (*eof)(fs_data_t* fs, file_t* file);
+    bool (*error)(fs_data_t* fs, const file_t* file);
+    bool (*eof)(fs_data_t* fs, const file_t* file);
     void (*clear_error)(fs_data_t* fs, file_t* file);
 } file_system_t;
 
