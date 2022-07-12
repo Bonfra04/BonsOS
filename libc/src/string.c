@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 void* memcpy(void* destination, const void* source, size_t num)
 {
@@ -246,10 +247,20 @@ char* strrev(char *str)
       return str;
 }
 
-char* strtoupper(char *str)
+char* strtoupper(char* str)
 {
     char* p = str;
     for(; *p; p++)
         *p = toupper(*p);
     return str;
+}
+
+char* strdup(const char* str)
+{
+    size_t len = strlen(str);
+    char* ptr = malloc(len + 1);
+    if(!ptr)
+        return NULL;
+    memcpy(ptr, str, len + 1);
+    return ptr;
 }

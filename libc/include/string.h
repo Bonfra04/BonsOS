@@ -31,7 +31,8 @@ void* memset(void* bufptr, int value, size_t size);
 size_t strlen(const char* str);
 
 char* strrev(char* str);
-char* strtoupper(char *str);
+char* strtoupper(char* str);
+char* strdup(const char* str);
 
 #ifdef __cplusplus
 }
