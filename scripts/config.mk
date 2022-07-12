@@ -11,7 +11,7 @@ DIR_LIBC	:= $(DIR_ROOT)/libc
 DIR_LIBBONS	:= $(DIR_ROOT)/libbons
 DIR_SCRIPTS	:= $(DIR_ROOT)/scripts
 
-DIRS_INCLUDE := -I $(DIR_ROOT)/libc/include -I $(DIR_ROOT)/libk/include -I $(DIR_ROOT)/libbons/include
+DIRS_INCLUDE := -I $(DIR_LIBC)/include -I $(DIR_LIBK)/include -I $(DIR_LIBBONS)/include
 
 CC		:=  $(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-gcc
 CCFLAGS	:= -std=gnu17 $(DIRS_INCLUDE) -g \
