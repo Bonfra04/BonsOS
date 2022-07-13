@@ -108,7 +108,7 @@ void fsys_init(uint32_t partition_offset)
     disk_seek(fs_offset);
     disk_read(512, (void*)&bootsector);
 
-    bios_parameter_block_t* bpb = &(bootsector.bpb); 
+    bios_parameter_block_t* bpb = &(bootsector.bpb);
 
     mount_info.num_sectors = bpb->total_sectors != 0 ? bpb->total_sectors : bpb->total_sectors_big;
     mount_info.bytes_per_sector = bpb->bytes_per_sector;

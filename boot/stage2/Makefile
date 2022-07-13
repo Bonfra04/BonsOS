@@ -7,7 +7,7 @@ LD_FILE			:= stage2.ld
 RUNNABLE		:= $(DIR_BIN)/boot/loader.bin
 CRT0			:= loader.asm
 
-ASFLAGS	:= -f elf32
+ASFLAGS	:= -F dwarf -g -f elf32
 CCFLAGS	:= -std=gnu11 -Qn -g \
 			-m32 -mno-red-zone -mno-mmx -mfpmath=sse -masm=intel \
 			-ffreestanding -fno-asynchronous-unwind-tables \
@@ -21,6 +21,6 @@ POST_BUILD_RULE := separate_symbols
 include $(DIR_ROOT)/scripts/lib.mk
 
 separate_symbols:
-	@objcopy --only-keep-debug $(DIR_BIN)/boot/loader.bin $(DIR_BIN)/boot/loader.dbg
-	@objcopy --strip-debug --strip-unneeded $(DIR_BIN)/boot/loader.bin
-	@objcopy -O binary $(DIR_BIN)/boot/loader.bin $(DIR_BIN)/boot/loader.bin
+	@$(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-objcopy --only-keep-debug $(DIR_BIN)/boot/loader.bin $(DIR_BIN)/boot/loader.dbg
+	@$(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-objcopy --strip-debug --strip-unneeded $(DIR_BIN)/boot/loader.bin
+	@$(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-objcopy -O binary $(DIR_BIN)/boot/loader.bin $(DIR_BIN)/boot/loader.bin

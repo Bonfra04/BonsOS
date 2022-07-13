@@ -6,10 +6,9 @@ typedef struct lba_packet
 {
     uint8_t packet_size;
     uint8_t reserved;
-    uint16_t block_count;
+    uint16_t sectors_count;
     uint32_t buffer;
-    uint32_t lba_low;
-    uint32_t lba_high;
+    uint64_t lba;
 } __attribute__ ((packed)) lba_packet_t;
 
 static uint8_t buffer[512];
@@ -17,15 +16,16 @@ static uint16_t position;
 static uint32_t lba;
 static uint8_t drive;
 
+#define LIN_TO_FAR_ADDR(linaddr) ((((linaddr) >> 4) << 16) | ((linaddr) & 0xf))
+
 static void read_sector(uint32_t lba, uint8_t count, void* address)
 {
     lba_packet_t packet;
     packet.packet_size = 0x10;
     packet.reserved = 0;
-    packet.block_count = count;
-    packet.buffer = (uint32_t)address;
-    packet.lba_low = lba;
-    packet.lba_high = 0;
+    packet.sectors_count = count;
+    packet.buffer = LIN_TO_FAR_ADDR((uint32_t)address);
+    packet.lba = lba;
 
     rm_regs_t regs, o;
     regs.esi = (uint32_t)&packet;
