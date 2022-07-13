@@ -25,3 +25,5 @@ Finally you can run the .img file in a virtual machine or burn it to a drive usi
 ### Troubleshooting
 If when pressing F5 in VSCode qemu idle with "Guest has not initialized the display (yet)" try increasing the sleep amount in the `tasks.json` config file.
 
+### Credits
+A big portion of the code present in the bootloader is inspired (copied) by [limine](https://github.com/limine-bootloader/limine), do not assume i know anything about that code :P
