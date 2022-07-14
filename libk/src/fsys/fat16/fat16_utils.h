@@ -109,6 +109,7 @@ typedef struct fat16_data
     uint64_t bytes_per_cluster;
     uint64_t data_start;
     uint64_t fat_offset;
+    uint64_t data_cluster_count;
 } fat16_data_t;
 
 // utils
@@ -119,6 +120,7 @@ void from_dos(char dos[8+3], char* name, uint8_t upplow_mask);
 size_t get_pos(const fat16_entry_t* entry);
 bool set_pos(const fat16_data_t* data, fat16_entry_t* entry, size_t position);
 void direntry_to_fatentry(const direntry_t* d, fat16_entry_t* entry, uint64_t entry_addr);
+bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64_t* new_cluster);
 
 // read
 size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, size_t length);

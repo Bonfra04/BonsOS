@@ -12,11 +12,19 @@ size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, 
 
     while(length > 0)
     {
-        // check if eof
-        if(entry->cluster >= 0xFFF8 && entry->cluster <= 0xFFFF)
-            break;
         if(entry->type == FAT16_FILE && entry->advance == entry->length)
             break;
+
+        // read next cluster
+        if(entry->cluster_offset == data->bytes_per_cluster)
+        {
+            entry->cluster_offset = 0;
+            if(!get_next_cluster(data, entry->cluster, &entry->cluster))
+            {
+                entry->error = true;
+                break;
+            }
+        }
 
         // calculate to read length
         size_t chunk_length = ullmin(length, data->bytes_per_cluster - entry->cluster_offset);
@@ -37,18 +45,6 @@ size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, 
         bytes_read += chunk_length;
         length -= chunk_length;
         buffer = (uint8_t*)buffer + chunk_length;
-
-        // read next cluster
-        if(entry->cluster_offset == data->bytes_per_cluster)
-        {
-            entry->cluster_offset = 0;
-            if(!get_next_cluster(data, entry->cluster, &entry->cluster))
-            {
-                entry->error = true;
-                break;
-            }
-        }
-
     }
 
     return bytes_read;
@@ -140,7 +136,7 @@ fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* directory
         while(list_dir(data, &entry, &dirent))
             if(strlen(dirent.name) == strlen(name) && strcmp(dirent.name, name) == 0)
             {
-                uint64_t entry_addr = (entry.cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry.cluster_offset;
+                uint64_t entry_addr = (entry.cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry.cluster_offset - sizeof(dir_entry_t);
                 direntry_to_fatentry(&dirent, &entry, entry_addr);
                 break;
             }

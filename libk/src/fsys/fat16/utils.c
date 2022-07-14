@@ -1,7 +1,9 @@
-#include "fat16_utils.h"
+#include <storage/storage.h>
 
 #include <string.h>
 #include <ctype.h>
+
+#include "fat16_utils.h"
 
 fat16_entry_t* unpack_file(const file_t* file)
 {
@@ -20,10 +22,11 @@ bool get_next_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64
 {
     uint64_t addr = data->fat_offset + current_cluster * sizeof(uint16_t);
     
-    if (current_cluster >= 0xFFF8 && current_cluster <= 0xFFFF)
+    *next_cluster = 0;
+    if(storage_seek_read(data->storage_id, data->offset + addr, sizeof(uint16_t), next_cluster) != sizeof(uint16_t))
         return false;
 
-    return storage_seek_read(data->storage_id, data->offset + addr, sizeof(uint16_t), next_cluster) != sizeof(uint16_t);
+    return !(next_cluster >= 0xFFF8 && next_cluster <= 0xFFFF);
 }
 
 void from_dos(char dos[8+3], char* name, uint8_t upplow_mask)
@@ -93,4 +96,37 @@ void direntry_to_fatentry(const direntry_t* d, fat16_entry_t* entry, uint64_t en
     entry->error = false;
     entry->lfn = dir.lfn;
     entry->entry_addr = entry_addr;
+}
+
+bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64_t* new_cluster)
+{
+    if(!storage_seek(data->storage_id, data->offset + data->fat_offset))
+        return false;
+
+    uint16_t cluster = FIRST_CLUSTER_OFFSET;
+
+    for(; cluster < data->data_cluster_count - FIRST_CLUSTER_OFFSET; cluster++)
+    {
+        uint16_t entry;
+        if(storage_read(data->storage_id, sizeof(uint16_t), &entry) != sizeof(uint16_t))
+            return false;
+
+        if(entry == 0)
+        {
+            entry = 0xFFFF;
+            if(storage_seek_write(data->storage_id, data->offset + data->fat_offset + cluster * sizeof(uint16_t), sizeof(uint16_t), &entry) != sizeof(uint16_t))
+                return false;
+            break;
+        }
+    }
+
+    if(cluster == data->data_cluster_count - FIRST_CLUSTER_OFFSET)
+        return false;
+
+    if(current_cluster != 0)
+        if(storage_seek_write(data->storage_id, data->offset + data->fat_offset + current_cluster * sizeof(uint16_t), sizeof(uint16_t), &cluster) != sizeof(uint16_t))
+            return false;
+    
+    *new_cluster = cluster;
+    return true;
 }

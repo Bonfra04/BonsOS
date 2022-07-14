@@ -61,6 +61,11 @@ file_system_t fat16_instantiate(partition_descriptor_t partition)
 
     data->root_dir = root_dir;
 
+    uint64_t root_size_in_sectors = (bpb->root_entries * sizeof(dir_entry_t)) / bpb->bytes_per_sector;
+    uint64_t num_sectors = bpb->total_sectors != 0 ? bpb->total_sectors : bpb->total_sectors_big;
+    uint64_t data_sector_count = num_sectors - (bpb->reserved_sectors + (bpb->number_of_fats * bpb->sectors_per_fat) + root_size_in_sectors);
+    data->data_cluster_count = data_sector_count / bpb->sectors_per_cluster;
+
     return fs;
 }
 
@@ -126,6 +131,13 @@ size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
 
 size_t fat16_write_file(fs_data_t* fs, file_t* file, const void* buffer, size_t length)
 {
+    fat16_data_t* data = data_from_fs(fs);
+    fat16_entry_t* entry = unpack_file(file);
+
+    if(entry->error || entry->type != FAT16_FILE)
+        return 0;
+
+    return write_entry(data, entry, buffer, length);
 }
 
 bool fat16_exists_file(fs_data_t* fs, const char* filename)
