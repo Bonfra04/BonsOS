@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 
 #include "fat16_utils.h"
 
@@ -62,4 +63,26 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
     }
 
     return bytes_written;
+}
+
+bool create_entry(const fat16_data_t* data, const fat16_entry_t* dir, const char* filename, uint8_t flags)
+{
+    fat16_entry_t directory = *dir;
+
+    size_t num_entries;
+    dir_entry_t* entries = gen_entries(data, &directory, filename, &num_entries, flags);
+    while(dir_chain_len(data, &directory) < num_entries)
+        set_pos(data, &directory, get_pos(&directory) + sizeof(dir_entry_t));
+
+    if(write_entry(data, &directory, entries, num_entries * sizeof(dir_entry_t)) != num_entries * sizeof(dir_entry_t))
+    {
+        free(entries);
+        return false;
+    }
+    free(entries);
+
+    dir_entry_t dummy;
+    memset(&dummy, 0, sizeof(dir_entry_t));
+
+    return write_entry(data, &directory, &dummy, sizeof(dir_entry_t)) == sizeof(dir_entry_t);
 }

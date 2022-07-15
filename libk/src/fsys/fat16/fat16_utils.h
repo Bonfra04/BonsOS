@@ -99,6 +99,7 @@ typedef struct fat16_direntry
 {
     dir_entry_t dir_entry;
     bool lfn;
+    bool deleted;
 } fat16_direntry_t;
 
 typedef struct fat16_data
@@ -121,6 +122,8 @@ size_t get_pos(const fat16_entry_t* entry);
 bool set_pos(const fat16_data_t* data, fat16_entry_t* entry, size_t position);
 void direntry_to_fatentry(const direntry_t* d, fat16_entry_t* entry, uint64_t entry_addr);
 bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64_t* new_cluster);
+uint64_t dir_chain_len(const fat16_data_t* data, const fat16_entry_t* dir);
+dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, const char* entryname, size_t* num_entries, uint8_t flags);
 
 // read
 size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, size_t length);
@@ -129,6 +132,7 @@ fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* dir, cons
 
 // write
 size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* buffer, size_t length);
+bool create_entry(const fat16_data_t* data, const fat16_entry_t* dir, const char* filename, uint8_t flags);
 
 #define data_from_fs(fs) ((fat16_data_t*)&fs->fs_specific)
 #define fs_from_data(data) ((fs_data_t*)((uint8_t*)data - 8*3))

@@ -53,6 +53,7 @@ size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, 
 bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
 {
     bool lng = false;
+    bool del = false;
 
     dir_entry_t d;
     do {
@@ -70,7 +71,7 @@ bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
         }
 
         if((uint8_t)d.fullname[0] == ENTRY_DELETED)
-            goto skip;
+            del = true;
         if(d.flags == ENTRY_VOLUME_ID)
             goto skip;
         
@@ -111,6 +112,7 @@ bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
     fat16_direntry_t fat16_dirent;
     fat16_dirent.dir_entry = d;
     fat16_dirent.lfn = lng;
+    fat16_dirent.deleted = del;
 
     *(fat16_direntry_t*)(&dirent->fs_data) = fat16_dirent;
 

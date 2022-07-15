@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <assert.h> // TODO: remove
+#include <libgen.h>
 
 #include "fat16_utils.h"
 
@@ -71,6 +72,20 @@ file_system_t fat16_instantiate(partition_descriptor_t partition)
 
 bool fat16_create_file(fs_data_t* fs, const char* filename)
 {
+    if(filename[0] != '/')
+        return false;
+
+    fat16_data_t* data = data_from_fs(fs);
+
+    const char* fname = strdup(filename);
+    const char* parent_name = dirname(fname);
+    fat16_entry_t parent = get_entry(data, &data->root_dir, parent_name);
+    free(fname);
+
+    if(!get_entry(data, &parent, basename(filename)).error)
+        return false;
+
+    return create_entry(data, &parent, basename(filename), ENTRY_FILE);
 }
 
 bool fat16_delete_file(fs_data_t* fs, const char* filename)
@@ -96,10 +111,10 @@ file_t fat16_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mod
         if(!entry.error)
             if(entry.type == FAT16_DIR)
                 return pack_file(INVALID_ENTRY);
-            else if(!fat16_delete_file(fs, filename + 1))
+            else if(!fat16_delete_file(fs, filename))
                 return pack_file(INVALID_ENTRY);
 
-        if(!fat16_create_file(fs, filename + 1))
+        if(!fat16_create_file(fs, filename))
             return pack_file(INVALID_ENTRY);
         entry = get_entry(data, &data->root_dir, filename + 1);
     }
@@ -188,7 +203,12 @@ bool fat16_list_dir(fs_data_t* fs, file_t* dir, direntry_t* dirent)
     if(dir_entry->error || dir_entry->type != FAT16_DIR)
         return false;
 
-    return list_dir(data, dir_entry, dirent);
+    bool* del = &((fat16_direntry_t*)dirent->fs_data)->deleted;
+    *del = true;
+    while(*del) // TODO: double check this
+        if(!list_dir(data, dir_entry, dirent))
+            return false;
+    return true;
 }
 
 bool fat16_exists_dir(fs_data_t* fs, const char* dirpath)
