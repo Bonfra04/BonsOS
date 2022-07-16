@@ -101,33 +101,27 @@ void main(const bootinfo_t* bootinfo)
     tty_print("BonsOS successfully booted\n");
 
     {
-        file_t f = fsys_open_file("1:/test/MixedatasAS.txt", FSYS_WRITE);
-        const char* buff = "Massimiliano";
-        fsys_write_file(&f, buff, 13);
+        fsys_create_dir("1:/test/giorgio");
+    }
+
+    {
+        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_WRITE);
+        fsys_write_file(&f, "dio cane mai", 13);
+    }
+
+    {
+        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_READ);
+        char buff[13];
+        fsys_read_file(&f, buff, 13);
+        kernel_log("\n%s\n\n", buff);
     }
 
     {
         file_t f = fsys_open_dir("1:/test");
         direntry_t e;
         while(fsys_list_dir(&f, &e))
-        {
             kernel_log("%s\n", e.name);
-        }
     }
-
-    // {
-    //     file_t f = fsys_open_file("1:/test/ciao.TXT", FSYS_READ);
-    //     char* buff = "Sesso medusa palle";
-    //     fsys_write_file(&f, buff, 19);
-    // }
-
-    // {
-    //     file_t f = fsys_open_file("1:/test/ciao.TXT", FSYS_READ);
-    //     char buff[30];
-    //     fsys_read_file(&f, buff, 29);
-    //     buff[29] = '\0';
-    //     kernel_log("A%sA", buff);
-    // }
 
     tty_print("All done\n");
     storage_flush(0);
