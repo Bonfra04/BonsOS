@@ -93,45 +93,15 @@ void init(const bootinfo_t* bootinfo)
     fsys_init();
     fsys_register(fat16_instantiate, PART_TYPE_FAT16);
     fsys_auto_mount();
+
+    // reload default font
+    text_renderer_load_font("1:/assets/zap-vga16.psf");
 }
 
 void main(const bootinfo_t* bootinfo)
 {
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
-
-    {
-        fsys_create_dir("1:/test/giorgio");
-    }
-
-    {
-        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_WRITE);
-        fsys_write_file(&f, "dio cane mai", 12);
-    }
-
-    {
-        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_APPEND);
-        fsys_write_file(&f, "gioegio", 7);
-    }
-
-    {
-        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_READ);
-        char buf[128];
-        fsys_read_file(&f, buf, 128);
-        kernel_log("%s", buf);
-    }
-
-    {
-        fsys_delete_dir("1:/test/giorgio");
-        fsys_create_dir("1:/test/giorgio");
-    }
-
-    {
-        file_t f = fsys_open_dir("1:/test/giorgio");
-        direntry_t e;
-        while(fsys_list_dir(&f, &e))
-            kernel_log("%s\n", e.name);
-    }
 
     tty_print("All done\n");
     storage_flush(0);
