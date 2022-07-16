@@ -110,8 +110,15 @@ void main(const bootinfo_t* bootinfo)
     }
 
     {
-        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_WRITE);
+        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_APPEND);
         fsys_write_file(&f, "gioegio", 7);
+    }
+
+    {
+        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_READ);
+        char buf[128];
+        fsys_read_file(&f, buf, 128);
+        kernel_log("%s", buf);
     }
 
     {

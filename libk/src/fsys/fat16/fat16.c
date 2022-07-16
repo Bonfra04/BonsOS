@@ -1,7 +1,6 @@
 #include <fsys/fat16/fat16.h>
 
 #include <string.h>
-#include <assert.h> // TODO: remove
 #include <libgen.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -132,7 +131,14 @@ file_t fat16_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mod
     }
     else if(mode == FSYS_APPEND)
     {
-        assert(false); // TODO: implement
+        if(entry.error)
+        {
+            if(!fat16_create_file(fs, filename))
+                return pack_file(INVALID_ENTRY);
+            entry = get_entry(data, &data->root_dir, filename + 1);
+        }
+        if(!set_pos(data, &entry, entry.length))
+            return pack_file(INVALID_ENTRY);
     }
 
     return pack_file(entry);
@@ -284,7 +290,7 @@ bool fat16_list_dir(fs_data_t* fs, file_t* dir, direntry_t* dirent)
 
     bool* del = &((fat16_direntry_t*)dirent->fs_data)->deleted;
     *del = true;
-    while(*del) // TODO: double check this
+    while(*del)
         if(!list_dir(data, dir_entry, dirent))
             return false;
     return true;
