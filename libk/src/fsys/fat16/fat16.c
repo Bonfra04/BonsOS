@@ -4,6 +4,7 @@
 #include <assert.h> // TODO: remove
 #include <libgen.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "fat16_utils.h"
 
@@ -93,10 +94,10 @@ bool fat16_delete_file(fs_data_t* fs, const char* filename)
 {
     if(filename[0] != '/')
         return false;
-        
+
     fat16_data_t* data = data_from_fs(fs);
 
-    fat16_entry_t entry = get_entry(data, &data->root_dir, filename);
+    fat16_entry_t entry = get_entry(data, &data->root_dir, filename + 1);
     if(entry.error || entry.type != FAT16_FILE)
         return false;
 
@@ -216,7 +217,40 @@ bool fat16_create_dir(fs_data_t* fs, const char* dirpath)
 
 bool fat16_delete_dir(fs_data_t* fs, const char* dirpath)
 {
+    if(dirpath[0] != '/')
+        return false;
 
+    fat16_data_t* data = data_from_fs(fs);
+
+    fat16_entry_t entry = get_entry(data, &data->root_dir, dirpath + 1);
+    if(entry.error || entry.type != FAT16_DIR)
+        return false;
+
+    direntry_t dirent;
+    while(list_dir(data, &entry, &dirent))
+    {
+        if(strlen(dirent.name) == 1 && dirent.name[0] == '.')
+            continue;
+        if(strlen(dirent.name) == 2 && dirent.name[0] == '.' && dirent.name[1] == '.')
+            continue;
+
+        char entryname[strlen(dirpath) + strlen(dirent.name) + 2];
+        memset(entryname, 0, sizeof(entryname));
+        sprintf(entryname, "%s/%s", dirpath, dirent.name);
+
+        if((dirent.flags & FSYS_FLG_FILE) == FSYS_FLG_FILE)
+        {
+            if(!fat16_delete_file(fs, entryname))
+                return false;
+        }
+        else if((dirent.flags & FSYS_FLG_DIR) == FSYS_FLG_DIR)
+        {
+            if(!fat16_delete_dir(fs, entryname))
+                return false;
+        }
+    }
+
+    return free_entry(data, &entry);
 }
 
 file_t fat16_open_dir(fs_data_t* fs, const char* dirpath)
@@ -298,6 +332,8 @@ bool fat16_eof(fs_data_t* fs, const file_t* file)
 
 void fat16_clear_error(fs_data_t* fs, file_t* file)
 {
+    (void)fs;
+
     fat16_entry_t* entry = unpack_file(file);
     entry->error = false;
 }

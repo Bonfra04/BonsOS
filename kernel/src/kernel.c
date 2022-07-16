@@ -115,6 +115,11 @@ void main(const bootinfo_t* bootinfo)
     }
 
     {
+        fsys_delete_dir("1:/test/giorgio");
+        fsys_create_dir("1:/test/giorgio");
+    }
+
+    {
         file_t f = fsys_open_dir("1:/test/giorgio");
         direntry_t e;
         while(fsys_list_dir(&f, &e))
