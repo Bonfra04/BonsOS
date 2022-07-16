@@ -1,5 +1,6 @@
 #include <graphics/text_renderer.h>
 #include <graphics/screen.h>
+#include <fsys/fsys.h>
 
 #include "default_font.h"
 
@@ -20,7 +21,7 @@ static void load_font(psf1_header_t* header)
     for (uint16_t ch = 0; ch < 256; ch++)
     {
         for (int i = 0; i < header->charsize; i++)
-            bitmaps[ch][i] = default_font[advance + i];
+            bitmaps[ch][i] = ((uint8_t*)header)[advance + i];
         advance += header->charsize;
     }   
 }
@@ -32,9 +33,22 @@ void text_renderer_init()
 
 bool text_renderer_load_font(const char* filepath)
 {
-    (void)filepath;
-    // TODO: implement
-    return false;
+    file_t f = fsys_open_file(filepath, FSYS_READ);
+    if(fsys_error(&f))
+        return false;
+    if(!fsys_set_position(&f, -1))
+        return false;
+    uint64_t size = fsys_get_position(&f);
+    if(!fsys_set_position(&f, 0))
+        return false;
+
+    uint8_t font[size];
+    if(fsys_read_file(&f, &font, sizeof(font)) != sizeof(font))
+        return false;
+
+    load_font(&font);
+
+    return true;
 }
 
 void text_renderer_putchar(size_t x, size_t y, size_t scale, char c, uint32_t fg, uint32_t bg)
