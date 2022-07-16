@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h> // TODO: remove
 #include <libgen.h>
+#include <stdlib.h>
 
 #include "fat16_utils.h"
 
@@ -77,7 +78,7 @@ bool fat16_create_file(fs_data_t* fs, const char* filename)
 
     fat16_data_t* data = data_from_fs(fs);
 
-    const char* fname = strdup(filename);
+    char* fname = strdup(filename);
     const char* parent_name = dirname(fname);
     fat16_entry_t parent = get_entry(data, &data->root_dir, parent_name);
     free(fname);
@@ -168,6 +169,39 @@ bool fat16_exists_file(fs_data_t* fs, const char* filename)
 
 bool fat16_create_dir(fs_data_t* fs, const char* dirpath)
 {
+    if(dirpath[0] != '/')
+        return false;
+
+    fat16_data_t* data = data_from_fs(fs);
+
+    char* dname = strdup(dirpath);
+    const char* parent_name = dirname(dname);
+    fat16_entry_t parent = get_entry(data, &data->root_dir, parent_name);
+    free(dname);
+
+    if(!get_entry(data, &parent, basename(dirpath)).error)
+        return false;
+
+    if(!create_entry(data, &parent, basename(dirpath), ENTRY_DIRECTORY))
+        return false;
+
+    fat16_entry_t entry = get_entry(data, &parent, basename(dirpath));
+
+    dir_entry_t dot_entry = construct_dir_entry(ENTRY_DIRECTORY);
+    memcpy(dot_entry.fullname, ".          ", 11);
+    dot_entry.first_cluster = entry.first_cluster;
+
+    dir_entry_t dotdot_entry = construct_dir_entry(ENTRY_DIRECTORY);
+    memcpy(dotdot_entry.fullname, "..         ", 11);
+    dotdot_entry.first_cluster = parent.first_cluster;
+
+    if(write_entry(data, &entry, &dot_entry, sizeof(dir_entry_t)) != sizeof(dir_entry_t))
+        return false;
+
+    if(write_entry(data, &entry, &dotdot_entry, sizeof(dir_entry_t)) != sizeof(dir_entry_t))
+        return false;
+
+    return true;
 }
 
 bool fat16_delete_dir(fs_data_t* fs, const char* dirpath)
@@ -224,6 +258,8 @@ bool fat16_exists_dir(fs_data_t* fs, const char* dirpath)
 
 size_t fat16_get_position(fs_data_t* fs, const file_t* file)
 {
+    (void)fs;
+
     return get_pos(unpack_file(file));
 }
 
@@ -235,12 +271,16 @@ bool fat16_set_position(fs_data_t* fs, file_t* file, size_t position)
 
 bool fat16_error(fs_data_t* fs, const file_t* file)
 {
+    (void)fs;
+
     fat16_entry_t* entry = unpack_file(file);
     return entry->error;
 }
 
 bool fat16_eof(fs_data_t* fs, const file_t* file)
 {
+    (void)fs;
+    
     fat16_entry_t* entry = unpack_file(file);
     return entry->advance >= entry->length;
 }

@@ -104,7 +104,7 @@ bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64
     if(!storage_seek(data->storage_id, data->offset + data->fat_offset))
         return false;
 
-    uint16_t cluster = FIRST_CLUSTER_OFFSET;
+    uint16_t cluster = 0;
 
     for(; cluster < data->data_cluster_count - FIRST_CLUSTER_OFFSET; cluster++)
     {
@@ -268,11 +268,7 @@ static uint8_t lfn_checksum(const uint8_t* dos)
 dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, const char* entryname, size_t* num_entries, uint8_t flags)
 {
     dir_entry_t* entries = malloc(sizeof(dir_entry_t));
-    memset(entries, 0, sizeof(dir_entry_t));
-    entries[0].flags = flags;
-    entries[0].file_size = 0;
-    entries[0].first_cluster = 0;
-    // TODO: times
+    entries[0] = construct_dir_entry(flags);
 
     uint8_t caseness;
     if(to_dos(entryname, entries->fullname, &caseness))
@@ -298,7 +294,7 @@ dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, con
         uint64_t adv = 0;
      
         uint8_t order = i - 1;
-        lfn_entry_t* lfn = &entries[*num_entries - i];
+        lfn_entry_t* lfn = (lfn_entry_t*)&entries[*num_entries - i];
         memset(lfn, 0, sizeof(lfn_entry_t));
         lfn->lfn_attr = ENTRY_LFN;
         lfn->order = order | (i == *num_entries ? 0x40 : 0);
@@ -322,4 +318,13 @@ dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, con
     }
 
     return entries;
+}
+
+dir_entry_t construct_dir_entry(uint8_t flags)
+{
+    dir_entry_t entry;
+    memset(&entry, 0, sizeof(dir_entry_t));
+    entry.flags = flags;
+    // TODO: times
+    return entry;
 }

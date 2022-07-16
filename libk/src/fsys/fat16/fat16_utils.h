@@ -124,6 +124,7 @@ void direntry_to_fatentry(const direntry_t* d, fat16_entry_t* entry, uint64_t en
 bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64_t* new_cluster);
 uint64_t dir_chain_len(const fat16_data_t* data, const fat16_entry_t* dir);
 dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, const char* entryname, size_t* num_entries, uint8_t flags);
+dir_entry_t construct_dir_entry(uint8_t flags);
 
 // read
 size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, size_t length);
