@@ -91,6 +91,9 @@ bool fat16_create_file(fs_data_t* fs, const char* filename)
 
 bool fat16_delete_file(fs_data_t* fs, const char* filename)
 {
+    if(filename[0] != '/')
+        return false;
+        
     fat16_data_t* data = data_from_fs(fs);
 
     fat16_entry_t entry = get_entry(data, &data->root_dir, filename);
@@ -213,6 +216,7 @@ bool fat16_create_dir(fs_data_t* fs, const char* dirpath)
 
 bool fat16_delete_dir(fs_data_t* fs, const char* dirpath)
 {
+
 }
 
 file_t fat16_open_dir(fs_data_t* fs, const char* dirpath)
