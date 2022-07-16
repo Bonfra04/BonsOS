@@ -328,3 +328,23 @@ dir_entry_t construct_dir_entry(uint8_t flags)
     // TODO: times
     return entry;
 }
+
+bool free_cluster_chain(const fat16_data_t* data, uint64_t first_cluster)
+{
+    uint64_t cluster = first_cluster;
+    while(cluster != 0 && !(cluster >= 0xFFF8 && cluster <= 0xFFFF))
+    {
+        uint64_t next_cluster;
+        if(!get_next_cluster(data, cluster, &next_cluster) && next_cluster != 0xFFFF)
+            return false;
+
+        uint16_t free_cluster = 0;
+        uint64_t addr = data->fat_offset + cluster * sizeof(uint16_t);
+        if(storage_seek_write(data->storage_id, data->offset + addr, sizeof(uint16_t), &free_cluster) != sizeof(uint16_t))
+            return false;
+    
+        cluster = next_cluster;
+    }
+
+    return true;
+}

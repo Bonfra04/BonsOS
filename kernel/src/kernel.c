@@ -106,18 +106,16 @@ void main(const bootinfo_t* bootinfo)
 
     {
         file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_WRITE);
-        fsys_write_file(&f, "dio cane mai", 13);
+        fsys_write_file(&f, "dio cane mai", 12);
     }
 
     {
-        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_READ);
-        char buff[13];
-        fsys_read_file(&f, buff, 13);
-        kernel_log("\n%s\n\n", buff);
+        file_t f = fsys_open_file("1:/test/giorgio/mimmo.txt", FSYS_WRITE);
+        fsys_write_file(&f, "gioegio", 7);
     }
 
     {
-        file_t f = fsys_open_dir("1:/test");
+        file_t f = fsys_open_dir("1:/test/giorgio");
         direntry_t e;
         while(fsys_list_dir(&f, &e))
             kernel_log("%s\n", e.name);

@@ -87,3 +87,15 @@ bool create_entry(const fat16_data_t* data, const fat16_entry_t* dir, const char
 
     return write_entry(data, &directory, &dummy, sizeof(dir_entry_t)) == sizeof(dir_entry_t);
 }
+
+bool free_entry(const fat16_data_t* data, fat16_entry_t* entry)
+{
+    dir_entry_t dummy;
+    memset(&dummy, ENTRY_DELETED, sizeof(dir_entry_t));
+    if(storage_seek_write(data->storage_id, data->offset + entry->entry_addr, sizeof(dir_entry_t), &dummy) != sizeof(dir_entry_t))
+        return false;
+    if(!free_cluster_chain(data, entry->first_cluster))
+        return false;
+
+    return true;
+}

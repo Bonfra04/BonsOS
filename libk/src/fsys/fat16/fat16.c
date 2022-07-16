@@ -91,6 +91,13 @@ bool fat16_create_file(fs_data_t* fs, const char* filename)
 
 bool fat16_delete_file(fs_data_t* fs, const char* filename)
 {
+    fat16_data_t* data = data_from_fs(fs);
+
+    fat16_entry_t entry = get_entry(data, &data->root_dir, filename);
+    if(entry.error || entry.type != FAT16_FILE)
+        return false;
+
+    return free_entry(data, &entry);
 }
 
 file_t fat16_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mode)

@@ -125,6 +125,7 @@ bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64
 uint64_t dir_chain_len(const fat16_data_t* data, const fat16_entry_t* dir);
 dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, const char* entryname, size_t* num_entries, uint8_t flags);
 dir_entry_t construct_dir_entry(uint8_t flags);
+bool free_cluster_chain(const fat16_data_t* data, uint64_t first_cluster);
 
 // read
 size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, size_t length);
@@ -134,6 +135,7 @@ fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* dir, cons
 // write
 size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* buffer, size_t length);
 bool create_entry(const fat16_data_t* data, const fat16_entry_t* dir, const char* filename, uint8_t flags);
+bool free_entry(const fat16_data_t* data, fat16_entry_t* entry);
 
 #define data_from_fs(fs) ((fat16_data_t*)&fs->fs_specific)
 #define fs_from_data(data) ((fs_data_t*)((uint8_t*)data - 8*3))
