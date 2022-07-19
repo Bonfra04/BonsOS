@@ -163,13 +163,13 @@ void* paging_get_ph(paging_data_t data, void* virtual_addr)
         return 0;
 
     if(pd[pd_offset] & PML_SIZE)
-        return PML_GET_ADDRESS(pd[pd_offset]) + offset_2m;
+        return (uint8_t*)PML_GET_ADDRESS(pd[pd_offset]) + offset_2m;
     
     uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
     if((pt[pt_offset] & PML_PRESENT) == 0)
         return 0;
 
-    return PML_GET_ADDRESS(pt[pt_offset]) + offset_4k;
+    return (uint8_t*)PML_GET_ADDRESS(pt[pt_offset]) + offset_4k;
 }
 
 page_privilege_t paging_get_privilege(paging_data_t data, void* virtual_addr)

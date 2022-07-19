@@ -145,6 +145,12 @@ bool paging_unmap(paging_data_t data, void* virtual_addr, size_t length);
 #define paging_enable(data) asm ("mov cr3, %0" : : "r" (data))
 
 /**
+ * @brief gets the current paging hierarchy address
+ * @return the current paging hierarchy address
+ */
+#define paging_get_current(data) asm ("mov %0, cr3" : "=r" (data))
+
+/**
  * combines the indices of a paging structure into a single virtual address
  * @param[in] pml4_off pml4 index
  * @param[in] pdp_off pdp index
