@@ -29,6 +29,9 @@
 
 #include <fsys/fsys.h>
 #include <fsys/fat16/fat16.h>
+
+#include <smp/scheduler.h>
+
 #include <log.h>
 
 #include <stddef.h>
@@ -37,8 +40,6 @@
 #include <stdio.h>
 
 #include "bootinfo.h"
-
-#include <pci/ata/sata.h>
 
 void init(const bootinfo_t* bootinfo)
 {
@@ -96,6 +97,22 @@ void init(const bootinfo_t* bootinfo)
 
     // reload default font
     text_renderer_load_font("1:/assets/zap-vga16.psf");
+
+    // multi process
+    scheduler_init();
+    scheduler_start();
+}
+
+void task0()
+{
+    tty_print("Init task0");
+    for(int i = 0; i < 10; i++)
+    {
+        tty_print("TASK0\n");
+        hlt();
+    }
+
+    scheduler_terminate_thread();
 }
 
 void main(const bootinfo_t* bootinfo)
@@ -103,7 +120,8 @@ void main(const bootinfo_t* bootinfo)
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    tty_print("All done\n");
-    storage_flush(0);
-    exit(EXIT_SUCCESS);
+    scheduler_create_kernel_task(task0);
+
+    for(;;)
+        hlt();
 }
