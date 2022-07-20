@@ -10,6 +10,7 @@ DIR_LIBK	:= $(DIR_ROOT)/libk
 DIR_LIBC	:= $(DIR_ROOT)/libc
 DIR_LIBBONS	:= $(DIR_ROOT)/libbons
 DIR_SCRIPTS	:= $(DIR_ROOT)/scripts
+DIR_PROGRAMS:= $(DIR_ROOT)/programs
 
 DIRS_INCLUDE := -I $(DIR_LIBC)/include -I $(DIR_LIBK)/include -I $(DIR_LIBBONS)/include
 

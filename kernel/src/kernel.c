@@ -103,24 +103,20 @@ void init(const bootinfo_t* bootinfo)
     scheduler_start();
 }
 
-void task0()
-{
-    tty_print("Init task0");
-    for(int i = 0; i < 10; i++)
-    {
-        tty_print("TASK0\n");
-        hlt();
-    }
-
-    scheduler_terminate_thread();
-}
-
 void main(const bootinfo_t* bootinfo)
 {
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    scheduler_create_kernel_task(task0);
+    file_t f = fsys_open_file("1:/bin/init.elf", FSYS_READ);
+    fsys_set_position(&f, -1);
+    size_t len = fsys_get_position(&f);
+    fsys_set_position(&f, 0);
+
+    uint8_t* buf = pfa_alloc(len / PFA_PAGE_SIZE + 1);
+    fsys_read_file(&f, buf, len);
+
+    scheduler_create_process(buf + 0x1000, buf + len, buf + 0x1000);
 
     for(;;)
         hlt();

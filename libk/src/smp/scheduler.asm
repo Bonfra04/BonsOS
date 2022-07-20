@@ -30,14 +30,14 @@ scheduler_tick:
     call get_next_thread                        ; get next thread
     mov [ current_thread ], rax                 ; set current thread to next thread
 
-    mov rdi, rax
+    push rax
+    call lapic_eoi                              ; send eoi to the lapic
+    pop rdi
 scheduler_replace_switch:
     mov rbx, [ rdi + thread_t.process ]         ; get thread's process
     mov rsp, [ rdi + thread_t.stack_pointer ]   ; set rsp
-    mov rbx, [ rbx + process_t.paging ]         ; set paging addr
+    mov rbx, [ rbx + process_t.paging ]         ; set paging ad5dr
     mov cr3, rbx
-
-    call lapic_eoi                              ; send eoi to the lapic
 
     ; restore the interrupt context
     pop rax

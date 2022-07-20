@@ -36,6 +36,24 @@
                 "set remotetimeout 35",
                 "add-symbol-file ${workspaceFolder}/bin/boot/loader.dbg"
             ]
-        }
+        },
+        {
+            "name": "Qemu Debug - Init",
+            "type": "gdb",
+            "request": "attach",
+            "executable": "${workspaceFolder}/img-content/bin/init.elf",
+            "target": "tcp::9000",
+            "remote": true,
+            "cwd": "${workspaceFolder}",
+            "gdbpath": "gdb",
+            "preLaunchTask": "run qemu (debug)",
+            "postDebugTask": "kill qemu",
+            "autorun": [
+                "set remotetimeout 15",
+                "directory libc",
+                "directory programs/init",
+                "set output-radix 16"
+            ]
+        },
     ]
 }

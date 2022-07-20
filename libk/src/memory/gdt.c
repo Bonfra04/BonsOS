@@ -111,6 +111,8 @@ static gdt_t* gdt_create(uint8_t core_id)
     gdt->tss_desc.limit_low = sizeof(tss_entry_t) - 1;
     gdt->tss_desc.access = TSS_PRESENT | TSS_PRIV_KERNEL | TSS_FREE;
 
+    tss_entry->RSP0 = 0xBAADBEEF;
+
     return gdt;
 }
 
