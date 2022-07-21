@@ -12,6 +12,9 @@ typedef struct thread
     uint64_t rsp;
     void* stack_base;
 
+    uint64_t krsp;
+    void* kstack_base;
+
     process_t* proc;
 
     thread_t* next_thread;

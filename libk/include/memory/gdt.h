@@ -12,3 +12,9 @@
  * @brief installs the gdt for the calling core
  */
 void gdt_install();
+
+/**
+ * @brief sets the top of the kernel stack for the calling core
+ * @param[in] stack_top the top of the kernel stack
+ */
+void tss_set_kstack(void* stack_top);

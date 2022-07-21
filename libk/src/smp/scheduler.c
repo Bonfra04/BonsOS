@@ -103,6 +103,10 @@ void scheduler_attach_thread(process_t* proc, void* entry_point)
     new->proc = proc;
     new->stack_base = stack_base;
 
+    new->kstack_base = pfa_alloc(THREAD_STACK_SIZE);
+    new->krsp = (uint8_t*)new->kstack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+    paging_map(proc->paging, new->kstack_base, new->kstack_base, THREAD_STACK_SIZE * PFA_PAGE_SIZE, PAGE_PRIVILEGE_KERNEL);
+
     proc->n_threads++;
     add_thread(new);
 }
@@ -138,9 +142,9 @@ void scheduler_create_kernel_task(void* entry_point)
     void* rsp = create_stack(kernel_process, stack_base, entry_point, true);
 
     thread_t* new = malloc(sizeof(thread_t));
-    new->rsp = (uint64_t)rsp;
+    new->krsp = (uint64_t)rsp;
     new->proc = kernel_process;
-    new->stack_base = stack_base;
+    new->kstack_base = stack_base;
 
     kernel_process->n_threads++;
     add_thread(new);
