@@ -47,6 +47,7 @@ void* vmm_assign_pages(paging_data_t paging_data, page_privilege_t privilege, si
     uint16_t candidate_pd;
     uint16_t candidate_pt;
 
+    // TODO: this will succeed if you ask for a privilege different than the pml4's one.
     for(uint16_t pml4_off = 1; pml4_off < 512; pml4_off++)
         for(uint16_t pdp_off = 0; pdp_off < 512; pdp_off++)
             for(uint16_t pd_off = 0; pd_off < 512; pd_off++)

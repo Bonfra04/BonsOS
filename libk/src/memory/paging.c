@@ -28,7 +28,7 @@
 #define PML_SET_ADDRESS(entry, val) ((entry) |= ((uint64_t)(val) & PML_ADDRESS))
 #define PML_UPDATE_ADDRESS(entry, val) (PML_CLEAR_ADDRESS(entry), PML_SET_ADDRESS(entry, val))
 
-static paging_data_t kernel_paging;
+paging_data_t kernel_paging;
 
 static void clean_structure(paging_data_t data)
 {
