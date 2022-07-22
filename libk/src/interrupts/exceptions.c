@@ -1,5 +1,6 @@
 #include <interrupts/exceptions.h>
 #include <interrupts/isr_dispatcher.h>
+#include <memory/paging.h>
 #include <cpu.h>
 #include <io/tty.h>
 #include <io/uart.h>
@@ -70,6 +71,8 @@ static void dump_context(const interrupt_context_t* context, char* str)
 
 static void isr_fatal(const interrupt_context_t* context)
 {
+    paging_enable(kernel_paging);
+
     int i = context->interrupt;
 
     const char* exstr = i < ((int)(sizeof(exceptionstr) / sizeof(exceptionstr[0])))
