@@ -140,3 +140,14 @@ void tss_set_kstack(void* stack_top)
 
     tss_entry->RSP0 = (uint64_t)stack_top;
 }
+
+void* tss_get_kstack()
+{
+    gdtr_t gdtr;
+    asm volatile ("sgdt %0" : "=m"(gdtr));
+    gdt_t* gdt = (gdt_t*)gdtr.offset;
+    tss_descriptor_t* tss_desc = &gdt->tss_desc;
+    tss_entry_t* tss_entry = (tss_entry_t*)((uint64_t)tss_desc->base_highest << 32 | tss_desc->base_high << 24 | tss_desc->base_middle << 16 | tss_desc->base_low);
+
+    return tss_entry->RSP0;
+}

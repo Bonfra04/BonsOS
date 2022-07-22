@@ -1,4 +1,3 @@
-#include <linker.h>
 #include <panic.h>
 #include <acpi.h>
 #include <cpu.h>
@@ -32,7 +31,11 @@
 
 #include <smp/scheduler.h>
 
+#include <syscall/syscall.h>
+
 #include <log.h>
+
+#include <linker.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -101,6 +104,9 @@ void init(const bootinfo_t* bootinfo)
     // multi process
     scheduler_init();
     scheduler_start();
+
+    // syscalls
+    syscall_enable();
 }
 
 void main(const bootinfo_t* bootinfo)

@@ -18,3 +18,8 @@ void gdt_install();
  * @param[in] stack_top the top of the kernel stack
  */
 void tss_set_kstack(void* stack_top);
+
+/**
+ * @brief gets the top of the kernel stack for the calling core
+ */
+void* tss_get_kstack();

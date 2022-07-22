@@ -83,10 +83,10 @@ lmode_enable:
     or eax, (1 << 5) | (1 << 4) | (1 << 7)  ; CR4.PAE | CR4.PSE | CR4.PGE
     mov cr4, eax
 
-    ; Enable 64-bit mode mode and syscall/sysret.
+    ; Enable 64-bit mode mode
     mov ecx, 0xc0000080 ; Extended Feature Enable Register (EFER)
     rdmsr
-    or eax, (1 << 8) | (1 << 0)
+    or eax, (1 << 8)
     wrmsr
 
     ; Enable paging and protected mode.

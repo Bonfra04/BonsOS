@@ -4,5 +4,6 @@ section .text
 _start:
     mov rax, 0
 .loop:
+    syscall
     inc rax
     jmp .loop
