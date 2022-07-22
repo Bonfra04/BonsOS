@@ -14,6 +14,8 @@ typedef enum page_privilege
 
 typedef void* paging_data_t;
 
+extern paging_data_t kernel_paging;
+
 /**
  * @brief initializes paging and identity maps all memory
  */
