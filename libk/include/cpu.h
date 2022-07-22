@@ -25,4 +25,19 @@
 #define cli() asm volatile("cli")
 #define sti() asm volatile("sti")
 
+typedef struct registers4
+{
+    uint64_t rax;
+    uint64_t rbx;
+    uint64_t rcx;
+    uint64_t rdx;
+} registers4_t;
+
+#define MSR_IA32_EFER   0xC0000080
+#define MSR_IA32_STAR   0xC0000081
+#define MSR_IA32_LSTAR  0xC0000082
+#define MSR_IA32_FMASK  0xC0000084
+
 uint64_t rdmsr(uint32_t id);
+void wrmsr(uint32_t id, uint64_t value);
+void cpuid(uint32_t code, registers4_t *regs);
