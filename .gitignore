@@ -5,3 +5,5 @@
 BonsOS.img
 
 qemu.log
+
+/img-content/bin/*.elf
