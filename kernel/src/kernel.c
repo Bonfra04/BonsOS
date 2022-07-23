@@ -33,6 +33,8 @@
 
 #include <syscall/syscall.h>
 
+#include <executable/executable.h>
+
 #include <log.h>
 
 #include <linker.h>
@@ -114,15 +116,9 @@ void main(const bootinfo_t* bootinfo)
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    file_t f = fsys_open_file("1:/bin/init.elf", FSYS_READ);
-    fsys_set_position(&f, -1);
-    size_t len = fsys_get_position(&f);
-    fsys_set_position(&f, 0);
+    executable_t* executable = executable_load("1:/bin/init.elf");
 
-    uint8_t* buf = pfa_alloc(len / PFA_PAGE_SIZE + 1);
-    fsys_read_file(&f, buf, len);
-
-    scheduler_create_process(buf + 0x1000, buf + len, buf + 0x1000);
+    scheduler_run_executable(executable);
 
     for(;;)
         hlt();

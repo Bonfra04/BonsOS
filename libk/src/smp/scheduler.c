@@ -47,6 +47,7 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
 static void destroy_process(process_t* process)
 {
     vmm_destroy(process->paging);
+    executable_unload(process->executable);
 }
 
 static void destroy_thread(thread_t* thread)
@@ -116,6 +117,7 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
     process_t* proc = malloc(sizeof(process_t));
     proc->paging = paging_create();
     proc->n_threads = 0;
+    proc->executable = NULL;
 
     address_low = ALIGN_4K_DOWN(address_low);
     address_high = ALIGN_4K_UP(address_high);
@@ -133,6 +135,14 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
     void* vt_entry = USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low;
     scheduler_attach_thread(proc, vt_entry);
 
+    return proc;
+}
+
+process_t* scheduler_run_executable(const executable_t* executable)
+{
+    void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
+    process_t* proc = scheduler_create_process(executable->base_address, address_high, executable->entry_point);
+    proc->executable = executable;
     return proc;
 }
 

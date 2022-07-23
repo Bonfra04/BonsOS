@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory/paging.h>
+#include <executable/executable.h>
 
 #include <stdint.h>
 
@@ -25,6 +26,7 @@ typedef struct process
 {
     paging_data_t paging;
     uint64_t n_threads;
+    const executable_t* executable;
 } process_t;
 
 /**
@@ -45,6 +47,13 @@ void scheduler_start();
  * @return The created process
  */
 process_t* scheduler_create_process(void* address_low, void* address_high, void* entry_point);
+
+/**
+ * @brief Creates a new process with a single thread, mapping the given executable
+ * @param[in] executable The executable to load
+ * @return The created process
+ */
+process_t* scheduler_run_executable(const executable_t* executable);
 
 /**
  * @brief Attaches a thread to a process
