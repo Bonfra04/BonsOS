@@ -29,37 +29,39 @@ SELECTOR_KERNEL_DATA equ 0x10
 SELECTOR_USER_DATA equ 0x18
 
 syscall_handle:
-    mov r10, rsp    ; save rsp
-    mov r9, rcx     ; save return addr
-    mov r8, r11     ; save flags
-    mov rdx, cr3    ; save cr3
+    push r11        ; save flags
+    push rcx        ; save ret addr
+    mov r10, cr3    ; save paging
+    mov r11, rsp    ; save rsp
+    ; rax contains syscall number
 
     ; retrive gdt address
     sub rsp, 8+2
     sgdt [ rsp ]
-    mov rdi, [ rsp + gdtr_t.offset ]
+    mov r8, [ rsp + gdtr_t.offset ]
 
     ; use kernel paging
-    mov rdx, [ kernel_paging ]
-    mov cr3, rdx
+    mov r9, [ kernel_paging ]
+    mov cr3, r9
 
     ; get tss entry address
-    mov ecx, [ rdi + gdt_t.tss_desc + tss_desc_t.base_highest ]
+    mov ecx, [ r8 + gdt_t.tss_desc + tss_desc_t.base_highest ]
     shl rcx, 32
-    mov ch, [ rdi + gdt_t.tss_desc + tss_desc_t.base_high ]
-    mov cl, [ rdi + gdt_t.tss_desc + tss_desc_t.base_middle ]
+    mov cx, [ r8 + gdt_t.tss_desc + tss_desc_t.base_high ]
+    shl cx, 8
+    mov cl, [ r8 + gdt_t.tss_desc + tss_desc_t.base_middle ]
     shl ecx, 16
-    mov cx, [ rdi + gdt_t.tss_desc + tss_desc_t.base_low ]
+    mov cx, [ r8 + gdt_t.tss_desc + tss_desc_t.base_low ]
 
     ; get stack to kernel stack
     mov rsp, [ rcx + 4 ]
 
     ; set segments
-    mov rcx, SELECTOR_KERNEL_DATA
-    mov ds, rcx
-    mov es, rcx
-    mov fs, rcx
-    mov gs, rcx
+    mov r8, SELECTOR_KERNEL_DATA
+    mov ds, r8
+    mov es, r8
+    mov fs, r8
+    mov gs, r8
 
     ; save preserved registers
     push rbx
@@ -68,7 +70,7 @@ syscall_handle:
     push r13
     push r14
     push r15
-    
+
     ; enable interrupts
     sti
 
@@ -86,14 +88,14 @@ syscall_handle:
     pop rbx
 
     ; restore segments
-    mov rcx, SELECTOR_USER_DATA | 3
-    mov ds, rcx
-    mov es, rcx
-    mov fs, rcx
-    mov gs, rcx
+    mov r8, SELECTOR_USER_DATA | 3
+    mov ds, r8
+    mov es, r8
+    mov fs, r8
+    mov gs, r8
 
-    mov rsp, r10    ; restore rsp
-    mov rcx, r9     ; restore return addr
-    mov r11, r8     ; restore flags
-    mov cr3, rdx    ; restore cr3
+    mov rsp, r11    ; restore rsp
+    mov cr3, r10    ; restore paging
+    pop rcx         ; restore ret addr
+    pop r11         ; restore flags
     o64 sysret
