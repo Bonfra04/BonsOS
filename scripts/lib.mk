@@ -73,7 +73,7 @@ endif
 
 $(OBJ_FILES_ASM): $(DIR_LIB_BUILD)/%_asm.o: %.asm
 	@echo "$(TAG) Assembling $<"
-	@$(AS) $(ASFLAGS) $< -o $@
+	@$(AS) $(ASFLAGS) $(PREPROC) $< -o $@
 
 $(OBJ_FILES_C): $(DIR_LIB_BUILD)/%.o: %.c
 	@echo "$(TAG) Compiling $<"
