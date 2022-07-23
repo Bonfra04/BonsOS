@@ -286,7 +286,7 @@ dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, con
     memmove(entries, short_83, sizeof(dir_entry_t));
 
     shortenize_name(data, dir, entryname, short_83->fullname);
-    uint8_t chsum = lfn_checksum(short_83->fullname);
+    uint8_t chsum = lfn_checksum((uint8_t*)short_83->fullname);
 
 
     for(size_t i = *num_entries; i > 1; i--)

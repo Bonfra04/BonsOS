@@ -34,5 +34,13 @@ executable_t* executable_load(const char* path)
 
 void executable_unload(const executable_t* executable)
 {
-
+    switch (executable->format)
+    {
+    case EXEC_ELF:
+        elf_unload(executable);
+        break;
+    
+    default:
+        break;
+    }
 }

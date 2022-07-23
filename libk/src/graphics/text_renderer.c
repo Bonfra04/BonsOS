@@ -46,7 +46,7 @@ bool text_renderer_load_font(const char* filepath)
     if(fsys_read_file(&f, &font, sizeof(font)) != sizeof(font))
         return false;
 
-    load_font(&font);
+    load_font((psf1_header_t*)&font);
 
     return true;
 }

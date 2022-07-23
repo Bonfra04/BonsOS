@@ -41,7 +41,7 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     context->ss = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->cs = is_kernel ? SELECTOR_KERNEL_CODE : (SELECTOR_USER_CODE | 3);
     
-    return context->rsp = (uint64_t)vt_stack_base + (sp - ph_stack_base);
+    return ptr(context->rsp = (uint64_t)vt_stack_base + (sp - ph_stack_base));
 }
 
 static void destroy_process(process_t* process)
@@ -119,20 +119,20 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
     proc->n_threads = 0;
     proc->executable = NULL;
 
-    address_low = ALIGN_4K_DOWN(address_low);
-    address_high = ALIGN_4K_UP(address_high);
+    address_low = ptr(ALIGN_4K_DOWN(address_low));
+    address_high = ptr(ALIGN_4K_UP(address_high));
 
     size_t size = address_high - address_low;
-    paging_map(proc->paging, address_low, USER_PROCESS_BASE_ADDRESS, size, PAGE_PRIVILEGE_USER);
+    paging_map(proc->paging, address_low, ptr(USER_PROCESS_BASE_ADDRESS), size, PAGE_PRIVILEGE_USER);
 
     extern symbol_t __kernel_start_addr;
     extern symbol_t __kernel_end_addr;
     size_t kernel_start_aligned = ALIGN_4K_DOWN(__kernel_start_addr);
     size_t kernel_end_aligned = ALIGN_4K_UP(__kernel_end_addr);
     size_t kernel_size = kernel_end_aligned - kernel_start_aligned;
-    paging_map(proc->paging, __kernel_start_addr, kernel_start_aligned, kernel_size, PAGE_PRIVILEGE_KERNEL);
+    paging_map(proc->paging, __kernel_start_addr, ptr(kernel_start_aligned), kernel_size, PAGE_PRIVILEGE_KERNEL);
 
-    void* vt_entry = USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low;
+    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low);
     scheduler_attach_thread(proc, vt_entry);
 
     return proc;

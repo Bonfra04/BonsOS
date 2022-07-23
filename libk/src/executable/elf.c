@@ -87,5 +87,5 @@ executable_t* elf_load(uint8_t* file_data, size_t num_pages)
 void elf_unload(const executable_t* executable)
 {
     pfa_free(executable->base_address, executable->num_pages);
-    free(executable);
+    free((void*)executable);
 }
