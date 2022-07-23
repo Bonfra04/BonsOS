@@ -12,6 +12,7 @@ bits 64
 section .text
     global isr_dispatcher
     global isr_set
+    extern kernel_paging
 
 isr_handlers: times 256 dq 0 
 
@@ -84,6 +85,10 @@ isr_dispatcher:
     mov rax, ds
     push rax
 
+    mov r15, cr3                ; save cr3
+    mov rax, [ kernel_paging ]  ; set kernel paging
+    mov cr3, rax
+
 .call_handler:
     ; find the handler
     mov rax, [rsp + 8 * 20]             ; get the interrupt number
@@ -97,6 +102,9 @@ isr_dispatcher:
     call rax
 
 .pop_context:
+
+    mov cr3, r15                ; restore cr3
+
     pop rax
     mov ds, rax
     pop rax
