@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <containers/vector.h>
+#include <containers/darray.h>
 
 typedef struct fsys_reg
 {
@@ -11,20 +11,19 @@ typedef struct fsys_reg
     uint8_t type;
 } fsys_reg_t;
 
-static vector_t fsys_registry;
-static vector_t fsys_instances;
+static fsys_reg_t* fsys_registry;
+static file_system_t* fsys_instances;
 
 static file_system_t fsys_instantiate(partition_descriptor_t partition)
 {
     file_system_t fs;
     memset(&fs, 0, sizeof(file_system_t));
     
-    for(size_t i = 0; i < vector_size(&fsys_registry); i++)
+    for(size_t i = 0; i < darray_length(fsys_registry); i++)
     {
-        fsys_reg_t* reg = vector_at(&fsys_registry, fsys_reg_t, i);
-        if(reg->type == partition.type)
+        if(fsys_registry[i].type == partition.type)
         {
-            fs = reg->instantiate(partition);
+            fs = fsys_registry[i].instantiate(partition);
             break;
         }
     }
@@ -36,8 +35,8 @@ static file_system_t fsys_instantiate(partition_descriptor_t partition)
 
 void fsys_init()
 {
-    fsys_registry = vector(fsys_reg_t);
-    fsys_instances = vector(file_system_t);
+    fsys_registry = darray(fsys_reg_t, 0);
+    fsys_instances = darray(file_system_t, 0);
 }
 
 void fsys_auto_mount()
@@ -59,7 +58,7 @@ void fsys_register(fsys_instantiate_t instantiate_function, uint8_t type)
     fsys_reg_t reg;
     reg.instantiate = instantiate_function;
     reg.type = type;
-    vector_push_back(&fsys_registry, reg);
+    darray_append(fsys_registry, reg);
 }
 
 uint64_t fsys_mount(partition_descriptor_t partition)
@@ -73,37 +72,34 @@ uint64_t fsys_mount(partition_descriptor_t partition)
     fs.data.offset = partition.start;
     fs.data.length = partition.length;
 
-    for(size_t i = 0; i < vector_size(&fsys_instances); i++)
+    for(size_t i = 0; i < darray_length(fsys_instances); i++)
     {
-        file_system_t* fs_ptr = vector_at(&fsys_instances, file_system_t, i);
-        if(!fs_ptr->mounted)
+        if(!fsys_instances[i].mounted)
         {
-            *fs_ptr = fs;
+            fsys_instances[i] = fs;
             return i + 1;
         }
     }
 
-    vector_push_back(&fsys_instances, fs);
-    return vector_size(&fsys_instances);
+    darray_append(fsys_instances, fs);
+    return darray_length(fsys_instances);
 }
 
 void fsys_unmount(uint64_t id)
 {
-    if(id == 0 || id > vector_size(&fsys_instances))
+    if(id == 0 || id > darray_length(fsys_instances))
         return;
 
-    file_system_t* fs = vector_at(&fsys_instances, file_system_t, id - 1);
-    memset(fs, 0, sizeof(file_system_t));
-    fs->mounted = false;
+    memset(&fsys_instances[id - 1], 0, sizeof(file_system_t));
+    fsys_instances[id - 1].mounted = false;
 }
 
 uint64_t fsys_nfsys()
 {
     uint64_t count = 0;
-    for(size_t i = 0; i < vector_size(&fsys_instances); i++)
+    for(size_t i = 0; i < darray_length(fsys_instances); i++)
     {
-        file_system_t* fs = vector_at(&fsys_instances, file_system_t, i);
-        if(fs->mounted)
+        if(fsys_instances[i].mounted)
             count++;
     }
     return count;
@@ -111,11 +107,10 @@ uint64_t fsys_nfsys()
 
 uint8_t fsys_type(uint64_t id)
 {
-    if(id == 0 || id > vector_size(&fsys_instances))
+    if(id == 0 || id > darray_length(fsys_instances))
         return 0;
 
-    file_system_t* fs = vector_at(&fsys_instances, file_system_t, id - 1);
-    return fs->type;
+    return fsys_instances[id - 1].type;
 }
 
 static uint64_t split_name(const char* filename, char** fname)
@@ -132,14 +127,13 @@ static uint64_t split_name(const char* filename, char** fname)
 
 file_system_t* get_fs(uint64_t id)
 {
-    if(id == 0 || id > vector_size(&fsys_instances))
+    if(id == 0 || id > darray_length(fsys_instances))
         return NULL;
     
-    file_system_t* fs = vector_at(&fsys_instances, file_system_t, id - 1);
-    if(!fs->mounted)
+    if(!fsys_instances[id - 1].mounted)
         return NULL;
 
-    return fs;
+    return &fsys_instances[id - 1];
 }
 
 file_t fsys_open_file(const char* filename, fsys_file_mode_t mode)

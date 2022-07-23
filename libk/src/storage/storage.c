@@ -4,15 +4,15 @@
 #include <string.h>
 #include <assert.h>
 
-#include <containers/vector.h>
+#include <containers/darray.h>
 
 #include "storage_types.h"
 
-static vector_t storage_devices;
+static storage_device_t* storage_devices;
 
 void storage_init()
 {
-    storage_devices = vector(storage_device_t);
+    storage_devices = darray(storage_device_t, 0);
 
     for(size_t i = 0; i < sata_ndisks(); i++)
     {
@@ -41,7 +41,7 @@ uint64_t storage_register_device(storage_data_t data)
     device.writer = data.writer;
     device.registered = true;
     device.lba_pos = 0;
-    device.partitions = vector(partition_t);
+    device.partitions = darray(partition_t, 0);
 
     device.reader(device.internal_id, device.lba_pos, 1, device.buffer);
     const master_bootrecord_t* mbr = (master_bootrecord_t*)device.buffer;
@@ -55,40 +55,37 @@ uint64_t storage_register_device(storage_data_t data)
         partition.length = mbr->partitions[i].sectors * device.buff_len;
 
         if (partition.type != PART_TYPE_FREE)
-            vector_push_back(&device.partitions, partition);
+            darray_append(device.partitions, partition);
     }
 
-    for (size_t i = 0; i < vector_size(&storage_devices); i++)
+    for (size_t i = 0; i < darray_length(storage_devices); i++)
     {
-        storage_device_t* dev = vector_at(&storage_devices, storage_device_t, i);
-        if (!dev->registered)
+        if (!storage_devices[i].registered)
         {
-            *dev = device;
+            storage_devices[i] = device;
             return i;
         }
     }
 
-    vector_push_back(&storage_devices, device);
-    return vector_size(&storage_devices) - 1;
+    darray_append(storage_devices, device);
+    return darray_length(storage_devices) - 1;
 }
 
 void storage_unregister_device(uint64_t id)
 {
-    if(id >= vector_size(&storage_devices))
+    if(id >= darray_length(storage_devices))
         return;
 
-    storage_device_t* device = vector_at(&storage_devices, storage_device_t, id);
-    memset(device, -1, sizeof(storage_device_t));
-    device->registered = false;
+    memset(&storage_devices[id], -1, sizeof(storage_device_t));
+    storage_devices[id].registered = false;
 }
 
 size_t storage_ndevices()
 {
     size_t count = 0;
-    for(size_t i = 0; i < vector_size(&storage_devices); i++)
+    for(size_t i = 0; i < darray_length(storage_devices); i++)
     {
-        storage_device_t* device = vector_at(&storage_devices, storage_device_t, i);
-        if(device->registered)
+        if(storage_devices[i].registered)
             count++;
     }
     return count;
@@ -99,12 +96,11 @@ storage_descriptor_t storage_info(uint64_t id)
     storage_descriptor_t desc;
     memset(&desc, 0, sizeof(storage_descriptor_t));
 
-    if(id >= vector_size(&storage_devices))
+    if(id >= darray_length(storage_devices))
         return desc;
 
-    storage_device_t* device = vector_at(&storage_devices, storage_device_t, id);
-    desc.capacity = device->capacity;
-    desc.partitions_count = vector_size(&device->partitions);
+    desc.capacity = storage_devices[id].capacity;
+    desc.partitions_count = darray_length(storage_devices[id].partitions);
     desc.device_id = id;
 
     return desc;
@@ -115,14 +111,13 @@ partition_descriptor_t storage_get_partition(uint64_t id, uint64_t index)
     partition_descriptor_t desc;
     memset(&desc, 0, sizeof(partition_descriptor_t));
 
-    if(id >= vector_size(&storage_devices))
+    if(id >= darray_length(storage_devices))
         return desc;
 
-    storage_device_t* device = vector_at(&storage_devices, storage_device_t, id);
-    if(index >= vector_size(&device->partitions))
+    if(index >= darray_length(storage_devices[id].partitions))
         return desc;
 
-    partition_t* partition = vector_at(&device->partitions, partition_t, index);
+    partition_t* partition = &storage_devices[id].partitions[index];
     desc.device_id = id;
     desc.start = partition->offset;
     desc.length = partition->length;
@@ -133,14 +128,13 @@ partition_descriptor_t storage_get_partition(uint64_t id, uint64_t index)
 
 static storage_device_t* get_device(size_t id)
 {
-    if(id >= vector_size(&storage_devices))
+    if(id >= darray_length(storage_devices))
         return NULL;
 
-    storage_device_t* device = vector_at(&storage_devices, storage_device_t, id);
-    if(!device->registered)
+    if(!storage_devices[id].registered)
         return NULL;
 
-    return device;
+    return &storage_devices[id];
 }
 
 bool storage_flush(size_t id)

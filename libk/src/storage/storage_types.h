@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include <containers/vector.h>
+#include <containers/darray.h>
 
 #define MAX_BUFFER_LENGTH 512
 
@@ -51,6 +51,6 @@ typedef struct storage_device
     storage_function_t reader;
     storage_function_t writer;
 
-    vector_t partitions;
+    partition_t* partitions;
     bool registered;
 } storage_device_t;
