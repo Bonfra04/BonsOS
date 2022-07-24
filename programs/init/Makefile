@@ -5,7 +5,7 @@ include $(DIR_ROOT)/img-content/bin/flags.mk
 
 LIB_NAME		:= init
 LD_FILE			:= $(DIR_ROOT)/img-content/bin/elf.ld
-LIB_DEPS		:= $(call libfile, libc)
+LIB_DEPS		:= $(call libfile, libc)  $(call libfile, libbons)
 
 RUNNABLE		:= $(DIR_ROOT)/img-content/bin/init.elf
 

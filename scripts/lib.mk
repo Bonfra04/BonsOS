@@ -7,10 +7,10 @@ SHELL=/bin/bash
 #	 LIB_DEPS		 The paths to the dependencies of this project
 #	 PREPROC		 List of prepocessor definitions
 #
-#	 CRT0			 The source file for crt0.asm
+#	 CRT0			 The source file for crt0.asm # TODO: remove
 #
 #	 RUNNABLE		 The path of the binary file if wanted
-#	 LD_FILE		 The path of the linker file 		(if RUNNABLE)
+#	 LD_FILE		 The path of the linker file to link the runnable
 #----------------------------------------------------------------------------
 
 # Recursively find files from the current working directory that match param1.
@@ -22,16 +22,17 @@ findfiles	= $(patsubst ./%,%,$(shell find . -name $(1)))
 outputdirs	= $(addprefix $(dir $(1)/), $(sort $(dir $(2))))
 
 #filter out param2 from param1
-filter		= $(shell IFS=' ' read -r -a array <<< "$(1)"; echo "$${array[@]/${2}}")
+filter_out		= $(shell IFS=' ' read -r -a array <<< "$(1)"; echo "$${array[@]/$(2)}")
 
 DIR_LIB_BUILD	:= $(DIR_OBJ)/$(LIB_NAME)
 DIR_LIB_OUTPUT	:= $(DIR_BIN)/$(LIB_NAME)
 
 ASM_FILES		:= $(call findfiles,'*.asm')
-ifdef CRT0
-ASM_FILES 		:= $(shell IFS=' ' read -r -a array <<< "$(ASM_FILES)"; echo "$${array[@]/$(CRT0)}")
-CRT0_OBJ		:= $(DIR_LIB_BUILD)/${CRT0}.o
-endif
+
+# TODO: remove this (sort out inside bootloader)
+ASM_FILES		:= $(call filter_out,$(ASM_FILES),$(CRT0))
+CRT0_OBJ		:= $(if $(CRT0),$(DIR_LIB_BUILD)/${CRT0}.o,)
+
 C_FILES			:= $(call findfiles,'*.c')
 CODE_FILES		:= $(ASM_FILES) $(C_FILES)
 
