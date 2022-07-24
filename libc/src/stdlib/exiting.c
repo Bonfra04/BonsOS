@@ -3,8 +3,14 @@
 
 #include <containers/linked_list.h>
 
-linked_list_t atexit_functions = NULL;
-linked_list_t at_quick_exit_functions = NULL;
+static linked_list_t atexit_functions;
+static linked_list_t at_quick_exit_functions;
+
+static void __attribute__((constructor)) __atexit_init()
+{
+    atexit_functions = linked_list_new();
+    at_quick_exit_functions = linked_list_new();
+}
 
 int atexit(void (*func)())
 {
@@ -65,13 +71,15 @@ void _Exit(int status)
 
 #else
 
-// TODO: implement
+extern void call_dtors();
+
 void _Exit(int status)
 {
     (void)status;
-    for(;;);
+
+    call_dtors();
+
+    for(;;); // TODO: terminate the process
 }
 
 #endif
-
-

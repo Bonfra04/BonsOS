@@ -21,6 +21,20 @@ SECTIONS
         *(.rodata)
     }
 
+    .ctors : ALIGN(0x1000)
+    {
+        __start_ctors = .;
+        *(.ctors)
+        __end_ctors = .;
+    }
+
+    .dtors : ALIGN(0x1000)
+    {
+        __start_dtors = .;
+        *(.dtors)
+        __end_dtors = .;
+    }
+
     .bss : ALIGN(0x1000)
     {
         *(COMMON)

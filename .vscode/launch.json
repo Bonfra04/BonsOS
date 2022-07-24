@@ -16,6 +16,7 @@
                 "set remotetimeout 35",
                 "directory libk",
                 "directory libc",
+                "directory libbons",
                 "directory kernel",
                 "directory kernel/src",
                 "set output-radix 16",
@@ -51,6 +52,7 @@
             "autorun": [
                 "set remotetimeout 15",
                 "directory libc",
+                "directory libbons",
                 "directory programs/init",
                 "set output-radix 16"
             ]

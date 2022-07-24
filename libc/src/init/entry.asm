@@ -5,9 +5,12 @@ bits 64
 section .text
     global _start
     extern main
+    extern call_ctors
+    extern exit
 
 _start:
+    call call_ctors
     call main
-    jmp $
+    call exit
 
 %endif
