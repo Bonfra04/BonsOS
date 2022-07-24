@@ -5,17 +5,17 @@
 #include <log.h>
 
 #include <linker.h>
-#include <containers/vector.h>
+#include <containers/darray.h>
 
 #include <string.h>
 
 #include "sata_types.h"
 
-static vector_t sata_devices;
+static sata_device_t* sata_devices;
 
 void sata_init()
 {
-    sata_devices = vector(sata_device_t);
+    sata_devices = darray(sata_device_t, 0);
 }
 
 static void enable_ahci_mode(volatile hba_mem_t* hba)
@@ -160,7 +160,7 @@ static void init_device(volatile hba_mem_t* hba)
             if(!identify(&device))
                 continue;
 
-            vector_push_back(&sata_devices, device);
+            darray_append(sata_devices, device);
         }
 }
 
@@ -279,38 +279,32 @@ void sata_register_device(const pci_device_t* pci_device)
 
 size_t sata_ndisks()
 {
-    return vector_size(&sata_devices);
+    return darray_length(sata_devices);
 }
 
 bool sata_read(size_t disk, uint64_t lba, size_t sectors, void* buffer)
 {
-    sata_device_t* device = vector_at(&sata_devices, sata_device_t, disk);
-    return ahci_rw(device, lba, buffer, sectors, false);
+    return ahci_rw(&sata_devices[disk], lba, buffer, sectors, false);
 }
 
 bool sata_write(size_t disk, uint64_t lba, size_t sectors, void* buffer)
 {
-    sata_device_t* device = vector_at(&sata_devices, sata_device_t, disk);
-    return ahci_rw(device, lba, buffer, sectors, true);
+    return ahci_rw(&sata_devices[disk], lba, buffer, sectors, true);
 }
 
 size_t sata_get_capacity(size_t disk)
 {
-    sata_device_t* device = vector_at(&sata_devices, sata_device_t, disk);
-    return device->ident.lba_capacity * device->ident.sector_bytes;
+    return sata_devices[disk].ident.lba_capacity * sata_devices[disk].ident.sector_bytes;
 }
 
 size_t sata_get_sector_size(size_t disk)
 {
-    sata_device_t* device = vector_at(&sata_devices, sata_device_t, disk);
-    return device->ident.sector_bytes;
+    return sata_devices[disk].ident.sector_bytes;
 }
 
 void sata_get_model(size_t disk, char* model)
 {
-    sata_device_t* device = vector_at(&sata_devices, sata_device_t, disk);
-
-    uint16_t* m = (uint16_t*)device->ident.model;
+    uint16_t* m = (uint16_t*)sata_devices[disk].ident.model;
 
     memset(model, '\'', 40);
     for(uint8_t i = 0; i < 20; i++)
