@@ -4,7 +4,6 @@
 #include <memory/paging.h>
 
 #include <linker.h>
-#include <containers/linked_list.h>
 
 #include <string.h>
 
@@ -31,9 +30,9 @@ typedef struct rsdp_descriptor_20
 static rsdt_header_t* rsdt;
 
 static void* madt_lapic_address = NULL;
-static linked_list_t madt_lapic_entries = NULL;
-static linked_list_t madt_ioapic_entries = NULL;
-static linked_list_t madt_int_src_ovr_entries = NULL;
+static lapic_entry_t* madt_lapic_entries;
+static ioapic_entry_t* madt_ioapic_entries;
+static ioapic_int_src_ovr_entry_t* madt_int_src_ovr_entries;
 
 static void find_rsdt()
 {
@@ -77,6 +76,10 @@ static void parse_tables()
 
 void acpi_init()
 {
+    madt_lapic_entries = darray(lapic_entry_t, 0);
+    madt_ioapic_entries = darray(ioapic_entry_t, 0);
+    madt_int_src_ovr_entries = darray(ioapic_int_src_ovr_entry_t, 0);
+
     find_rsdt();
     parse_tables();
 }
@@ -96,21 +99,21 @@ static void parse_apic_table(const rsdt_header_t* header)
         {
             lapic_entry_t* lapic = (lapic_entry_t*)(entry + 1);
             if(lapic->flags & 1 || lapic->flags & 2)
-                linked_list_append(madt_lapic_entries, lapic_entry_t*, lapic);
+                darray_append(madt_lapic_entries, *lapic);
             break;
         }
 
         case MADT_IOAPIC:
         {
             ioapic_entry_t* ioapic = (ioapic_entry_t*)(entry + 1);
-            linked_list_append(madt_ioapic_entries, ioapic_entry_t*, ioapic);
+            darray_append(madt_ioapic_entries, *ioapic);
             break;
         }
 
         case MADT_INT_SRC_OVR:
         {
             ioapic_int_src_ovr_entry_t* int_src_ovr = (ioapic_int_src_ovr_entry_t*)(entry + 1);
-            linked_list_append(madt_int_src_ovr_entries, ioapic_int_src_ovr_entry_t*, int_src_ovr);
+            darray_append(madt_int_src_ovr_entries, *int_src_ovr);
             break;
         }
 

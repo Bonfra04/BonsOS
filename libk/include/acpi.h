@@ -1,26 +1,7 @@
 #pragma once
 
-#include <containers/linked_list.h>
+#include <containers/darray.h>
 #include <stdint.h>
-
-typedef struct madt_data
-{
-    void* lapic_address;
-    linked_list_t lapic_entries;
-    linked_list_t ioapic_entries;
-    linked_list_t ioapic_int_src_ovr_entries;
-} madt_data_t;
-
-/**
- * @brief locates and reads the acpi tables
- */
-void acpi_init();
-
-/**
- * @brief creates a structure holding all madt revelant data
- * @return structure holding all madt revelant data
- */
-madt_data_t acpi_get_madt();
 
 typedef struct lapic_entry
 {
@@ -44,3 +25,22 @@ typedef struct ioapic_int_src_ovr_entry
     uint32_t gsi;
     uint16_t flags;
 } __attribute__((packed)) ioapic_int_src_ovr_entry_t;
+
+typedef struct madt_data
+{
+    void* lapic_address;
+    lapic_entry_t* lapic_entries;
+    ioapic_entry_t* ioapic_entries;
+    ioapic_int_src_ovr_entry_t* ioapic_int_src_ovr_entries;
+} madt_data_t;
+
+/**
+ * @brief locates and reads the acpi tables
+ */
+void acpi_init();
+
+/**
+ * @brief creates a structure holding all madt relevant data
+ * @return structure holding all madt relevant data
+ */
+madt_data_t acpi_get_madt();

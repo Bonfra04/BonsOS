@@ -92,18 +92,15 @@ void ioapic_init()
 {
     madt_data_t madt_data = acpi_get_madt();
 
-    linked_list_t ioapic_entries = madt_data.ioapic_entries;
-    num_ioapic = linked_list_size(ioapic_entries);
+    num_ioapic = darray_length(madt_data.ioapic_entries);
     ioapics = heap_malloc(sizeof(ioapic_t) * num_ioapic);
 
     for(size_t i = 0; i < num_ioapic; i++)
     {
-        ioapic_entry_t* ioapic_entry = linked_list_val(ioapic_entries, ioapic_entry_t*, i);
-
-        ioapics[i].address = ioapic_entry->ioapic_address;
-        ioapics[i].gsi_base = ioapic_entry->gsi_base;
+        ioapics[i].address = madt_data.ioapic_entries[i].ioapic_address;
+        ioapics[i].gsi_base = madt_data.ioapic_entries[i].gsi_base;
         ioapics[i].num_entries = (ioapic_read(ptr(ioapics[i].address), IOAPICVER) >> 16) + 1;
-        ioapics[i].id = ioapic_entry->ioapic_id;
+        ioapics[i].id = madt_data.ioapic_entries[i].ioapic_id;
 
         for(uint16_t red = 0; red < ioapics[i].num_entries; red++)
         {
@@ -124,12 +121,11 @@ void ioapic_init()
         }
     }
 
-    linked_list_t overrides = madt_data.ioapic_int_src_ovr_entries;
-    size_t num_overrides = linked_list_size(overrides);
+    size_t num_overrides = darray_length(madt_data.ioapic_int_src_ovr_entries);
     
     for(size_t i = 0; i < num_overrides; i++)
     {
-        ioapic_int_src_ovr_entry_t* override = linked_list_val(overrides, ioapic_int_src_ovr_entry_t*, i);
+        ioapic_int_src_ovr_entry_t* override = &madt_data.ioapic_int_src_ovr_entries[i];
 
         for(size_t ioapic = 0; ioapic < num_ioapic; ioapic++)
         {
