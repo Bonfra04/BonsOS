@@ -44,7 +44,7 @@ void* heap_malloc(size_t size)
     {
         if(current_region->free && current_region->length >= size + sizeof(heap_region_t))
         {
-            if(current_region->length > size + sizeof(heap_region_t))
+            if(current_region->length >= size + sizeof(heap_region_t) * 2)
             {
                 heap_region_t* new_region = (heap_region_t*)((uint64_t)current_region + size + sizeof(heap_region_t));
                 new_region->length = current_region->length - (size + sizeof(heap_region_t));
