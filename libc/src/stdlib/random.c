@@ -1,6 +1,11 @@
 #include <stdlib.h>
 
-static unsigned int _seed = 1;
+static unsigned int _seed;
+
+void __attribute__((constructor)) __random_init()
+{
+    _seed = 1;
+}
 
 int rand(void)
 {

@@ -6,7 +6,7 @@
 static linked_list_t atexit_functions;
 static linked_list_t at_quick_exit_functions;
 
-static void __attribute__((constructor)) __atexit_init()
+static void __attribute__((constructor)) __exiting_init()
 {
     atexit_functions = linked_list_new();
     at_quick_exit_functions = linked_list_new();
