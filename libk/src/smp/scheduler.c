@@ -105,7 +105,7 @@ void scheduler_attach_thread(process_t* proc, void* entry_point)
     new->stack_base = stack_base;
 
     new->kstack_base = pfa_alloc(THREAD_STACK_SIZE);
-    new->krsp = (uint8_t*)new->kstack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+    new->krsp = (uint64_t)new->kstack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
     paging_map(proc->paging, new->kstack_base, new->kstack_base, THREAD_STACK_SIZE * PFA_PAGE_SIZE, PAGE_PRIVILEGE_KERNEL);
 
     proc->n_threads++;
