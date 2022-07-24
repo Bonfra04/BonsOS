@@ -20,6 +20,8 @@ POST_BUILD_RULE := separate_symbols
 
 include $(DIR_ROOT)/scripts/lib.mk
 
+.PHONY: separate_symbols
+
 separate_symbols:
 	@$(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-objcopy --only-keep-debug $(DIR_BIN)/boot/loader.bin $(DIR_BIN)/boot/loader.dbg
 	@$(DIR_ROOT)/tools/cross-compiler/bin/x86_64-elf-objcopy --strip-debug --strip-unneeded $(DIR_BIN)/boot/loader.bin
