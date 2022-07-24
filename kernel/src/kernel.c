@@ -118,7 +118,8 @@ void main(const bootinfo_t* bootinfo)
 
     executable_t* executable = executable_load("1:/bin/init.elf");
 
-    scheduler_run_executable(executable);
+    char* args[] = { "miao", "bau", 0 };
+    scheduler_run_executable(executable, args);
 
     for(;;)
         hlt();

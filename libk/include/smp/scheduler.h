@@ -44,23 +44,26 @@ void scheduler_start();
  * @param[in] address_low Lowest physical address of the process
  * @param[in] address_high Highest physical address of the process
  * @param[in] entry_point Physical address of the entry point
+ * @param[in] args Null terminated string array of arguments
  * @return The created process
  */
-process_t* scheduler_create_process(void* address_low, void* address_high, void* entry_point);
+process_t* scheduler_create_process(void* address_low, void* address_high, void* entry_point, char* args[]);
 
 /**
  * @brief Creates a new process with a single thread, mapping the given executable
  * @param[in] executable The executable to load
+ * @param[in] args Null terminated string array of arguments
  * @return The created process
  */
-process_t* scheduler_run_executable(const executable_t* executable);
+process_t* scheduler_run_executable(const executable_t* executable, char* args[]);
 
 /**
  * @brief Attaches a thread to a process
  * @param[in] proc The process to attach the thread to
  * @param[in] entry_point Virtual address of the entry point inside the process
+ * @param[in] args Null terminated string array of arguments
  */
-void scheduler_attach_thread(process_t* proc, void* entry_point);
+void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[]);
 
 /**
  * @brief Creates a task that runs in kernel space
