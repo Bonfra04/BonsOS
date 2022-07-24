@@ -1,11 +1,11 @@
 #include <memory/gdt.h>
-#include <memory/heap.h>
 #include <interrupts/lapic.h>
 
 #include <linker.h>
 
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define GDT_PRESENT (1 << 7)
 #define GDT_PRIV_KERNEL (0 << 5)
@@ -81,12 +81,12 @@ static gdtr_t boot_gdtr;
 
 static gdt_t* gdt_create(uint8_t core_id)
 {
-    tss_entry_t* tss_entry = core_id == 0 ? &boot_tss : (tss_entry_t*)heap_malloc(sizeof(tss_entry_t));
+    tss_entry_t* tss_entry = core_id == 0 ? &boot_tss : malloc(sizeof(tss_entry_t));
     memset(tss_entry, 0, sizeof(tss_entry_t));
     tss_entry->IOPB_offset = sizeof(tss_entry_t);
     uint64_t tss_base = (uint64_t)tss_entry;
 
-    gdt_t* gdt = core_id == 0 ? &boot_gdt : (gdt_t*)heap_malloc(sizeof(gdt_t));
+    gdt_t* gdt = core_id == 0 ? &boot_gdt : malloc(sizeof(gdt_t));
     memset(gdt, 0, sizeof(gdt_t));
 
     // Kernel data descriptor
@@ -124,7 +124,7 @@ void gdt_install()
 
     gdt_t* gdt = gdt_create(0);
     
-    gdtr_t* gdtr = core_id == 0 ? &boot_gdtr : (gdtr_t*)heap_malloc(sizeof(gdtr_t));
+    gdtr_t* gdtr = core_id == 0 ? &boot_gdtr : malloc(sizeof(gdtr_t));
     gdtr->size = sizeof(gdt_t) - 1;
     gdtr->offset = (uint64_t)gdt;
 

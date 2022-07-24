@@ -1,10 +1,11 @@
 #include <interrupts/ioapic.h>
 #include <acpi.h>
-#include <memory/heap.h>
 #include <interrupts/lapic.h>
 
 #include <linker.h>
 #include <log.h>
+
+#include <stdlib.h>
 
 #define IOAPICID    0x0
 #define IOAPICVER   0x1
@@ -93,7 +94,7 @@ void ioapic_init()
     madt_data_t madt_data = acpi_get_madt();
 
     num_ioapic = darray_length(madt_data.ioapic_entries);
-    ioapics = heap_malloc(sizeof(ioapic_t) * num_ioapic);
+    ioapics = malloc(sizeof(ioapic_t) * num_ioapic);
 
     for(size_t i = 0; i < num_ioapic; i++)
     {
