@@ -138,7 +138,7 @@ void paging_destroy(paging_data_t data)
     pfa_free((void*)pml4, 1);
 }
 
-void* paging_get_ph(paging_data_t data, void* virtual_addr)
+void* paging_get_ph(paging_data_t data, const void* virtual_addr)
 {
     data = data ?: kernel_paging;
     uint64_t vt = ALIGN_4K_DOWN(virtual_addr);

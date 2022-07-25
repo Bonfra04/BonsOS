@@ -38,7 +38,7 @@ void paging_destroy(paging_data_t data);
  * @param[in] vt The virtual address to translate
  * @return The translated physical address
  */
-void* paging_get_ph(paging_data_t data, void* virtual_addr);
+void* paging_get_ph(paging_data_t data, const void* virtual_addr);
 
 /**
  * @brief gets the set privilege of a virtual memory area
