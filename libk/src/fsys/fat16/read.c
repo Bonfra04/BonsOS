@@ -125,7 +125,7 @@ fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* directory
     
     char* fname = strdup(filename);
     char* name = strtok(fname, "/");
-    while(name != NULL)
+    while(name != NULL && name[0] != '\0')
     {
         if(entry.type != FAT16_DIR)
         {
