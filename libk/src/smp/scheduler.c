@@ -24,8 +24,6 @@ thread_t* current_thread;
 extern void scheduler_tick(const interrupt_context_t* context);
 extern void scheduler_replace_switch(thread_t* thread);
 
-#include <log.h>
-
 static uint64_t stack_push8(uint64_t rsp, uint8_t value)
 {
     rsp -= 1;
@@ -171,6 +169,7 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
     proc->paging = paging_create();
     proc->n_threads = 0;
     proc->executable = NULL;
+    proc->resources = darray(resource_t, 0);
 
     address_low = ptr(ALIGN_4K_DOWN(address_low));
     address_high = ptr(ALIGN_4K_UP(address_high));
@@ -241,4 +240,49 @@ void scheduler_terminate_thread()
 
     scheduler_replace_switch(current_thread);
     kernel_panic("Thread termination failed");
+}
+
+int scheduler_alloc_resource(void* resource, resource_type_t type)
+{
+    resource_t* resources = current_thread->proc->resources;
+    for(size_t i = 0; i < darray_length(resources); i++)
+        if(resources[i].type == RES_UNUSED)
+        {
+            resources[i].type = type;
+            resources[i].resource = resource;
+            return i;
+        }
+
+    resource_t new;
+    new.type = type;
+    new.resource = resource;
+    darray_append(current_thread->proc->resources, new);
+    return darray_length(current_thread->proc->resources) - 1;
+}
+
+void* scheduler_get_resource(int id, resource_type_t type)
+{
+    resource_t* resources = current_thread->proc->resources;
+    if(id >= darray_length(resources))
+        return NULL;
+
+    if(resources[id].type != type)
+        return NULL;
+
+    return resources[id].resource;
+}
+
+bool scheduler_free_resource(int id, resource_type_t type)
+{
+    resource_t* resources = current_thread->proc->resources;
+    if(id >= darray_length(resources))
+        return false;
+
+    if(resources[id].type != type)
+        return false;
+
+    resources[id].type = RES_UNUSED;
+    resources[id].resource = NULL;
+
+    return true;
 }

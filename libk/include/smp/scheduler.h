@@ -22,12 +22,26 @@ typedef struct thread
     thread_t* prev_thread;
 } thread_t;
 
+typedef enum resource_type
+{
+    RES_FILE, RES_UNUSED
+} resource_type_t;
+
+typedef struct resource
+{
+    resource_type_t type;
+    void* resource;
+} resource_t;
+
 typedef struct process
 {
     paging_data_t paging;
     uint64_t n_threads;
     const executable_t* executable;
+    resource_t* resources;
 } process_t;
+
+extern thread_t* current_thread;
 
 /**
  * @brief Initializes the scheduler
@@ -81,4 +95,33 @@ void scheduler_yield();
  */
 void __attribute__((noreturn)) scheduler_terminate_thread();
 
+/**
+ * @brief Executes a block of code ensuring that the scheduler won't tick while it is executing
+ * @param[in] code The code to execute
+ */
 #define scheduler_atomic(code) { asm volatile ("cli"); code; asm volatile ("sti"); }
+
+/**
+ * @brief Allocates a resource for the calling thread
+ * @param[in] resource Pointer to the resource to allocate
+ * @param[in] type Type of the resource
+ * @return The id of the resource
+ * @note The resource is not owned by the scheduler
+ */
+int scheduler_alloc_resource(void* resource, resource_type_t type);
+
+/**
+ * @brief returns a resource for the calling thread
+ * @param[in] id The id of the resource
+ * @param[in] type Expected type of the resource
+ * @return The resource
+ */
+void* scheduler_get_resource(int id, resource_type_t type);
+
+/**
+ * @brief Removes a resource for the calling thread
+ * @param[in] id The id of the resource
+ * @param[in] type Expected type of the resource
+ * @return True if the resource was removed, false otherwise
+ */
+bool scheduler_free_resource(int id, resource_type_t type);
