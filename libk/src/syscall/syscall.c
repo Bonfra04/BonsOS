@@ -2,10 +2,20 @@
 #include <memory/gdt.h>
 #include <cpu.h>
 
+#include "syscalls.h"
+
+#define MAX_SYSCALLS 4
+
 extern void syscall_handle();
+
+void* syscall_handlers[MAX_SYSCALLS];
 
 void syscall_init()
 {
+    syscall_handlers[0] = syscall_open_file;
+    syscall_handlers[1] = syscall_close_file;
+    syscall_handlers[2] = syscall_read_file;
+    syscall_handlers[3] = syscall_write_file;
 }
 
 void syscall_enable()

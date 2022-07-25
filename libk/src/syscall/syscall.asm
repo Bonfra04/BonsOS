@@ -2,6 +2,7 @@ bits 64
 
 section .text
     global syscall_handle
+    extern syscall_handlers
     extern kernel_paging
 
 struc gdtr_t
@@ -27,6 +28,8 @@ endstruc
 
 SELECTOR_KERNEL_DATA equ 0x10
 SELECTOR_USER_DATA equ 0x18
+
+MAX_SYSCALLS equ 4
 
 syscall_handle:
     push r11        ; save flags
@@ -74,8 +77,17 @@ syscall_handle:
     ; enable interrupts
     sti
 
-    ; dispatcher code here
+    ; check if syscall number is valid
+    cmp rax, MAX_SYSCALLS
+    jge .restore_context
+    ; save syscall
+    mov rax, [ syscall_handlers + rax * 8 ]
 
+    ; call syscall
+    cld     ; System V ABI requires direction flag to be cleared on function entry
+    call rax
+
+.restore_context:
     ; disable interrupts
     cli
 

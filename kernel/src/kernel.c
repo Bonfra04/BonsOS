@@ -108,6 +108,7 @@ void init(const bootinfo_t* bootinfo)
     scheduler_start();
 
     // syscalls
+    syscall_init();
     syscall_enable();
 }
 
@@ -122,5 +123,10 @@ void main(const bootinfo_t* bootinfo)
     scheduler_run_executable(executable, args);
 
     for(;;)
+    {
+        scheduler_atomic({
+            storage_flush(0);
+        });
         hlt();
+    }
 }
