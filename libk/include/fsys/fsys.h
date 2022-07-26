@@ -4,9 +4,11 @@
 
 #define FNAME_MAX_LEN 255
 
+typedef struct file_system file_system_t;
+
 typedef struct file
 {
-    uint64_t fsys_id;
+    file_system_t* fsys;
     uint8_t fs_data[512];
 } file_t;
 
@@ -21,7 +23,7 @@ typedef struct direntry
 #define FSYS_FLG_FILE      0x02
 #define FSYS_FLG_READ_ONLY 0x04
 
-#define INVALID_FILE (file_t){ .fsys_id = 0, .fs_data = { 0 } }
+#define INVALID_FILE (file_t){ .fsys = NULL, .fs_data = { 0 } }
 
 typedef struct fs_data
 {
@@ -90,31 +92,25 @@ void fsys_auto_mount();
 void fsys_register(fsys_instantiate_t instantiate_function, uint8_t type);
 
 /**
- * @brief mounts a file system for the given partition returning its id
+ * @brief mounts a file system for the given partition with the given name
  * @param[in] partition the partition descriptor
- * @return the id of the file system (0 if the file system is not supported)
- * @note do not attempt mount a partition multiple times
+ * @param[in] name the name of the file system
+ * @return true if the file system was mounted, false otherwise
  */
-uint64_t fsys_mount(partition_descriptor_t partition);
+bool fsys_mount(partition_descriptor_t partition, const char* name);
 
 /**
- * @brief unmounts the file system with the given id
- * @param[in] id the id of the file system
+ * @brief unmounts the file system with the given name
+ * @param[in] name the name of the file system
  */
-void fsys_unmount(uint64_t id);
+void fsys_unmount(const char* name);
 
 /**
- * @brief returns the number of mounted file systems
- * @return the number of mounted file systems
- */
-uint64_t fsys_nfsys();
-
-/**
- * @brief returns the file system type for the given id
- * @param[in] id the id of the file system
+ * @brief returns the file system type for the given name
+ * @param[in] name the name of the file system
  * @return the file system type
  */
-uint8_t fsys_type(uint64_t id);
+uint8_t fsys_type(const char* name);
 
 file_t fsys_open_file(const char* filename, fsys_file_mode_t mode);
 bool fsys_close_file(file_t* file);
