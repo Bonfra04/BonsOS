@@ -101,7 +101,7 @@ void init(const bootinfo_t* bootinfo)
     fsys_auto_mount();
 
     // reload default font
-    text_renderer_load_font("1:/assets/zap-vga16.psf");
+    text_renderer_load_font("a:/assets/zap-vga16.psf");
 
     // multi process
     scheduler_init();
@@ -117,7 +117,7 @@ void main(const bootinfo_t* bootinfo)
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    executable_t* executable = executable_load("1:/bin/init.elf");
+    executable_t* executable = executable_load("a:/bin/init.elf");
 
     char* args[] = { "miao", "bau", 0 };
     scheduler_run_executable(executable, args);
