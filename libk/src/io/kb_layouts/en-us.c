@@ -1,6 +1,6 @@
 #include <io/keyboard.h>
 
-const uint16_t kb_layout_en_us[] = {
+const kb_layout_t kb_layout_en_us = {
     [0x00 ... UINT16_MAX - 1] = UINT16_MAX,
 
     [0x29] = KEY_BACKTICK,
