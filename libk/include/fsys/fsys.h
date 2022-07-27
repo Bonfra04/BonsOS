@@ -41,7 +41,6 @@ typedef enum fsys_file_mode
 typedef struct file_system
 {
     uint8_t type;
-    bool mounted;
     fs_data_t data;
 
     file_t (*open_file)(fs_data_t* fs, const char* filename, fsys_file_mode_t mode);
@@ -98,6 +97,14 @@ void fsys_register(fsys_instantiate_t instantiate_function, uint8_t type);
  * @return true if the file system was mounted, false otherwise
  */
 bool fsys_mount(partition_descriptor_t partition, const char* name);
+
+/**
+ * @brief mounts a virtual file system with the given name
+ * @param[in] instantiate_function the function to instantiate the file system
+ * @param[in] name the name of the file system
+ * @return true if the file system was mounted, false otherwise
+ */
+bool fsys_mount_vfs(fsys_instantiate_t instantiate_function, const char* name);
 
 /**
  * @brief unmounts the file system with the given name

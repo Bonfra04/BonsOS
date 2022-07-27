@@ -29,7 +29,6 @@ static file_system_t* fsys_instantiate(partition_descriptor_t partition)
         }
     }
 
-    fs->mounted = false;
     fs->type = partition.type;
     return fs;
 }
@@ -70,11 +69,17 @@ bool fsys_mount(partition_descriptor_t partition, const char* name)
     if(fs->type == 0)
         return false;
     
-    fs->mounted = true;
     fs->data.disk_id = partition.device_id;
     fs->data.offset = partition.start;
     fs->data.length = partition.length;
 
+    return trie_insert(fsys_instances, name, fs);
+}
+
+bool fsys_mount_vfs(fsys_instantiate_t instantiate_function, const char* name)
+{
+    file_system_t* fs = malloc(sizeof(file_system_t));
+    *fs = instantiate_function((partition_descriptor_t){});
     return trie_insert(fsys_instances, name, fs);
 }
 
@@ -282,7 +287,9 @@ bool fsys_close_dir(file_t* dir)
 bool fsys_error(file_t* file)
 {
     if(!file)
-        return false;
+        return true;
+    if(!file->fsys)
+        return true;
 
     file_system_t* fs = file->fsys;
     return fs->error(&fs->data, file);
