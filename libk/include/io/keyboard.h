@@ -4,13 +4,7 @@
 #include <stdbool.h>
 #include <io/keycodes.h>
 
-typedef struct key_state
-{
-    uint16_t keycode;
-    bool state;
-} key_state_t;
-
-typedef key_state_t kb_layout_t[UINT16_MAX];
+typedef uint16_t kb_layout_t[UINT16_MAX];
 extern const kb_layout_t kb_layout_en_us;
 
 /**

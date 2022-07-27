@@ -26,21 +26,23 @@ static void keyboard_isr(const interrupt_context_t* context)
     (void)context;
 
     uint8_t scancode = inportb(0x60);
+    bool is_pressed = !(scancode & 0x80);
+    scancode &= ~0x80;
 
     if(scancode != 0xE0)
     {
         uint16_t wide_scancode = is_multibyte * (0xE0 << 8) | scancode;
-        key_state_t keystate = current_layout[wide_scancode];
+        uint16_t keycode = current_layout[wide_scancode];
 
-        if(keystate.keycode == UINT16_MAX)
+        if(keycode == UINT16_MAX)
             kernel_panic("Unrecognized scancode: [0x%X]", wide_scancode);
 
-        keystates[keystate.keycode] = keystate.state;
+        keystates[keycode] = is_pressed;
 
-        switch (keystate.keycode)
+        switch (keycode)
         {
         case KEY_CAPS_LOCK:
-            if(keystate.state)
+            if(is_pressed)
                 kb_state.capslock = !kb_state.capslock;
             break;
         }
