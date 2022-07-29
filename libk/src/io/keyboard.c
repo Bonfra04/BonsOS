@@ -31,10 +31,10 @@ static void keyboard_isr(const interrupt_context_t* context)
 
     uint8_t scancode = inportb(0x60);
     bool is_pressed = !(scancode & 0x80);
-    scancode &= ~0x80;
 
     if(scancode != 0xE0)
     {
+        scancode &= ~0x80;
         uint16_t wide_scancode = is_multibyte * (0xE0 << 8) | scancode;
         uint16_t keycode = current_layout[wide_scancode];
 

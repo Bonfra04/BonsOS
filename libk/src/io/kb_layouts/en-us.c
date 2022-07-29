@@ -59,6 +59,6 @@ const kb_layout_t kb_layout_en_us = {
     [0x1D] = KEY_LEFT_CONTROL,
     [0x38] = KEY_LEFT_ALT,
     [0x39] = KEY_SPACE,
-    [0x3B] = KEY_RIGHT_ALT,
-    [0x3C] = KEY_RIGHT_CONTROL, // TODO: check with us keyboard
+    [0xE038] = KEY_RIGHT_ALT,
+    [0xE01D] = KEY_RIGHT_CONTROL,
 };
