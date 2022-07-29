@@ -41,9 +41,9 @@ bool trie_insert(trie_node_t* root, const char* key, void* value)
     return true;
 }
 
-static trie_node_t* find_node(trie_node_t* root, const char* key)
+static const trie_node_t* find_node(const trie_node_t* root, const char* key)
 {
-    trie_node_t* node = root;
+    const trie_node_t* node = root;
     size_t len = strlen(key);
 
     for(uint64_t i = 0; i < len; i++)
@@ -79,7 +79,7 @@ static void delete_node(trie_node_t* node)
 
 void trie_remove(trie_node_t* root, const char* key)
 {
-    trie_node_t* node = find_node(root, key);
+    trie_node_t* node = (trie_node_t*)find_node(root, key);
     if(node == NULL)
         return;
 
@@ -91,7 +91,7 @@ void trie_remove(trie_node_t* root, const char* key)
 
 void* trie_get(const trie_node_t* root, const char* key)
 {    
-    trie_node_t* node = find_node(root, key);
+    const trie_node_t* node = find_node(root, key);
     if(node == NULL)
         return NULL;
     return node->value;
