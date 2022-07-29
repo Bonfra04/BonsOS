@@ -12,7 +12,7 @@ queue_t queue_new()
     return queue;
 }
 
-bool enqueue(queue_t* queue, void* value)
+bool queue_enqueue(queue_t* queue, void* value)
 {
     queue_node_t* node = malloc(sizeof(queue_node_t));
     if(node == NULL)
@@ -30,7 +30,7 @@ bool enqueue(queue_t* queue, void* value)
     return true;
 }
 
-void* dequeue(queue_t* queue)
+void* queue_dequeue(queue_t* queue)
 {
     if(queue->head == NULL)
         return NULL;
@@ -49,4 +49,10 @@ void* dequeue(queue_t* queue)
 size_t queue_size(queue_t* queue)
 {
     return queue->size;
+}
+
+void queue_flush(queue_t* queue)
+{
+    while(queue->head != NULL)
+        queue_dequeue(queue);
 }

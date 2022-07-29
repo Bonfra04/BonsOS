@@ -19,7 +19,8 @@ typedef struct {
 queue_t queue_new();
 #define queue() queue_new()
 
-bool enqueue(queue_t* queue, void* value);
-void* dequeue(queue_t* queue);
+bool queue_enqueue(queue_t* queue, void* value);
+void* queue_dequeue(queue_t* queue);
 
 size_t queue_size(queue_t* queue);
+void queue_flush(queue_t* queue);
