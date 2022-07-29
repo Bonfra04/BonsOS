@@ -4,6 +4,8 @@
 #include <panic.h>
 #include <io/ports.h>
 
+#include <containers/tsqueue.h>
+
 #include <string.h>
 
 #define KB_IRQ 1
@@ -20,6 +22,8 @@ static keyboard_state_t kb_state;
 static bool keystates[UINT16_MAX];
 
 static bool is_multibyte;
+
+static tsqueue_t key_queue;
 
 static void keyboard_isr(const interrupt_context_t* context)
 {
@@ -46,6 +50,9 @@ static void keyboard_isr(const interrupt_context_t* context)
                 kb_state.capslock = !kb_state.capslock;
             break;
         }
+
+        keyevent_t event = {.keycode = keycode, .is_pressed = is_pressed};
+        tsqueue_enqueue(&key_queue, (void*)event.value);
     }
 
     is_multibyte = scancode == 0xE0;
@@ -64,6 +71,8 @@ void keyboard_init()
 
     isr_set(KB_ISR, keyboard_isr);
     ioapic_unmask(KB_IRQ);
+
+    key_queue = tsqueue();
 }
 
 bool keyboard_get_key(uint16_t key)
@@ -74,4 +83,17 @@ bool keyboard_get_key(uint16_t key)
 void keyboard_layout_set(const kb_layout_t layout)
 {
     memcpy(current_layout, layout, sizeof(kb_layout_t));
+}
+
+keyevent_t keyboard_pull()
+{
+    tsqueue_wait(&key_queue);
+    keyevent_t event;
+    event.value = (uint64_t)tsqueue_dequeue(&key_queue);
+    return event;
+}
+
+void keyboard_flush()
+{
+    tsqueue_flush(&key_queue);
 }
