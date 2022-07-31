@@ -1,22 +1,21 @@
-#include <syscalls.h>
-
-#include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 int main()
 {
-    int fd = sys_open_file("tty:/0", OPEN_READ);
+    fopen("tty:/0", "r"); // open stdin
+    fopen("tty:/0", "w"); // open stdout
+    fopen("tty:/0", "w"); // open stderr
 
-    sys_write_file(fd, "What's your name? ", 18);
+    fwrite("What's your name? ", 18, 1, stdout);
     
     char name[5];
     memset(name, '\0', 5);
-    sys_read_file(fd, name, 4);
+    fread(name, 4, 1, stdin);
     
-    sys_write_file(fd, "Hello ", 6);
-    sys_write_file(fd, name, strlen(name));
-    sys_write_file(fd, ".", 1);
+    fwrite("Hello ", 6, 1, stdout);
+    fwrite(name, strlen(name), 1, stdout);
+    fwrite(".", 1, 1, stdout);
 
-    sys_close_file(fd);
     return 0;
 }
