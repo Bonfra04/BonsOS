@@ -112,15 +112,29 @@ void init(const bootinfo_t* bootinfo)
     syscall_enable();
 }
 
+#include <ctype.h>
+
+void key_logger()
+{
+    for(;;)
+    {
+        keyevent_t k = keyboard_pull();
+        if(k.is_pressed && isprint(k.vt_keycode))
+            kernel_log("%c", k.vt_keycode);
+    }
+}
+
 void main(const bootinfo_t* bootinfo)
 {
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    executable_t* executable = executable_load("a:/bin/init.elf");
+    // executable_t* executable = executable_load("a:/bin/init.elf");
 
-    char* args[] = { "miao", "bau", 0 };
-    scheduler_run_executable(executable, args);
+    // char* args[] = { "miao", "bau", 0 };
+    // scheduler_run_executable(executable, args);
+
+    scheduler_create_kernel_task(key_logger);
 
     for(;;)
     {
