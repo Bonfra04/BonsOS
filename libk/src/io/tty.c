@@ -128,6 +128,7 @@ void tty_print(const char* str)
 size_t tty_read(char* buf, size_t size)
 {
     size_t read = 0;
+    size_t advance = 0;
     while(true)
     {
         keyevent_t k = keyboard_pull();
@@ -137,9 +138,16 @@ size_t tty_read(char* buf, size_t size)
         switch (k.vt_keycode)
         {
         case '\b':
-            *buf = '\0';
-            buf--;
-            print_char('\b');
+            if(advance > 0)
+            {
+                if(--advance < size)
+                {
+                    *buf = '\0';
+                    buf--;
+                    read--;
+                }
+                print_char('\b');
+            }
             break;
 
         case '\n':
@@ -150,6 +158,7 @@ size_t tty_read(char* buf, size_t size)
             if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
             {
                 print_char(k.vt_keycode);
+                advance++;
                 if(read < size)
                 {
                     *buf = k.vt_keycode;
