@@ -1,8 +1,9 @@
-CCFLAGS	:= -std=gnu11 $(DIRS_INCLUDE) -g \
+CCFLAGS	:= -std=gnu17 $(DIRS_INCLUDE) -g \
 			-D BONSOS \
 			-masm=intel \
 			-mcmodel=large \
 			-mno-red-zone \
+			-ffreestanding \
 			-Wall -Wextra \
 			-fplan9-extensions \
 			-Wno-misleading-indentation -Wno-parentheses -Wno-implicit-fallthrough \
