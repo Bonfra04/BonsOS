@@ -15,7 +15,7 @@ size_t sys_read_file(int fd, char* buff, size_t count)
     return sys(SYSCALL_READ_FILE, (uint64_t)fd, (uint64_t)buff, (uint64_t)count);
 }
 
-size_t sys_write_file(int fd, char* buff, size_t count)
+size_t sys_write_file(int fd, const char* buff, size_t count)
 {
     return sys(SYSCALL_WRITE_FILE, (uint64_t)fd, (uint64_t)buff, (uint64_t)count);
 }
