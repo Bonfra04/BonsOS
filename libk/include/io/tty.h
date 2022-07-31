@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdarg.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct screenpos
 {
@@ -67,3 +67,10 @@ void tty_clear();
  * @param[in] str string to print
  */
 void tty_print(const char* str);
+
+/**
+ * @brief reads an entire line from the screen and returns the first size characters
+ * @param[in] buf buffer to store the line
+ * @param[in] size maximum number of characters to read
+ */
+size_t tty_read(char* buf, size_t size);

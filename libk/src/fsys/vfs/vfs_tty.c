@@ -3,7 +3,6 @@
 #include <io/tty.h>
 #include <io/keyboard.h>
 
-#include <ctype.h>
 #include <stdlib.h>
 
 void vfs_tty_init()
@@ -63,38 +62,7 @@ size_t vfs_tty_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t lengt
     uint64_t id = *(uint64_t*)file->fs_data;
     // TODO: use id
 
-    size_t read = 0;
-    while(true)
-    {
-        keyevent_t k = keyboard_pull();
-        if(!k.is_pressed)
-            continue;
-
-        switch (k.vt_keycode)
-        {
-        case '\b':
-            *(char*)buffer = '\0';
-            buffer = (char*)buffer - 1;
-            tty_print("\b");
-            break;
-
-        case '\n':
-            tty_print("\n");
-            return read;
-
-        default:
-            if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
-            {
-                tty_print((char[]){ k.vt_keycode, 0 });
-                if(read < length)
-                {
-                    *(char*)buffer = k.vt_keycode;
-                    buffer = (char*)buffer + 1;
-                    read++;
-                }
-            }
-        }
-    }
+    return tty_read(buffer, length);
 }
 
 size_t vfs_tty_write_file(fs_data_t* fs, file_t* file, const void* buffer, size_t length)

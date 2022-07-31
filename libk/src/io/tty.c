@@ -2,6 +2,9 @@
 
 #include <graphics/screen.h>
 #include <graphics/text_renderer.h>
+#include <io/keyboard.h>
+
+#include <ctype.h>
 
 #define TAB_SIZE 4
 
@@ -120,4 +123,40 @@ void tty_print(const char* str)
 {
     while(*str)
         print_char(*str++);
+}
+
+size_t tty_read(char* buf, size_t size)
+{
+    size_t read = 0;
+    while(true)
+    {
+        keyevent_t k = keyboard_pull();
+        if(!k.is_pressed)
+            continue;
+
+        switch (k.vt_keycode)
+        {
+        case '\b':
+            *buf = '\0';
+            buf--;
+            print_char('\b');
+            break;
+
+        case '\n':
+            print_char('\n');
+            return read;
+
+        default:
+            if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
+            {
+                print_char(k.vt_keycode);
+                if(read < size)
+                {
+                    *buf = k.vt_keycode;
+                    buf++;
+                    read++;
+                }
+            }
+        }
+    }
 }
