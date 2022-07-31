@@ -97,7 +97,7 @@ uint8_t fsys_type(const char* name)
     return fs->type;
 }
 
-static const char* split_name(char* filename, char** fname)
+static const char* split_name(const char* filename, char** fname)
 {
     char* separator = (char*)strchr(filename, ':');
     *fname = separator + 1;
