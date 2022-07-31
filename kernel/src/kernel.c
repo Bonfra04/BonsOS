@@ -28,6 +28,7 @@
 
 #include <fsys/fsys.h>
 #include <fsys/fat16/fat16.h>
+#include <fsys/vfs/vfs_tty.h>
 
 #include <smp/scheduler.h>
 
@@ -110,18 +111,9 @@ void init(const bootinfo_t* bootinfo)
     // syscalls
     syscall_init();
     syscall_enable();
-}
 
-#include <ctype.h>
-
-void key_logger()
-{
-    for(;;)
-    {
-        keyevent_t k = keyboard_pull();
-        if(k.is_pressed && isprint(k.vt_keycode))
-            kernel_log("%c", k.vt_keycode);
-    }
+    // virtual file systems
+    vfs_tty_init();
 }
 
 void main(const bootinfo_t* bootinfo)
@@ -129,12 +121,10 @@ void main(const bootinfo_t* bootinfo)
     init(bootinfo);
     tty_print("BonsOS successfully booted\n");
 
-    // executable_t* executable = executable_load("a:/bin/init.elf");
+    executable_t* executable = executable_load("a:/bin/init.elf");
 
-    // char* args[] = { "miao", "bau", 0 };
-    // scheduler_run_executable(executable, args);
-
-    scheduler_create_kernel_task(key_logger);
+    char* args[] = { "miao", "bau", 0 };
+    scheduler_run_executable(executable, args);
 
     for(;;)
     {
