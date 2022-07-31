@@ -168,7 +168,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
         else
             continue;
 
-        char buffer[1024];
+        char buffer[1024]; // TODO: better calculate this size dinamically
         memset(buffer, '\0', sizeof(buffer));
 
         switch(spec)
