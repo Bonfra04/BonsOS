@@ -23,6 +23,7 @@ libc:
 	@make $(MAKE_FLAGS) --directory=$(DIR_LIBC)
 
 libbons:
+	@make $(MAKE_FLAGS) --directory=$(DIR_LIBBONS) kernel=1
 	@make $(MAKE_FLAGS) --directory=$(DIR_LIBBONS)
 
 programs:

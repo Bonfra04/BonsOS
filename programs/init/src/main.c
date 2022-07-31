@@ -1,6 +1,7 @@
+#include <syscalls.h>
+
 #include <stdint.h>
 #include <string.h>
-#include <syscalls.h>
 
 int main()
 {

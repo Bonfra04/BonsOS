@@ -1,9 +1,12 @@
+#include <memory/heap.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef KERNEL_BUILD
-
-#include <memory/heap.h>
+static void __attribute__((constructor)) __memory_init()
+{
+    heap_init();
+}
 
 void* malloc(size_t size)
 {
@@ -14,24 +17,6 @@ void free(void* ptr)
 {
     heap_free(ptr);
 }
-
-#else
-
-// TODO: IMPLEMENT
-#warning "stdlib memory functions are not implemented yet for userland"
-
-void* malloc(size_t size)
-{
-    (void)size;
-    return NULL;
-}
-
-void free(void* ptr)
-{
-    (void)ptr;
-}
-
-#endif
 
 void* calloc(size_t num, size_t size)
 {

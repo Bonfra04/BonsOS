@@ -1,5 +1,4 @@
 #include <memory/heap.h>
-#include <memory/pfa.h>
 #include <alignment.h>
 
 #include <stdint.h>
@@ -19,10 +18,26 @@ static void* base_address;
 static uint64_t size;
 static heap_region_t* first_region;
 
+#ifdef KERNEL_BUILD
+#include <memory/pfa.h>
+#define PAGE_SIZE PFA_PAGE_SIZE
+static void* alloc_pages(size_t num_pages)
+{
+    return pfa_alloc(num_pages);
+}
+#else
+#include <syscalls.h>
+#define PAGE_SIZE 0x1000
+static void* alloc_pages(size_t num_pages)
+{
+    return sys_map_mem(NULL, num_pages * PAGE_SIZE);
+}
+#endif
+
 void heap_init()
 {
-    base_address = pfa_alloc(1);
-    size = PFA_PAGE_SIZE;
+    base_address = alloc_pages(1);
+    size = PAGE_SIZE;
     first_region = base_address;
 
     first_region->length = size;
@@ -31,7 +46,6 @@ void heap_init()
     first_region->free = true;
     first_region->chunk_id = 0;
 }
-
 
 void* heap_malloc(size_t size)
 {
@@ -66,7 +80,7 @@ void* heap_malloc(size_t size)
             current_region = current_region->next_region;
     }
 
-    heap_region_t* new_region = pfa_alloc(ALIGN_4K_UP(size + sizeof(heap_region_t)) / PFA_PAGE_SIZE);
+    heap_region_t* new_region = alloc_pages(ALIGN_4K_UP(size + sizeof(heap_region_t)) / PAGE_SIZE);
     new_region->length = ALIGN_4K_UP(size + sizeof(heap_region_t));
     new_region->next_region = NULL;
     new_region->previous_region = current_region;
