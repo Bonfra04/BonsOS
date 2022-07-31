@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-int syscall_read_file(int fd, char* buff, size_t count)
+size_t syscall_read_file(int fd, char* buff, size_t count)
 {
     buff = paging_get_ph(current_thread->proc->paging, buff);
 
