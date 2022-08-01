@@ -184,6 +184,69 @@ int puts(const char* str)
     return fputc('\n', stdout);
 }
 
+int fgetc(FILE* stream)
+{
+    if(!stream)
+        return EOF;
+
+    int c;
+    if(fread(&c, 1, 1, stream) == 0)
+        return EOF;
+    return c;
+}
+
+int getchar(void)
+{
+    return fgetc(stdin);
+}
+
+char* fgets(char* str, int num, FILE* stream)
+{
+    if(!str || !stream)
+        return NULL;
+
+    if(num == 0)
+        return NULL;
+
+    char* ptr = str;
+    while(--num > 0)
+    {
+        int c = fgetc(stream);
+        if(c == EOF)
+            break;
+        *ptr++ = c;
+        if(c == '\n')
+            break;
+    }
+
+    if(str == ptr)
+        return NULL;
+
+    *ptr = '\0';
+    return str;
+}
+
+char* gets(char* str)
+{
+    if(!str)
+        return NULL;
+
+    char* ptr = str;
+    for(;;)
+    {
+        int c = fgetc(stdin);
+        if(c == EOF || c == '\n')
+            break;
+        *ptr++ = c;
+    }
+
+    if(str == ptr)
+        return NULL;
+
+    *ptr = '\0';
+    return str;
+}
+
 int feof(FILE* stream)
 {
     return stream->flags & FILE_EOF;

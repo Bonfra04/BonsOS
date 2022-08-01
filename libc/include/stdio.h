@@ -40,14 +40,20 @@ int putchar(int character);
 int fputs(const char* str, FILE* stream);
 int puts(const char* str);
 
-int sprintf(char* buf, const char* format, ...);
-int vsprintf(char* buf, const char* format, va_list args);
-int snprintf(char* buf, size_t n, const char* format, ...);
-int vsnprintf(char* buf, size_t n, const char* format, va_list args);
+int fgetc(FILE* stream);
+#define getc(stream) fgetc(stream)
+int getchar(void);
+char* fgets(char* str, int num, FILE* stream);
+char* gets(char* str);
 
 int feof(FILE* stream);
 int ferror(FILE* stream);
 void clearerr(FILE* stream);
+
+int sprintf(char* buf, const char* format, ...);
+int vsprintf(char* buf, const char* format, va_list args);
+int snprintf(char* buf, size_t n, const char* format, ...);
+int vsnprintf(char* buf, size_t n, const char* format, va_list args);
 
 #ifdef __cplusplus
 }
