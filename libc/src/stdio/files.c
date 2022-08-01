@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <syscalls.h>
 
@@ -134,4 +135,34 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE *stream)
     }
 
     return 0;
+}
+
+int fputc(int character, FILE* stream)
+{
+    if(!stream)
+        return EOF;
+
+    return fwrite(&character, 1, 1, stream) == 1 ? character : EOF;
+}
+
+int putchar(int character)
+{
+    return fputc(character, stdout);
+}
+
+int fputs(const char* str, FILE* stream)
+{
+    if(!str || !stream)
+        return EOF;
+
+    size_t len = strlen(str);
+    return fwrite(str, 1, len, stream) == len ? 1 : EOF;
+}
+
+int puts(const char* str)
+{
+    int res = fputs(str, stdout);
+    if(res == EOF)
+        return EOF;
+    return fputc('\n', stdout);
 }
