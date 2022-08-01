@@ -72,15 +72,10 @@ bool set_pos(const fat16_data_t* data, fat16_entry_t* entry, size_t position)
 
     while(nclusters--)
         if(!get_next_cluster(data, entry->cluster, &entry->cluster))
-        {
-            entry->error = true;
             return false;
-        }
 
     entry->cluster_offset = offset;
     entry->advance = position;
-
-    entry->error = false;
 
     return true;
 }
@@ -94,7 +89,6 @@ void direntry_to_fatentry(const direntry_t* d, fat16_entry_t* entry, uint64_t en
     entry->cluster = dir.dir_entry.first_cluster;
     entry->cluster_offset = 0;
     entry->advance = 0;
-    entry->error = false;
     entry->lfn = dir.lfn;
     entry->entry_addr = entry_addr;
 }

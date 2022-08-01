@@ -30,9 +30,6 @@ file_system_t vfs_tty_instantiate(partition_descriptor_t partition)
     fs.open_dir = vfs_tty_open_dir;
     fs.list_dir = vfs_tty_list_dir;
     fs.close_dir = vfs_tty_close_dir;
-    fs.error = vfs_tty_error;
-    fs.eof = vfs_tty_eof;
-    fs.clear_error = vfs_tty_clear_error;
     
     return fs;
 }
@@ -140,22 +137,4 @@ bool vfs_tty_close_dir(fs_data_t* fs, file_t* dir)
 {
     (void)fs; (void)dir;
     return false;
-}
-
-
-bool vfs_tty_error(fs_data_t* fs, const file_t* file)
-{
-    (void)fs; (void)file;
-    return false;
-}
-
-bool vfs_tty_eof(fs_data_t* fs, const file_t* file)
-{
-    (void)fs; (void)file;
-    return false;
-}
-
-void vfs_tty_clear_error(fs_data_t* fs, file_t* file)
-{
-    (void)fs; (void)file;
 }

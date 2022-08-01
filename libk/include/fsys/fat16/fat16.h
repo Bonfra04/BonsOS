@@ -26,7 +26,4 @@ file_t fat16_open_dir(fs_data_t* fs, const char* dirpath);
 bool fat16_list_dir(fs_data_t* fs, file_t* dir, direntry_t* entry);
 bool fat16_close_dir(fs_data_t* fs, file_t* dir);
 
-bool fat16_error(fs_data_t* fs, const file_t* file);
-bool fat16_eof(fs_data_t* fs, const file_t* file);
-void fat16_clear_error(fs_data_t* fs, file_t* file);
 

@@ -7,6 +7,7 @@
 size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* buffer, size_t length)
 {
     size_t bytes_written = 0;
+    bool error = false;
 
     while(length > 0)
     {
@@ -21,7 +22,7 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
                 state = allocate_cluster(data, entry->cluster, &new_cluster);
             if(!state)
             {
-                entry->error = true;
+                error = true;
                 break;
             }
 
@@ -43,7 +44,7 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
         uint64_t addr = (entry->cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry->cluster_offset;
         if(storage_seek_write(data->storage_id, data->offset + addr, chunk_length, buffer) != chunk_length)
         {
-            entry->error = true;
+            error = true;
             break;
         }
 
@@ -60,10 +61,10 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
     {
         entry->length += bytes_written;
         if(storage_seek_write(data->storage_id, data->offset + entry->entry_addr + offsetof(dir_entry_t, file_size), sizeof(uint32_t), &entry->length) != sizeof(uint32_t))
-            entry->error = true;
+            return -1;
     }
 
-    return bytes_written;
+    return error ? -1 : bytes_written;
 }
 
 bool create_entry(const fat16_data_t* data, const fat16_entry_t* dir, const char* filename, uint8_t flags)

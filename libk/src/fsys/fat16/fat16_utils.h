@@ -91,7 +91,6 @@ typedef struct fat16_entry
     uint64_t cluster;
     uint64_t cluster_offset;
     uint64_t advance;
-    bool error;
     bool lfn;
 } fat16_entry_t;
 
@@ -140,7 +139,7 @@ bool free_entry(const fat16_data_t* data, fat16_entry_t* entry);
 #define data_from_fs(fs) ((fat16_data_t*)&fs->fs_specific)
 #define fs_from_data(data) ((fs_data_t*)((uint8_t*)data - 8*3))
 
-#define INVALID_ENTRY ((fat16_entry_t){ .error = true, .type = FAT16_ERROR_ENTRY })
+#define INVALID_ENTRY ((fat16_entry_t){ .type = FAT16_ERROR_ENTRY })
 
 #define FIRST_CLUSTER_OFFSET 0x2
 #define CHARS_PER_LFN 13

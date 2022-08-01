@@ -20,10 +20,7 @@ size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, 
         {
             entry->cluster_offset = 0;
             if(!get_next_cluster(data, entry->cluster, &entry->cluster))
-            {
-                entry->error = true;
-                break;
-            }
+                return -1;
         }
 
         // calculate to read length
@@ -34,10 +31,7 @@ size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, 
         // read chunk
         uint64_t addr = (entry->cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry->cluster_offset;
         if(storage_seek_read(data->storage_id, data->offset + addr, chunk_length, buffer) != chunk_length)
-        {
-            entry->error = true;
-            break;
-        }
+            return -1;
 
         // adjust entry
         entry->cluster_offset += chunk_length;
@@ -59,10 +53,7 @@ bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
     do {
         skip:
         if(read_entry(data, dir, &d, sizeof(dir_entry_t)) != sizeof(dir_entry_t))
-        {
-            dir->error = true;
             return false;
-        }
 
         if(d.fullname[0] == '\0')
         {

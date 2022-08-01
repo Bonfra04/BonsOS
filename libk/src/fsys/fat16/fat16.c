@@ -35,10 +35,6 @@ file_system_t fat16_instantiate(partition_descriptor_t partition)
     fs.list_dir = fat16_list_dir;
     fs.open_dir = fat16_open_dir;
     fs.close_dir = fat16_close_dir;
-    fs.error = fat16_error;
-    fs.eof = fat16_eof;
-    fs.clear_error = fat16_clear_error;
-
     bios_parameter_block_t* bpb = &bootsector.bpb;
 
     uint64_t root_offset = ((bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors) * bpb->bytes_per_sector;
@@ -54,7 +50,6 @@ file_system_t fat16_instantiate(partition_descriptor_t partition)
     root_dir.first_cluster = (root_offset - data->data_start) / data->bytes_per_cluster + 2;
     root_dir.type = FAT16_DIR;
     root_dir.cluster_offset = 0;
-    root_dir.error = false;
     root_dir.advance = 0;
     root_dir.cluster = root_dir.first_cluster;
     root_dir.length = 0;
@@ -83,7 +78,7 @@ bool fat16_create_file(fs_data_t* fs, const char* filename)
     fat16_entry_t parent = get_entry(data, &data->root_dir, parent_name);
     free(fname);
 
-    if(!get_entry(data, &parent, basename(filename)).error)
+    if(get_entry(data, &parent, basename(filename)).type != FAT16_ERROR_ENTRY)
         return false;
 
     return create_entry(data, &parent, basename(filename), ENTRY_FILE);
@@ -97,7 +92,7 @@ bool fat16_delete_file(fs_data_t* fs, const char* filename)
     fat16_data_t* data = data_from_fs(fs);
 
     fat16_entry_t entry = get_entry(data, &data->root_dir, filename + 1);
-    if(entry.error || entry.type != FAT16_FILE)
+    if(entry.type != FAT16_FILE)
         return false;
 
     return free_entry(data, &entry);
@@ -114,12 +109,12 @@ file_t fat16_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mod
 
     if(mode == FSYS_READ)
     {
-        if(entry.error || entry.type != FAT16_FILE)
+        if(entry.type != FAT16_FILE)
             return pack_file(INVALID_ENTRY);
     }
     else if(mode == FSYS_WRITE)
     {
-        if(!entry.error)
+        if(entry.type != FAT16_ERROR_ENTRY)
             if(entry.type == FAT16_DIR)
                 return pack_file(INVALID_ENTRY);
             else if(!fat16_delete_file(fs, filename))
@@ -131,7 +126,7 @@ file_t fat16_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mod
     }
     else if(mode == FSYS_APPEND)
     {
-        if(entry.error)
+        if(entry.type != FAT16_ERROR_ENTRY)
         {
             if(!fat16_create_file(fs, filename))
                 return pack_file(INVALID_ENTRY);
@@ -156,8 +151,8 @@ size_t fat16_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
     fat16_data_t* data = data_from_fs(fs);
     fat16_entry_t* entry = unpack_file(file);
 
-    if(entry->error || entry->type != FAT16_FILE)
-        return 0;
+    if(entry->type != FAT16_FILE)
+        return -1;
 
     return read_entry(data, entry, buffer, length);
 }
@@ -167,8 +162,8 @@ size_t fat16_write_file(fs_data_t* fs, file_t* file, const void* buffer, size_t 
     fat16_data_t* data = data_from_fs(fs);
     fat16_entry_t* entry = unpack_file(file);
 
-    if(entry->error || entry->type != FAT16_FILE)
-        return 0;
+    if(entry->type != FAT16_FILE)
+        return -1;
 
     return write_entry(data, entry, buffer, length);
 }
@@ -181,7 +176,7 @@ bool fat16_exists_file(fs_data_t* fs, const char* filename)
     fat16_data_t* data = (fat16_data_t*)&fs->fs_specific;
     fat16_entry_t entry = get_entry(data, &data->root_dir, filename + 1);
 
-    return entry.error == false && entry.type == FAT16_FILE;
+    return entry.type == FAT16_FILE;
 }
 
 bool fat16_create_dir(fs_data_t* fs, const char* dirpath)
@@ -196,7 +191,7 @@ bool fat16_create_dir(fs_data_t* fs, const char* dirpath)
     fat16_entry_t parent = get_entry(data, &data->root_dir, parent_name);
     free(dname);
 
-    if(!get_entry(data, &parent, basename(dirpath)).error)
+    if(get_entry(data, &parent, basename(dirpath)).type != FAT16_ERROR_ENTRY)
         return false;
 
     if(!create_entry(data, &parent, basename(dirpath), ENTRY_DIRECTORY))
@@ -229,7 +224,7 @@ bool fat16_delete_dir(fs_data_t* fs, const char* dirpath)
     fat16_data_t* data = data_from_fs(fs);
 
     fat16_entry_t entry = get_entry(data, &data->root_dir, dirpath + 1);
-    if(entry.error || entry.type != FAT16_DIR)
+    if(entry.type != FAT16_DIR)
         return false;
 
     direntry_t dirent;
@@ -268,7 +263,7 @@ file_t fat16_open_dir(fs_data_t* fs, const char* dirpath)
 
     fat16_entry_t entry = get_entry(data, &data->root_dir, dirpath + 1);
 
-    if(entry.error || entry.type != FAT16_DIR)
+    if(entry.type != FAT16_DIR)
         return pack_file(INVALID_ENTRY);
     
     return pack_file(entry);
@@ -285,7 +280,7 @@ bool fat16_list_dir(fs_data_t* fs, file_t* dir, direntry_t* dirent)
 {
     fat16_data_t* data = data_from_fs(fs);
     fat16_entry_t* dir_entry = unpack_file(dir);
-    if(dir_entry->error || dir_entry->type != FAT16_DIR)
+    if(dir_entry->type != FAT16_DIR)
         return false;
 
     bool* del = &((fat16_direntry_t*)dirent->fs_data)->deleted;
@@ -304,7 +299,7 @@ bool fat16_exists_dir(fs_data_t* fs, const char* dirpath)
     fat16_data_t* data = (fat16_data_t*)&fs->fs_specific;
     fat16_entry_t entry = get_entry(data, &data->root_dir, dirpath + 1);
 
-    return entry.error == false && entry.type == FAT16_DIR;
+    return entry.type == FAT16_DIR;
 }
 
 size_t fat16_get_position(fs_data_t* fs, const file_t* file)
@@ -320,26 +315,3 @@ bool fat16_set_position(fs_data_t* fs, file_t* file, size_t position)
     return set_pos(data, unpack_file(file), position);
 }
 
-bool fat16_error(fs_data_t* fs, const file_t* file)
-{
-    (void)fs;
-
-    fat16_entry_t* entry = unpack_file(file);
-    return entry->error;
-}
-
-bool fat16_eof(fs_data_t* fs, const file_t* file)
-{
-    (void)fs;
-    
-    fat16_entry_t* entry = unpack_file(file);
-    return entry->advance >= entry->length;
-}
-
-void fat16_clear_error(fs_data_t* fs, file_t* file)
-{
-    (void)fs;
-
-    fat16_entry_t* entry = unpack_file(file);
-    entry->error = false;
-}
