@@ -64,6 +64,8 @@ typedef struct file_system
     file_t (*open_dir)(fs_data_t* fs, const char* dirpath);
     bool (*list_dir)(fs_data_t* fs, file_t* dir, direntry_t* entry);
     bool (*close_dir)(fs_data_t* fs, file_t* dir);
+
+    bool (*error)(fs_data_t* fs, const file_t* file);
 } file_system_t;
 
 typedef file_system_t (*fsys_instantiate_t)(partition_descriptor_t partition);
@@ -136,3 +138,5 @@ bool fsys_exists_dir(const char* dirpath);
 file_t fsys_open_dir(const char* dirpath);
 bool fsys_list_dir(file_t* dir, direntry_t* entry);
 bool fsys_close_dir(file_t* dir);
+
+bool fsys_error(file_t* file);

@@ -35,6 +35,7 @@ file_system_t fat16_instantiate(partition_descriptor_t partition)
     fs.list_dir = fat16_list_dir;
     fs.open_dir = fat16_open_dir;
     fs.close_dir = fat16_close_dir;
+    fs.error = fat16_error;
     bios_parameter_block_t* bpb = &bootsector.bpb;
 
     uint64_t root_offset = ((bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors) * bpb->bytes_per_sector;
@@ -315,3 +316,10 @@ bool fat16_set_position(fs_data_t* fs, file_t* file, size_t position)
     return set_pos(data, unpack_file(file), position);
 }
 
+bool fat16_error(fs_data_t* fs, const file_t* file)
+{
+    (void)fs;
+
+    fat16_entry_t* entry = unpack_file(file);
+    return entry->type == FAT16_ERROR_ENTRY;
+}

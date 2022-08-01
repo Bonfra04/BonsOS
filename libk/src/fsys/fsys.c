@@ -283,3 +283,14 @@ bool fsys_close_dir(file_t* dir)
     file_system_t* fs = dir->fsys;
     return fs->close_dir(&fs->data, dir);
 }
+
+bool fsys_error(file_t* file)
+{
+    if(!file)
+        return true;
+    if(!file->fsys)
+        return true;
+
+    file_system_t* fs = file->fsys;
+    return fs->error(&fs->data, file);
+}
