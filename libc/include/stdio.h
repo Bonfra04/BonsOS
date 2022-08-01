@@ -9,17 +9,20 @@ extern "C" {
 
 #define EOF (-1)
 
-#define _IOFBF 1
-#define _IOLBF 2
-#define _IONBF 3
+#define _IOFBF 0b01
+#define _IOLBF 0b10
+#define _IONBF 0b11
 
 typedef struct __FILE
 {
     int fd;
-    unsigned char buffered;
     void* buffer;
     size_t buffer_size;
+    unsigned char flags;
 } FILE;
+
+#define FILE_ERROR  0b0100
+#define FILE_EOF    0b1000
 
 extern FILE* stdin;
 extern FILE* stdout;
@@ -41,6 +44,10 @@ int sprintf(char* buf, const char* format, ...);
 int vsprintf(char* buf, const char* format, va_list args);
 int snprintf(char* buf, size_t n, const char* format, ...);
 int vsnprintf(char* buf, size_t n, const char* format, va_list args);
+
+int feof(FILE* stream);
+int ferror(FILE* stream);
+void clearerr(FILE* stream);
 
 #ifdef __cplusplus
 }

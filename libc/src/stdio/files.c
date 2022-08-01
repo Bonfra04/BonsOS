@@ -12,13 +12,13 @@ static void __attribute__((constructor)) __files_init()
 {
     stdin = calloc(sizeof(FILE), 1);
     stdin->fd = 0;
-    stdin->buffered = _IONBF;
+    stdin->flags = _IONBF;
     stdout = calloc(sizeof(FILE), 1);
     stdout->fd = 1;
-    stdout->buffered = _IONBF;
+    stdout->flags = _IONBF;
     stderr = calloc(sizeof(FILE),1 );
     stderr->fd = 2;
-    stderr->buffered = _IONBF;
+    stderr->flags = _IONBF;
 }
 
 FILE* fopen(const char* filename, const char* mode)
@@ -42,7 +42,7 @@ FILE* fopen(const char* filename, const char* mode)
         free(stream);
         return NULL;
     }
-    stream->buffered = _IONBF;
+    stream->flags = _IONBF;
 
     return stream;
 }
@@ -63,7 +63,18 @@ int fclose(FILE* stream)
 
 static size_t fread_unbuffered(void* ptr, size_t length, FILE* stream)
 {
-    return sys_read_file(stream->fd, ptr, length);
+    size_t res = sys_read_file(stream->fd, ptr, length);
+    switch (res)
+    {
+    case 0:
+        stream->flags |= FILE_EOF;
+        return 0;
+    case -1:
+        stream->flags |= FILE_ERROR;
+        return 0;
+    default:
+        return res;
+    }
 }
 
 static size_t fread_linebuffered(void* ptr, size_t length, FILE* stream)
@@ -86,7 +97,7 @@ size_t fread(void* ptr, size_t size, size_t count, FILE *stream)
     if(size == 0 || count == 0)
         return 0;
 
-    switch (stream->buffered)
+    switch (stream->flags & 0b11)
     {
     case _IONBF:
         return fread_unbuffered(ptr, size * count, stream);
@@ -101,7 +112,13 @@ size_t fread(void* ptr, size_t size, size_t count, FILE *stream)
 
 static size_t fwrite_unbuffered(const void* ptr, size_t length, FILE* stream)
 {
-    return sys_write_file(stream->fd, ptr, length);
+    size_t res = sys_write_file(stream->fd, ptr, length);
+    if(res == -1)
+    {
+        stream->flags |= FILE_ERROR;
+        res = 0;
+    }
+    return res;
 }
 
 static size_t fwrite_linebuffered(const void* ptr, size_t length, FILE* stream)
@@ -124,7 +141,7 @@ size_t fwrite(const void* ptr, size_t size, size_t count, FILE *stream)
     if(size == 0 || count == 0)
         return 0;
 
-    switch (stream->buffered)
+    switch (stream->flags & 0b11)
     {
     case _IONBF:
         return fwrite_unbuffered(ptr, size * count, stream);
@@ -165,4 +182,20 @@ int puts(const char* str)
     if(res == EOF)
         return EOF;
     return fputc('\n', stdout);
+}
+
+int feof(FILE* stream)
+{
+    return stream->flags & FILE_EOF;
+}
+
+int ferror(FILE* stream)
+{
+    return stream->flags & FILE_ERROR;
+}
+
+void clearerr(FILE* stream)
+{
+    stream->flags &= ~FILE_ERROR;
+    stream->flags &= ~FILE_EOF;
 }
