@@ -69,6 +69,12 @@ void keyboard_layout_set(const kb_layout_t* layout);
 keyevent_t keyboard_pull();
 
 /**
+ * @brief checks weather a keyevent is available
+ * @return true if a keyevent is available, false otherwise
+ */
+bool keyboard_has_event();
+
+/**
  * @brief flushes the keyevent queue, discarding all keypresses
  */
 void keyboard_flush();
