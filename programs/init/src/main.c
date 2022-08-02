@@ -7,13 +7,6 @@ int main()
     fopen("tty:/0", "w"); // open stdout
     fopen("tty:/0", "w"); // open stderr
 
-    // for(;;)
-    // {
-    //     int c = getchar();
-    //     putchar(c);
-    //     putchar('\n');
-    // }
-
     puts("What's your name? ");
     
     char name[5];

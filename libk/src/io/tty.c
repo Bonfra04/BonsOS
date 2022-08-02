@@ -4,6 +4,8 @@
 #include <graphics/text_renderer.h>
 #include <io/keyboard.h>
 
+#include <containers/deque.h>
+
 #include <ctype.h>
 
 #define TAB_SIZE 4
@@ -17,6 +19,8 @@ static size_t col_length;
 static size_t char_width;
 static size_t char_height;
 
+static deque_t line_queue;
+
 void tty_init()
 {
     fg_color = 0xFFFFFFFF;
@@ -28,6 +32,8 @@ void tty_init()
     char_height = text_renderer_charheight(1);
     row_length = screen_get_width() / char_width;
     col_length = screen_get_height() / char_height;
+
+    line_queue = deque();
 
     tty_clear();
 }
@@ -125,9 +131,8 @@ void tty_print(const char* str)
         print_char(*str++);
 }
 
-size_t tty_read(char* buf, size_t size)
+static void buffer_line()
 {
-    size_t read = 0;
     size_t advance = 0;
     while(true)
     {
@@ -140,32 +145,35 @@ size_t tty_read(char* buf, size_t size)
         case '\b':
             if(advance > 0)
             {
-                if(--advance < size)
-                {
-                    *buf = '\0';
-                    buf--;
-                    read--;
-                }
                 print_char('\b');
+                deque_pop_back(&line_queue);
+                advance--;
             }
             break;
 
         case '\n':
             print_char('\n');
-            return read;
+            return;
 
         default:
             if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
             {
                 print_char(k.vt_keycode);
+                deque_push_back(&line_queue, (void*)(uint64_t)k.vt_keycode);
                 advance++;
-                if(read < size)
-                {
-                    *buf = k.vt_keycode;
-                    buf++;
-                    read++;
-                }
             }
         }
     }
+}
+
+size_t tty_read(char* buf, size_t size)
+{
+    if(deque_size(&line_queue) == 0)
+        buffer_line();
+
+    size_t i = size;
+    while(i-- && deque_size(&line_queue) > 0)
+        *buf++ = (char)(uint64_t)deque_pop_front(&line_queue);
+    
+    return size - i;
 }
