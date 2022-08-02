@@ -1,6 +1,6 @@
 #include <io/keyboard.h>
 
-#define Altered(...) { [0 ... 2] = { .mods = 0xFF, .vk = UINT16_MAX }, [0] = __VA_ARGS__ }
+#define Altered(...) { [0 ... 3] = { .mods = 0xFF, .vk = UINT16_MAX }, [0] = __VA_ARGS__ }
 #define AlteredNone() Altered({.mods = 0xFF, .vk = UINT16_MAX})
 
 const kb_layout_t kb_layout_en_us = {
@@ -19,9 +19,9 @@ const kb_layout_t kb_layout_en_us = {
     [0x0B] = { .physical = KEY_0, .altered = Altered({ .mods = 0, .vk = VK_0 }, { .mods = VK_MOD_SHIFT, .vk = VK_RIGHT_PARENTHESIS }) },
     [0x0C] = { .physical = KEY_MINUS, .altered = Altered({ .mods = 0, .vk = VK_MINUS }, { .mods = VK_MOD_SHIFT, .vk = VK_UNDERSCORE }) },
     [0x0D] = { .physical = KEY_EQUALS, .altered = Altered({ .mods = 0, .vk = VK_EQUALS }, { .mods = VK_MOD_SHIFT, .vk = VK_PLUS }) },
-    [0x0E] = { .physical = KEY_BACKSPACE, .altered = Altered({ .mods = 0, .vk = VK_BACKSPACE }) },
+    [0x0E] = { .physical = KEY_BACKSPACE, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_BACKSPACE }) },
 
-    [0x0F] = { .physical = KEY_TAB, .altered = Altered({ .mods = 0, .vk = VK_TAB }) },
+    [0x0F] = { .physical = KEY_TAB, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_TAB }) },
     [0x10] = { .physical = KEY_Q, .altered = Altered({ .mods = 0, .vk = VK_q }, { .mods = VK_MOD_SHIFT, .vk = VK_Q }) },
     [0x11] = { .physical = KEY_W, .altered = Altered({ .mods = 0, .vk = VK_w }, { .mods = VK_MOD_SHIFT, .vk = VK_W }) },
     [0x12] = { .physical = KEY_E, .altered = Altered({ .mods = 0, .vk = VK_e }, { .mods = VK_MOD_SHIFT, .vk = VK_E }) },
@@ -36,7 +36,7 @@ const kb_layout_t kb_layout_en_us = {
     [0x1B] = { .physical = KEY_RIGHT_BRACKET, .altered = Altered({ .mods = 0, .vk = VK_RIGHT_BRACKET }, { .mods = VK_MOD_SHIFT, .vk = VK_RIGHT_BRACE }) },
     [0x2B] = { .physical = KEY_BACKSLASH, .altered = Altered({ .mods = 0, .vk = VK_BACKSLASH }, { .mods = VK_MOD_SHIFT, .vk = VK_PIPE }) },
 
-    [0x3A] = { .physical = KEY_CAPS_LOCK, .altered = Altered({ .mods = 0, .vk = VK_CAPS_LOCK }) },
+    [0x3A] = { .physical = KEY_CAPS_LOCK, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_CAPS_LOCK }) },
     [0x1E] = { .physical = KEY_A, .altered = Altered({ .mods = 0, .vk = VK_a }, { .mods = VK_MOD_SHIFT, .vk = VK_A }) },
     [0x1F] = { .physical = KEY_S, .altered = Altered({ .mods = 0, .vk = VK_s }, { .mods = VK_MOD_SHIFT, .vk = VK_S }) },
     [0x20] = { .physical = KEY_D, .altered = Altered({ .mods = 0, .vk = VK_d }, { .mods = VK_MOD_SHIFT, .vk = VK_D }) },
@@ -48,9 +48,9 @@ const kb_layout_t kb_layout_en_us = {
     [0x26] = { .physical = KEY_L, .altered = Altered({ .mods = 0, .vk = VK_l }, { .mods = VK_MOD_SHIFT, .vk = VK_L }) },
     [0x27] = { .physical = KEY_SEMICOLON, .altered = Altered({ .mods = 0, .vk = VK_SEMICOLON }, { .mods = VK_MOD_SHIFT, .vk = VK_COLON }) },
     [0x28] = { .physical = KEY_APOSTROPHE, .altered = Altered({ .mods = 0, .vk = VK_QUOTE }, { .mods = VK_MOD_SHIFT, .vk = VK_DOUBLE_QUOTE }) },
-    [0x1C] = { .physical = KEY_ENTER, .altered = Altered({ .mods = 0, .vk = VK_RETURN }) },
+    [0x1C] = { .physical = KEY_ENTER, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_RETURN }) },
 
-    [0x2A] = { .physical = KEY_LEFT_SHIFT , .altered = Altered({ .mods = 0, .vk = VK_LEFT_SHIFT }, { .mods = VK_MOD_SHIFT, .vk = VK_LEFT_SHIFT }) },
+    [0x2A] = { .physical = KEY_LEFT_SHIFT , .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_LEFT_SHIFT }) },
     [0x2C] = { .physical = KEY_Z, .altered = Altered({ .mods = 0, .vk = VK_z }, { .mods = VK_MOD_SHIFT, .vk = VK_Z }) },
     [0x2D] = { .physical = KEY_X, .altered = Altered({ .mods = 0, .vk = VK_x }, { .mods = VK_MOD_SHIFT, .vk = VK_X }) },
     [0x2E] = { .physical = KEY_C, .altered = Altered({ .mods = 0, .vk = VK_c }, { .mods = VK_MOD_SHIFT, .vk = VK_C }) },
@@ -61,11 +61,16 @@ const kb_layout_t kb_layout_en_us = {
     [0x33] = { .physical = KEY_COMMA, .altered = Altered({ .mods = 0, .vk = VK_COMMA }, { .mods = VK_MOD_SHIFT, .vk = VK_LESS_THAN }) },
     [0x34] = { .physical = KEY_PERIOD, .altered = Altered({ .mods = 0, .vk = VK_PERIOD }, { .mods = VK_MOD_SHIFT, .vk = VK_GREATER_THAN }) },
     [0x35] = { .physical = KEY_FORWARD_SLASH, .altered = Altered({ .mods = 0, .vk = VK_FORWARD_SLASH }, { .mods = VK_MOD_SHIFT, .vk = VK_QUESTION_MARK }) },
-    [0x36] = { .physical = KEY_RIGHT_SHIFT, .altered = Altered({ .mods = 0, .vk = VK_RIGHT_SHIFT }, { .mods = VK_MOD_SHIFT, .vk = VK_RIGHT_SHIFT }) },
+    [0x36] = { .physical = KEY_RIGHT_SHIFT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_RIGHT_SHIFT }) },
     
-    [0x1D] = { .physical = KEY_LEFT_CONTROL, .altered = Altered({ .mods = 0, .vk = VK_LEFT_CONTROL }, { .mods = VK_MOD_CTRL, .vk = VK_LEFT_CONTROL }) },
-    [0x38] = { .physical = KEY_LEFT_ALT, .altered = Altered({ .mods = 0, .vk = VK_LEFT_ALT }, { .mods = VK_MOD_ALT, .vk = VK_LEFT_ALT }) },
-    [0x39] = { .physical = KEY_SPACE, .altered = Altered({ .mods = 0, .vk = VK_SPACE }) },
-    [0xE038] = { .physical = KEY_RIGHT_ALT, .altered = Altered({ .mods = 0, .vk = VK_RIGHT_ALT }, { .mods = VK_MOD_ALT, .vk = VK_RIGHT_ALT }) },
-    [0xE01D] = { .physical = KEY_RIGHT_CONTROL, .altered = Altered({ .mods = 0, .vk = VK_RIGHT_CONTROL }, { .mods = VK_MOD_CTRL, .vk = VK_RIGHT_CONTROL }) },
+    [0x1D] = { .physical = KEY_LEFT_CONTROL, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_LEFT_CONTROL }) },
+    [0x38] = { .physical = KEY_LEFT_ALT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_LEFT_ALT }) },
+    [0x39] = { .physical = KEY_SPACE, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_SPACE }) },
+    [0xE038] = { .physical = KEY_RIGHT_ALT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_RIGHT_ALT }) },
+    [0xE01D] = { .physical = KEY_RIGHT_CONTROL, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_RIGHT_CONTROL }) },
+
+    [0xE048] = { .physical = KEY_ARROW_UP, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_ARROW_UP}) },
+    [0xE04B] = { .physical = KEY_ARROW_LEFT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_ARROW_LEFT}) },
+    [0xE050] = { .physical = KEY_ARROW_DOWN, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_ARROW_DOWN}) },
+    [0xE04D] = { .physical = KEY_ARROW_RIGHT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_ARROW_RIGHT}) },
 };

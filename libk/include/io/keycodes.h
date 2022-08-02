@@ -57,7 +57,11 @@
 #define KEY_LEFT_ALT         0x38
 #define KEY_SPACE            0x39
 #define KEY_RIGHT_ALT        0x3A
-#define KEY_RIGHT_CONTROL    0x3D
+#define KEY_RIGHT_CONTROL    0x3B
+#define KEY_ARROW_UP         0x3C
+#define KEY_ARROW_LEFT       0x3D
+#define KEY_ARROW_DOWN       0x3E
+#define KEY_ARROW_RIGHT      0x3F
 
 #define VK_BACKTICK          '`'
 #define VK_TILDE             '~'
@@ -164,3 +168,7 @@
 #define VK_SPACE             ' '
 #define VK_RIGHT_ALT         0x05
 #define VK_RIGHT_CONTROL     0x06
+#define VK_ARROW_UP          0x07
+#define VK_ARROW_LEFT        0x08
+#define VK_ARROW_DOWN        0x09
+#define VK_ARROW_RIGHT       0x0A

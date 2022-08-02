@@ -14,11 +14,12 @@ typedef struct vk_entry
 #define VK_MOD_CTRL    0x02
 #define VK_MOD_ALT     0x04
 #define VK_MOD_MAIUSC  0x08
+#define VK_MOD_IGNORE  0x10
 
 typedef struct kb_layout_entry
 {
     uint16_t physical;
-    vk_entry_t altered[3];
+    vk_entry_t altered[4];
 } kb_layout_entry_t;
 
 typedef kb_layout_entry_t kb_layout_t[UINT16_MAX];

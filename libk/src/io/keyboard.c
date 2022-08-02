@@ -28,6 +28,9 @@ static tsqueue_t key_queue;
 
 static bool mods_match(uint8_t mods)
 {
+    if(mods & VK_MOD_IGNORE)
+        return true;
+    
     bool is_shift = (ph_keystates[KEY_LEFT_SHIFT] | ph_keystates[KEY_RIGHT_SHIFT]);
     bool is_maiusc = kb_state.capslock ^ is_shift;
     bool is_alt = ph_keystates[KEY_LEFT_ALT] && !ph_keystates[KEY_RIGHT_ALT];
@@ -65,7 +68,7 @@ static void keyboard_isr(const interrupt_context_t* context)
         if(entry->physical == UINT16_MAX)
             kernel_panic("Unrecognized scancode: [0x%X]", wide_scancode);
 
-        for(uint8_t i = 0; i < 3; i++)
+        for(uint8_t i = 0; i < 4; i++)
         {
             const vk_entry_t* alt_entry = &entry->altered[i];
             if(alt_entry->vk == UINT16_MAX)
