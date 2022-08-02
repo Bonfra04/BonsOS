@@ -43,7 +43,7 @@ void tsqueue_flush(tsqueue_t* tsqueue)
 
 void tsqueue_wait(tsqueue_t* tsqueue)
 {
-    while(queue_size(&tsqueue->queue) == 0)
+    while(tsqueue_size(tsqueue) == 0)
     {
         mutex_acquire(&tsqueue->blocking_mutex); // acquired
         mutex_acquire(&tsqueue->blocking_mutex); // cannot reacquire until a release inside enqueue happens
