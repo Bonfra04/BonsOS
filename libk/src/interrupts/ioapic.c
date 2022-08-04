@@ -53,8 +53,43 @@ typedef union redirection_entry
     } __attribute__ ((packed));
 } redirection_entry_t;
 
+typedef struct madt_header
+{
+    rsdt_header_t header;
+    uint32_t lapic_address;
+    uint32_t flags;
+    char entries_begin[];
+} __attribute__ ((packed)) madt_header_t;
+
+typedef struct madt_entry
+{
+    uint8_t entry_type;
+    uint8_t record_lenght;
+} __attribute__ ((packed)) madt_entry_t;
+
+typedef enum madt_entry_type
+{
+    MADT_IOAPIC = 1,
+    MADT_INT_SRC_OVR = 2,
+} madt_entry_type_t;
+
+typedef struct ioapic_entry
+{
+    uint8_t ioapic_id;
+    uint8_t reserved;
+    uint32_t ioapic_address;
+    uint32_t gsi_base;
+} __attribute__((packed)) ioapic_entry_t;
+
+typedef struct ioapic_int_src_ovr_entry
+{
+    uint8_t bus_source;
+    uint8_t irq_source;
+    uint32_t gsi;
+    uint16_t flags;
+} __attribute__((packed)) ioapic_int_src_ovr_entry_t;
+
 static ioapic_t* ioapics;
-static size_t num_ioapic;
 
 static void ioapic_write(const void* base, uint8_t offset, uint32_t val)
 {
@@ -89,67 +124,78 @@ static void ioapic_write_irq(const void* base, uint8_t irq, uint64_t entry)
     ioapic_write(base, offset + 1, high);
 }
 
-void ioapic_init()
+static void register_ioapic(ioapic_entry_t* entry)
 {
-    madt_data_t madt_data = acpi_get_madt();
+    ioapic_t ioapic;
+    ioapic.address = entry->ioapic_address;
+    ioapic.gsi_base = entry->gsi_base;
+    ioapic.num_entries = (ioapic_read(ptr(ioapic.address), IOAPICVER) >> 16) + 1;
+    ioapic.id = entry->ioapic_id;
 
-    num_ioapic = darray_length(madt_data.ioapic_entries);
-    ioapics = malloc(sizeof(ioapic_t) * num_ioapic);
-
-    for(size_t i = 0; i < num_ioapic; i++)
+    for(uint16_t red = 0; red < ioapic.num_entries; red++)
     {
-        ioapics[i].address = madt_data.ioapic_entries[i].ioapic_address;
-        ioapics[i].gsi_base = madt_data.ioapic_entries[i].gsi_base;
-        ioapics[i].num_entries = (ioapic_read(ptr(ioapics[i].address), IOAPICVER) >> 16) + 1;
-        ioapics[i].id = madt_data.ioapic_entries[i].ioapic_id;
+        redirection_entry_t entry;
+        entry.raw = 0;
 
-        for(uint16_t red = 0; red < ioapics[i].num_entries; red++)
-        {
-            redirection_entry_t entry;
-            entry.raw = 0;
+        entry.vector = ioapic.gsi_base + red + IRQ_OFFSET;
+        entry.delvMode = DELV_FIXED;
+        entry.destMode = DEST_PHYS;
+        entry.delvStatus = 0;
+        entry.pinPolarity = PIN_AHIGH;
+        entry.remoteIRR = 0; // TODO: tf is this
+        entry.triggerMode = TRIG_EDGE;
+        entry.mask = 1;
+        entry.destination = lapic_get_boot_id();
 
-            entry.vector = ioapics[i].gsi_base + red + IRQ_OFFSET;
-            entry.delvMode = DELV_FIXED;
-            entry.destMode = DEST_PHYS;
-            entry.delvStatus = 0;
-            entry.pinPolarity = PIN_AHIGH;
-            entry.remoteIRR = 0; // TODO: tf is this
-            entry.triggerMode = TRIG_EDGE;
-            entry.mask = 1;
-            entry.destination = lapic_get_boot_id();
-
-            ioapic_write_irq(ptr(ioapics[i].address), red, entry.raw);
-        }
+        ioapic_write_irq(ptr(ioapic.address), red, entry.raw);
     }
 
-    size_t num_overrides = darray_length(madt_data.ioapic_int_src_ovr_entries);
-    
-    for(size_t i = 0; i < num_overrides; i++)
+    darray_append(ioapics, ioapic);
+}
+
+static void register_override(ioapic_int_src_ovr_entry_t* entry)
+{
+    for(size_t i = 0; i < darray_length(ioapics); i++)
     {
-        ioapic_int_src_ovr_entry_t* override = &madt_data.ioapic_int_src_ovr_entries[i];
-
-        for(size_t ioapic = 0; ioapic < num_ioapic; ioapic++)
+        if(ioapics[i].gsi_base <= entry->irq_source && ioapics[i].gsi_base + ioapics[i].num_entries > entry->irq_source)
         {
-            if(ioapics[i].gsi_base <= override->irq_source && ioapics[i].gsi_base + ioapics[i].num_entries > override->irq_source)
-            {
-                uint8_t irq = override->irq_source - ioapics[i].gsi_base;
-                redirection_entry_t entry;
-                entry.raw = ioapic_read_irq(ptr(ioapics[i].address), irq);
+            uint8_t irq = entry->irq_source - ioapics[i].gsi_base;
+            redirection_entry_t red;
+            red.raw = ioapic_read_irq(ptr(ioapics[i].address), irq);
 
-                entry.vector = override->gsi + IRQ_OFFSET;
+            red.vector = entry->gsi + IRQ_OFFSET;
 
-                entry.pinPolarity = (override->flags & 2) ? PIN_ALOW : PIN_AHIGH;
-                entry.triggerMode = (override->flags & 8) ? TRIG_LEVEL : TRIG_EDGE;
+            red.pinPolarity = (entry->flags & 2) ? PIN_ALOW : PIN_AHIGH;
+            red.triggerMode = (entry->flags & 8) ? TRIG_LEVEL : TRIG_EDGE;
 
-                ioapic_write_irq(ptr(ioapics[i].address), irq, entry.raw);
-            }
+            ioapic_write_irq(ptr(ioapics[i].address), irq, red.raw);
+        }
+    }
+}
+
+void ioapic_init()
+{
+    ioapics = darray(ioapic_t, 0);
+
+    madt_header_t* madt = acpi_find_entry("APIC");
+    
+    for(madt_entry_t* entry = madt->entries_begin; entry < (uint8_t*)madt + madt->header.length; entry = ((uint8_t*)entry + entry->record_lenght))
+    {
+        switch (entry->entry_type)
+        {
+        case MADT_IOAPIC:
+            register_ioapic((ioapic_entry_t*)(entry + 1));
+            break;
+        case MADT_INT_SRC_OVR:
+            register_override((ioapic_int_src_ovr_entry_t*)(entry + 1));
+            break;
         }
     }
 }
 
 void ioapic_unmask(uint8_t irq)
 {
-    for(size_t i = 0; i < num_ioapic; i++)
+    for(size_t i = 0; i < darray_length(ioapics); i++)
     {
         for(uint16_t red = 0; red < ioapics[i].num_entries; red++)
         {
@@ -168,7 +214,7 @@ void ioapic_unmask(uint8_t irq)
 
 void ioapic_mask(uint8_t irq)
 {
-    for(size_t i = 0; i < num_ioapic; i++)
+    for(size_t i = 0; i < darray_length(ioapics); i++)
     {
         for(uint16_t red = 0; red < ioapics[i].num_entries; red++)
         {
