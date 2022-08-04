@@ -71,6 +71,8 @@ static void parse_tables()
 
         if(memcmp(header->signature, "APIC", 4) == 0)
             parse_apic_table(header);
+        else
+            kernel_warn("Ignoring ACPI table %4s", header->signature);
     }
 }
 
