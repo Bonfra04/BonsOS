@@ -3,6 +3,7 @@
 #include <graphics/screen.h>
 #include <graphics/text_renderer.h>
 #include <io/keyboard.h>
+#include <timers/hpet.h>
 
 #include <containers/deque.h>
 
@@ -131,37 +132,83 @@ void tty_print(const char* str)
         print_char(*str++);
 }
 
+static bool process_key(keyevent_t k, uint64_t* advance)
+{
+    if(!k.is_pressed)
+        return false;
+
+    switch (k.vt_keycode)
+    {
+    case '\b':
+        if(*advance > 0)
+        {
+            print_char('\b');
+            deque_pop_back(&line_queue);
+            (*advance)--;
+        }
+        break;
+
+    case '\n':
+        print_char('\n');
+        return true;
+
+    default:
+        if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
+        {
+            print_char(k.vt_keycode);
+            deque_push_back(&line_queue, (void*)(uint64_t)k.vt_keycode);
+            (*advance)++;
+        }
+    }
+
+    return false;
+}
+
+#include <timers/hpet.h>
+
+bool cursor_state = false;
+
+static void cursor_blink_off()
+{
+    cursor_state = false;
+    text_renderer_putchar(pos.x * char_width, pos.y * char_height, 1, ' ', fg_color, bg_color);
+}
+
+static void cursor_blink_on()
+{
+    cursor_state = true;
+    text_renderer_putchar(pos.x * char_width, pos.y * char_height, 1, '_', fg_color, bg_color);
+}
+
+static void cursor_blink_toggle()
+{
+    if(cursor_state)
+        cursor_blink_off();
+    else
+        cursor_blink_on();
+}
+
 static void buffer_line()
 {
     size_t advance = 0;
+    
+    uint64_t start_time = hpet_current_nanos();
+    
     while(true)
     {
-        keyevent_t k = keyboard_pull();
-        if(!k.is_pressed)
-            continue;
-
-        switch (k.vt_keycode)
+        while(keyboard_has_event())
         {
-        case '\b':
-            if(advance > 0)
-            {
-                print_char('\b');
-                deque_pop_back(&line_queue);
-                advance--;
-            }
-            break;
+            cursor_blink_off();
+            if(process_key(keyboard_pull(), &advance))
+                return;
+            cursor_blink_on();
+            start_time = hpet_current_nanos();
+        }
 
-        case '\n':
-            print_char('\n');
-            return;
-
-        default:
-            if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
-            {
-                print_char(k.vt_keycode);
-                deque_push_back(&line_queue, (void*)(uint64_t)k.vt_keycode);
-                advance++;
-            }
+        if(hpet_current_nanos() - start_time > 100000000 * 5)
+        {
+            cursor_blink_toggle();
+            start_time = hpet_current_nanos();
         }
     }
 }
