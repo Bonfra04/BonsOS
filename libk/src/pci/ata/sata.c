@@ -1,7 +1,7 @@
 #include <pci/ata/sata.h>
 #include <memory/paging.h>
 #include <memory/pfa.h>
-#include <pit.h>
+#include <timers/pit.h>
 #include <log.h>
 
 #include <linker.h>

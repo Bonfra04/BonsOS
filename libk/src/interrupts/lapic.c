@@ -2,7 +2,7 @@
 #include <cpu.h>
 #include <memory/paging.h>
 #include <interrupts/isr_dispatcher.h>
-#include <pit.h>
+#include <timers/pit.h>
 
 #include <stdbool.h>
 #include <string.h>

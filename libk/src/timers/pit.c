@@ -1,4 +1,4 @@
-#include <pit.h>
+#include <timers/pit.h>
 #include <io/ports.h>
 
 #include <stdbool.h>
