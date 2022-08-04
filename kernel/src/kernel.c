@@ -36,6 +36,8 @@
 
 #include <executable/executable.h>
 
+#include <timers/hpet.h>
+
 #include <log.h>
 
 #include <linker.h>
@@ -76,6 +78,9 @@ void init(const bootinfo_t* bootinfo)
 
     // read the acpi tables
     acpi_init();
+
+    // hpet timer
+    hpet_init();
 
     // interrupts
     pic_disable();
