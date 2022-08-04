@@ -198,7 +198,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                     char* arg = va_arg(args, char*);
                     if(precision != -1)
                         arg[precision] = '\0';
-                    strcpy(buffer, arg);
+                    strncpy(buffer, arg, width);
                 }
             }
             break;
