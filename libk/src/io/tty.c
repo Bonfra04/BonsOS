@@ -148,16 +148,15 @@ static bool process_key(keyevent_t k, uint64_t* advance)
         }
         break;
 
-    case '\n':
-        print_char('\n');
-        return true;
-
     default:
-        if(isprint(k.vt_keycode) || k.vt_keycode == '\t')
+        if(isprint(k.vt_keycode) || k.vt_keycode == '\t' || k.vt_keycode == '\n')
         {
             print_char(k.vt_keycode);
             deque_push_back(&line_queue, (void*)(uint64_t)k.vt_keycode);
             (*advance)++;
+
+            if(k.vt_keycode == '\n')
+                return true;
         }
     }
 

@@ -9,8 +9,8 @@ int main()
 
     puts("What's your name? ");
     
-    char name[5];
-    fgets(name, 5, stdin);
+    char name[10];
+    gets(name); // buffer overflow goes brrrr
     
     fputs("Hello ", stdout);
     fputs(name, stdout);
