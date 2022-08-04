@@ -53,19 +53,19 @@ typedef union redirection_entry
     } __attribute__ ((packed));
 } redirection_entry_t;
 
-typedef struct madt_header
-{
-    rsdt_header_t header;
-    uint32_t lapic_address;
-    uint32_t flags;
-    char entries_begin[];
-} __attribute__ ((packed)) madt_header_t;
-
 typedef struct madt_entry
 {
     uint8_t entry_type;
     uint8_t record_lenght;
 } __attribute__ ((packed)) madt_entry_t;
+
+typedef struct madt_header
+{
+    rsdt_header_t header;
+    uint32_t lapic_address;
+    uint32_t flags;
+    madt_entry_t entries_begin[];
+} __attribute__ ((packed)) madt_header_t;
 
 typedef enum madt_entry_type
 {
@@ -179,7 +179,7 @@ void ioapic_init()
 
     madt_header_t* madt = acpi_find_entry("APIC");
     
-    for(madt_entry_t* entry = madt->entries_begin; entry < (uint8_t*)madt + madt->header.length; entry = ((uint8_t*)entry + entry->record_lenght))
+    for(madt_entry_t* entry = madt->entries_begin; (uint8_t*)entry < (uint8_t*)madt + madt->header.length; entry = (madt_entry_t*)((uint8_t*)entry + entry->record_lenght))
     {
         switch (entry->entry_type)
         {
