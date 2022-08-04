@@ -143,6 +143,11 @@ keyevent_t keyboard_pull()
     return event;
 }
 
+bool keyboard_has_event()
+{
+    return tsqueue_size(&key_queue) > 0;
+}
+
 void keyboard_flush()
 {
     tsqueue_flush(&key_queue);

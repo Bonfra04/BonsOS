@@ -18,4 +18,5 @@ mutex_acquire:
 mutex_release:
     xor rax, rax
     lock btr [rdi], rax
+    call scheduler_yield ; replace block
     ret
