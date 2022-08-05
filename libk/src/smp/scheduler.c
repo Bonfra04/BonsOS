@@ -96,12 +96,13 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
 static void destroy_process(process_t* process)
 {
     vmm_destroy(process->paging);
-    executable_unload(process->executable);
+    if(process->executable)
+        executable_unload(process->executable);
 }
 
 static void destroy_thread(thread_t* thread)
 {
-    process_t* proc = current_thread->proc;
+    process_t* proc = thread->proc;
     
     if(thread->stack_base)
         vmm_free(proc->paging, thread->stack_base, THREAD_STACK_SIZE);
@@ -129,6 +130,7 @@ void scheduler_init()
     kernel_process = malloc(sizeof(process_t));
     paging_get_current(kernel_process->paging);
     kernel_process->n_threads = 0;
+    kernel_process->executable = NULL;
 }
 
 void scheduler_start()
