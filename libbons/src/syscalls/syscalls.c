@@ -24,3 +24,8 @@ void* sys_map_mem(void* ph_addr, size_t size)
 {
     return (void*)sys(SYSCALL_MAP_MEM, (uint64_t)ph_addr, (uint64_t)size, 0);
 }
+
+void sys_thread_exit()
+{
+    sys(SYSCALL_THREAD_EXIT, 0, 0, 0);
+}
