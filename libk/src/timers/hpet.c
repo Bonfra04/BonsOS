@@ -61,7 +61,7 @@ void hpet_init()
     hpet_header_t* hpet = acpi_find_entry("HPET");
 
     hpet_regs = (hpet_regs_t*)hpet->address.address;
-    paging_map(kernel_paging, hpet_regs, hpet_regs, sizeof(hpet_regs_t), PAGE_PRIVILEGE_KERNEL);
+    paging_map(NULL, hpet_regs, hpet_regs, sizeof(hpet_regs_t), PAGE_PRIVILEGE_KERNEL);
 
     // get period in femtoseconds
     period = hpet_regs->cap >> 32;
