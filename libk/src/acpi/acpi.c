@@ -68,4 +68,6 @@ void* acpi_find_entry(const char signature[4])
         if(memcmp(header->signature, signature, 4) == 0)
             return header;
     }
+
+    return NULL;
 }
