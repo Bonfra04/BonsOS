@@ -84,10 +84,7 @@ static bool init_port(volatile hba_port_t* port)
         spin++;
 
     if(spin >= 1000000)
-    {
-        // kernel_log("HERE 1\n");
         return false;
-    }
 
     port->serr = 0xFFFFFFFF;
 
@@ -96,10 +93,7 @@ static bool init_port(volatile hba_port_t* port)
         spin++;
 
     if(spin >= 1000000)
-    {
-        kernel_log("HERE 2\n");
         return false;
-    }
 
     port->is = 0;
 
