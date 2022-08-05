@@ -72,7 +72,7 @@ void init(const bootinfo_t* bootinfo)
     // initialize graphics
     screen_init(bootinfo->screen_width, bootinfo->screen_height, bootinfo->screen_pitch, ptr(bootinfo->framebuffer));
     text_renderer_init();
-    
+
     // initialize tty
     tty_init();
 
@@ -127,6 +127,8 @@ void main(const bootinfo_t* bootinfo)
     tty_print("BonsOS successfully booted\n");
 
     executable_t* executable = executable_load("a:/bin/init.elf");
+    if(!executable)
+        kernel_panic("Couldn't load init process");
 
     char* args[] = { "miao", "bau", 0 };
     scheduler_run_executable(executable, args);
