@@ -133,11 +133,12 @@ void main(const bootinfo_t* bootinfo)
     char* args[] = { "miao", "bau", 0 };
     scheduler_run_executable(executable, args);
 
+    // TODO: remove this (move to shutdown sequence)
     for(;;)
     {
         scheduler_atomic({
             storage_flush(0);
         });
-        hlt();
+        scheduler_yield();
     }
 }
