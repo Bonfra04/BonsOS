@@ -80,6 +80,7 @@ void _Exit(int status)
     call_dtors();
 
     sys_process_exit();
+    for(;;);
 }
 
 #endif
