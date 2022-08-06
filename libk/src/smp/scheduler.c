@@ -104,7 +104,6 @@ static void destroy_thread(thread_t* thread)
         pfa_free(thread->kstack_base, THREAD_STACK_SIZE);
     free(thread);
 
-    proc->n_threads--;
     darray_remove(proc->threads, darray_find(proc->threads, thread));
 }
 
@@ -150,7 +149,6 @@ void scheduler_init()
 {
     kernel_process = malloc(sizeof(process_t));
     paging_get_current(kernel_process->paging);
-    kernel_process->n_threads = 0;
     kernel_process->executable = NULL;
     kernel_process->threads = darray(thread_t*, 0);
 }
@@ -158,7 +156,6 @@ void scheduler_init()
 void scheduler_start()
 {
     current_thread = malloc(sizeof(thread_t));
-    kernel_process->n_threads++;
 
     asm volatile ("mov %0, rsp" : "=r"(current_thread->rsp) : : "memory");
     current_thread->proc = kernel_process;
@@ -184,7 +181,6 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
     new->krsp = (uint64_t)new->kstack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
     paging_map(proc->paging, new->kstack_base, new->kstack_base, THREAD_STACK_SIZE * PFA_PAGE_SIZE, PAGE_PRIVILEGE_KERNEL);
 
-    proc->n_threads++;
     darray_append(proc->threads, new);
     add_thread(new);
 }
@@ -193,7 +189,6 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
 {
     process_t* proc = malloc(sizeof(process_t));
     proc->paging = paging_create();
-    proc->n_threads = 0;
     proc->executable = NULL;
     proc->resources = darray(resource_t, 0);
     proc->threads = darray(thread_t*, 0);
@@ -235,7 +230,6 @@ void scheduler_create_kernel_task(void* entry_point)
     new->proc = kernel_process;
     new->kstack_base = new->stack_base = stack_base;
 
-    kernel_process->n_threads++;
     darray_append(kernel_process->threads, new);
     add_thread(new);
 }
@@ -263,7 +257,7 @@ void scheduler_terminate_thread()
         current_thread = current_thread->next_thread;
     
         destroy_thread(old);
-        if(proc->n_threads == 0)
+        if(darray_length(proc->threads) == 0)
             destroy_process(proc);
 
         if(current_thread == old)

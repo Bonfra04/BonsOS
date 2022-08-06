@@ -36,7 +36,6 @@ typedef struct resource
 typedef struct process
 {
     paging_data_t paging;
-    uint64_t n_threads;
     const executable_t* executable;
     resource_t* resources;
     thread_t** threads;

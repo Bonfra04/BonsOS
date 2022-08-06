@@ -11,7 +11,6 @@ section .text
 
 struc process_t
     .paging:         resq 1 
-    .n_threads:      resq 1
     .executable:     resq 1
     .resources:      resq 1
     .threads:        resq 1
