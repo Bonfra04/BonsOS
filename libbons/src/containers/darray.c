@@ -31,6 +31,27 @@ void* __darray_append(void* darray, void* element)
     return darray;
 }
 
+void* __darray_remove(void* darray, size_t index)
+{
+    darray_t* desc = (darray_t*)darray - 1;
+    memcpy((uint8_t*)darray + index * desc->stride, (uint8_t*)darray + (index + 1) * desc->stride, desc->stride * (desc->length - index - 1));
+    
+    size_t size = sizeof(darray_t) + desc->stride * (--desc->length);
+    desc = realloc(desc, size);
+    darray = desc + 1;
+    return darray;
+}
+
+size_t __darray_find(void* darray, void* element)
+{
+    darray_t* desc = (darray_t*)darray - 1;
+    for(size_t i = 0; i < desc->length; i++)
+        if(memcmp((uint8_t*)darray + i * desc->stride, element, desc->stride) == 0)
+            return i;
+    
+    return -1;
+}
+
 void darray_destroy(void* darray)
 {
     free((darray_t*)darray - 1);
