@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <syscalls.h>
+
 int main()
 {
     fopen("tty:/0", "r"); // open stdin
@@ -15,6 +17,8 @@ int main()
     fputs("Hello ", stdout);
     fputs(name, stdout);
     puts(".");
+
+    sys_exec("a:/bin/shell.elf", NULL);
 
     return 0;
 }

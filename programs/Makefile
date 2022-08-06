@@ -6,3 +6,4 @@ include $(DIR_ROOT)/scripts/config.mk
 
 all: 
 	@make $(MAKE_FLAGS) --directory=./init
+	@make $(MAKE_FLAGS) --directory=./shell
