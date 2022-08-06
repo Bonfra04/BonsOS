@@ -151,7 +151,7 @@ static void process_cleanup(process_t* process, bool clean_resources)
 
     darray_destroy(process->threads);
     
-    if(clean_resources)
+    if(clean_resources && process->resources)
     {
         for(size_t i = 0; i < darray_length(process->resources); i++)
         {
@@ -310,7 +310,8 @@ void scheduler_terminate_process()
 
 void scheduler_terminate_thread()
 {
-    scheduler_atomic({
+    // scheduler_atomic({
+        asm ("cli");
         process_t* proc = current_thread->proc;
         thread_t* old;
 
@@ -332,7 +333,7 @@ void scheduler_terminate_thread()
         
         scheduler_replace_switch(current_thread);
         kernel_panic("Thread termination failed");
-    });
+    // });
 }
 
 int scheduler_alloc_resource(void* resource, resource_type_t type)
