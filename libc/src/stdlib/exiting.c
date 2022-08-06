@@ -33,8 +33,6 @@ void exit(int status)
         ((void(*)())func)();
     }
 
-    // TODO: close all opened streams
-
     _Exit(status);
 }
 
@@ -71,15 +69,17 @@ void _Exit(int status)
 
 #else
 
+#include <syscalls.h>
+
 extern void call_dtors();
 
 void _Exit(int status)
 {
-    (void)status;
+    (void)status; // TODO: use status
 
     call_dtors();
 
-    for(;;); // TODO: terminate the process
+    sys_process_exit();
 }
 
 #endif

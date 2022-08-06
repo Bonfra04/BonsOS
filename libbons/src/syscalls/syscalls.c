@@ -29,3 +29,8 @@ void sys_thread_exit()
 {
     sys(SYSCALL_THREAD_EXIT, 0, 0, 0);
 }
+
+void sys_process_exit()
+{
+    sys(SYSCALL_PROCESS_EXIT, 0, 0, 0);
+}
