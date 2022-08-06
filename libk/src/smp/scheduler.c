@@ -94,7 +94,40 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     return ptr(context->rsp = (uint64_t)vt_stack_base + (sp - ph_stack_base));
 }
 
-static void destroy_thread(thread_t* thread)
+void scheduler_init()
+{
+    kernel_process = malloc(sizeof(process_t));
+    kernel_process->paging = kernel_paging;
+    kernel_process->executable = NULL;
+    kernel_process->threads = darray(thread_t*, 0);
+    kernel_process->resources = NULL;
+    
+    current_thread = malloc(sizeof(thread_t));
+    current_thread->proc = kernel_process;
+    current_thread->next_thread = current_thread;
+    current_thread->prev_thread = current_thread;
+    darray_append(kernel_process->threads, current_thread);
+}
+
+void scheduler_start()
+{
+    asm volatile ("mov %0, rsp" : "=r"(current_thread->rsp) : : "memory");
+
+    isr_set(LAPIC_ISR, scheduler_tick);
+    scheduler_yield();
+}
+
+static void thread_insert(thread_t* thread)
+{
+    scheduler_atomic({
+        thread->next_thread = current_thread->next_thread;
+        thread->prev_thread = current_thread;
+        current_thread->next_thread->prev_thread = thread;
+        current_thread->next_thread = thread;
+    });
+}
+
+static void thread_destroy(thread_t* thread)
 {
     process_t* proc = thread->proc;
     
@@ -107,64 +140,114 @@ static void destroy_thread(thread_t* thread)
     darray_remove(proc->threads, darray_find(proc->threads, thread));
 }
 
-static void destroy_process(process_t* process)
+static void process_cleanup(process_t* process, bool clean_resources)
 {
     vmm_destroy(process->paging);
     if(process->executable)
         executable_unload(process->executable);
 
     for(size_t i = 0; i < darray_length(process->threads); i++)
-        destroy_thread(process->threads[i]);
+        thread_destroy(process->threads[i]);
 
     darray_destroy(process->threads);
     
-    for(size_t i = 0; i < darray_length(process->resources); i++)
+    if(clean_resources)
     {
-        resource_t* resource = &process->resources[i];
-        void* data = resource->resource;
-        switch (resource->type)
+        for(size_t i = 0; i < darray_length(process->resources); i++)
         {
-        case RES_FILE:
-            fsys_close_file(data);
-            break;
+            resource_t* resource = &process->resources[i];
+            void* data = resource->resource;
+            switch (resource->type)
+            {
+            case RES_FILE:
+                fsys_close_file(data);
+                break;
+            }
+            free(data);
         }
-        free(data);
+        darray_destroy(process->resources);
     }
-    darray_destroy(process->resources);
-
-    free(process);
 }
 
-static void add_thread(thread_t* thread)
+static void process_init(process_t* proc, void* address_low, void* address_high, bool init_resources)
+{
+    proc->paging = paging_create();
+    proc->threads = darray(thread_t*, 0);
+    if(init_resources)
+        proc->resources = darray(resource_t, 0);
+
+    address_low = ptr(ALIGN_4K_DOWN(address_low));
+    address_high = ptr(ALIGN_4K_UP(address_high));
+
+    size_t size = address_high - address_low;
+    paging_map(proc->paging, address_low, ptr(USER_PROCESS_BASE_ADDRESS), size, PAGE_PRIVILEGE_USER);
+
+    extern symbol_t __kernel_start_addr;
+    extern symbol_t __kernel_end_addr;
+    size_t kernel_start_aligned = ALIGN_4K_DOWN(__kernel_start_addr);
+    size_t kernel_end_aligned = ALIGN_4K_UP(__kernel_end_addr);
+    size_t kernel_size = kernel_end_aligned - kernel_start_aligned;
+    paging_map(proc->paging, __kernel_start_addr, ptr(kernel_start_aligned), kernel_size, PAGE_PRIVILEGE_KERNEL);
+}
+
+process_t* scheduler_create_process(void* address_low, void* address_high, void* entry_point, char* args[])
+{
+    process_t* proc = malloc(sizeof(process_t));
+    proc->executable = NULL;
+
+    process_init(proc, address_low, address_high, true);
+
+    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low);
+    scheduler_attach_thread(proc, vt_entry, args);
+
+    return proc;
+}
+
+process_t* scheduler_run_executable(const executable_t* executable, char* args[])
+{
+    process_t* proc = malloc(sizeof(process_t));
+    proc->executable = executable;
+
+    void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
+    process_init(proc, executable->base_address, address_high, true);
+
+    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
+    scheduler_attach_thread(proc, vt_entry, args);
+
+    return proc;
+}
+
+void scheduler_replace_process(const executable_t* executable, char* args[])
 {
     scheduler_atomic({
-        thread->next_thread = current_thread->next_thread;
-        thread->prev_thread = current_thread;
-        current_thread->next_thread->prev_thread = thread;
-        current_thread->next_thread = thread;
+        process_t* proc = current_thread->proc;
+
+        thread_t* prev_thread = current_thread->prev_thread;
+        while(prev_thread->proc == proc)
+            prev_thread = prev_thread->prev_thread;
+        thread_t* next_thread = current_thread->next_thread;
+        while(next_thread->proc == proc)
+            next_thread = next_thread->next_thread;
+
+        process_cleanup(proc, false);
+
+        proc->executable = executable;
+
+        void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
+        process_init(proc, executable->base_address, address_high, false);
+
+        void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
+        scheduler_attach_thread(proc, vt_entry, args);
+
+        thread_t* new_thread = proc->threads[0];
+        prev_thread->next_thread = new_thread;
+        next_thread->prev_thread = new_thread;
+        new_thread->prev_thread = prev_thread;
+        new_thread->next_thread = next_thread;
+
+        scheduler_replace_switch(new_thread);
+        kernel_panic("Process replacement failed");
     });
-}
-
-void scheduler_init()
-{
-    kernel_process = malloc(sizeof(process_t));
-    paging_get_current(kernel_process->paging);
-    kernel_process->executable = NULL;
-    kernel_process->threads = darray(thread_t*, 0);
-}
-
-void scheduler_start()
-{
-    current_thread = malloc(sizeof(thread_t));
-
-    asm volatile ("mov %0, rsp" : "=r"(current_thread->rsp) : : "memory");
-    current_thread->proc = kernel_process;
-    current_thread->next_thread = current_thread;
-    current_thread->prev_thread = current_thread;
-    darray_append(kernel_process->threads, current_thread);
-
-    isr_set(LAPIC_ISR, scheduler_tick);
-    scheduler_yield();
 }
 
 void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
@@ -182,42 +265,7 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
     paging_map(proc->paging, new->kstack_base, new->kstack_base, THREAD_STACK_SIZE * PFA_PAGE_SIZE, PAGE_PRIVILEGE_KERNEL);
 
     darray_append(proc->threads, new);
-    add_thread(new);
-}
-
-process_t* scheduler_create_process(void* address_low, void* address_high, void* entry_point, char* args[])
-{
-    process_t* proc = malloc(sizeof(process_t));
-    proc->paging = paging_create();
-    proc->executable = NULL;
-    proc->resources = darray(resource_t, 0);
-    proc->threads = darray(thread_t*, 0);
-
-    address_low = ptr(ALIGN_4K_DOWN(address_low));
-    address_high = ptr(ALIGN_4K_UP(address_high));
-
-    size_t size = address_high - address_low;
-    paging_map(proc->paging, address_low, ptr(USER_PROCESS_BASE_ADDRESS), size, PAGE_PRIVILEGE_USER);
-
-    extern symbol_t __kernel_start_addr;
-    extern symbol_t __kernel_end_addr;
-    size_t kernel_start_aligned = ALIGN_4K_DOWN(__kernel_start_addr);
-    size_t kernel_end_aligned = ALIGN_4K_UP(__kernel_end_addr);
-    size_t kernel_size = kernel_end_aligned - kernel_start_aligned;
-    paging_map(proc->paging, __kernel_start_addr, ptr(kernel_start_aligned), kernel_size, PAGE_PRIVILEGE_KERNEL);
-
-    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low);
-    scheduler_attach_thread(proc, vt_entry, args);
-
-    return proc;
-}
-
-process_t* scheduler_run_executable(const executable_t* executable, char* args[])
-{
-    void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
-    process_t* proc = scheduler_create_process(executable->base_address, address_high, executable->entry_point, args);
-    proc->executable = executable;
-    return proc;
+    thread_insert(new);
 }
 
 void scheduler_create_kernel_task(void* entry_point)
@@ -231,17 +279,33 @@ void scheduler_create_kernel_task(void* entry_point)
     new->kstack_base = new->stack_base = stack_base;
 
     darray_append(kernel_process->threads, new);
-    add_thread(new);
+    thread_insert(new);
 }
 
-void scheduler_yield()
+void scheduler_terminate_process()
 {
-    asm("int 0x20");
-}
+    scheduler_atomic({
+        process_t* proc = current_thread->proc;
+        
+        thread_t* old;
+        while(current_thread->proc == proc)
+        {
+            current_thread->prev_thread->next_thread = current_thread->next_thread;
+            current_thread->next_thread->prev_thread = current_thread->prev_thread;
 
-thread_t* get_next_thread()
-{
-    return current_thread->next_thread;
+            old = current_thread;
+            current_thread = current_thread->next_thread;
+        }
+
+        process_cleanup(proc, true);
+        free(proc);
+
+        if(current_thread == old)
+            kernel_panic("No more threads to schedule");
+
+        scheduler_replace_switch(current_thread);
+        kernel_panic("Process termination failed");
+    });
 }
 
 void scheduler_terminate_thread()
@@ -256,40 +320,18 @@ void scheduler_terminate_thread()
         old = current_thread;
         current_thread = current_thread->next_thread;
     
-        destroy_thread(old);
+        thread_destroy(old);
         if(darray_length(proc->threads) == 0)
-            destroy_process(proc);
+        {
+            process_cleanup(proc, true);
+            free(proc);
+        }
 
         if(current_thread == old)
             kernel_panic("No more threads to schedule");
         
         scheduler_replace_switch(current_thread);
         kernel_panic("Thread termination failed");
-    });
-}
-
-void __attribute__((noreturn)) scheduler_terminate_process()
-{
-    scheduler_atomic({
-        process_t* proc = current_thread->proc;
-        thread_t* old;
-        
-        while(current_thread->proc == proc)
-        {
-            current_thread->prev_thread->next_thread = current_thread->next_thread;
-            current_thread->next_thread->prev_thread = current_thread->prev_thread;
-
-            old = current_thread;
-            current_thread = current_thread->next_thread;
-        }
-
-        destroy_process(proc);
-
-        if(current_thread == old)
-            kernel_panic("No more threads to schedule");
-
-        scheduler_replace_switch(current_thread);
-        kernel_panic("Process termination failed");
     });
 }
 
@@ -336,4 +378,14 @@ bool scheduler_free_resource(int id, resource_type_t type)
     resources[id].resource = NULL;
 
     return true;
+}
+
+void scheduler_yield()
+{
+    asm("int 0x20");
+}
+
+thread_t* get_next_thread()
+{
+    return current_thread->next_thread;
 }

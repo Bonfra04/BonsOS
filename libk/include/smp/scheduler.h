@@ -2,6 +2,7 @@
 
 #include <memory/paging.h>
 #include <executable/executable.h>
+#include <cpu.h>
 
 #include <stdint.h>
 
@@ -72,6 +73,13 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
 process_t* scheduler_run_executable(const executable_t* executable, char* args[]);
 
 /**
+ * @brief Replaces the calling process with a new one, keeping the original resources
+ * @param[in] executable The executable to load
+ * @param[in] args Null terminated string array of arguments
+ */
+void scheduler_replace_process(const executable_t* executable, char* args[]);
+
+/**
  * @brief Attaches a thread to a process
  * @param[in] proc The process to attach the thread to
  * @param[in] entry_point Virtual address of the entry point inside the process
@@ -104,7 +112,14 @@ void __attribute__((noreturn)) scheduler_terminate_process();
  * @brief Executes a block of code ensuring that the scheduler won't tick while it is executing
  * @param[in] code The code to execute
  */
-#define scheduler_atomic(code) { asm volatile ("cli"); code; asm volatile ("sti"); }
+#define scheduler_atomic(code) {                        \
+    bool __is_sti = get_flags() & CPU_EFLAGS_INTERRUPT; \
+    if(__is_sti)                                        \
+        asm volatile ("cli");                           \
+    code;                                               \
+    if(__is_sti)                                        \
+        asm volatile ("sti");                           \
+}
 
 /**
  * @brief Allocates a resource for the calling thread
