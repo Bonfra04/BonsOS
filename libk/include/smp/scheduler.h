@@ -39,6 +39,7 @@ typedef struct process
     uint64_t n_threads;
     const executable_t* executable;
     resource_t* resources;
+    thread_t** threads;
 } process_t;
 
 extern thread_t* current_thread;
@@ -94,6 +95,11 @@ void scheduler_yield();
  * @brief Terminates the calling thread
  */
 void __attribute__((noreturn)) scheduler_terminate_thread();
+
+/**
+ * @brief Terminates the calling process
+ */
+void __attribute__((noreturn)) scheduler_terminate_process();
 
 /**
  * @brief Executes a block of code ensuring that the scheduler won't tick while it is executing

@@ -3,6 +3,7 @@
 #include <memory/pfa.h>
 #include <interrupts/lapic.h>
 #include <memory/gdt.h>
+#include <fsys/fsys.h>
 #include <cpu.h>
 #include <panic.h>
 
@@ -93,13 +94,6 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     return ptr(context->rsp = (uint64_t)vt_stack_base + (sp - ph_stack_base));
 }
 
-static void destroy_process(process_t* process)
-{
-    vmm_destroy(process->paging);
-    if(process->executable)
-        executable_unload(process->executable);
-}
-
 static void destroy_thread(thread_t* thread)
 {
     process_t* proc = thread->proc;
@@ -111,8 +105,35 @@ static void destroy_thread(thread_t* thread)
     free(thread);
 
     proc->n_threads--;
-    if(proc->n_threads == 0)
-        destroy_process(proc);
+    darray_remove(proc->threads, darray_find(proc->threads, thread));
+}
+
+static void destroy_process(process_t* process)
+{
+    vmm_destroy(process->paging);
+    if(process->executable)
+        executable_unload(process->executable);
+
+    for(size_t i = 0; i < darray_length(process->threads); i++)
+        destroy_thread(process->threads[i]);
+
+    darray_destroy(process->threads);
+    
+    for(size_t i = 0; i < darray_length(process->resources); i++)
+    {
+        resource_t* resource = &process->resources[i];
+        void* data = resource->resource;
+        switch (resource->type)
+        {
+        case RES_FILE:
+            fsys_close_file(data);
+            break;
+        }
+        free(data);
+    }
+    darray_destroy(process->resources);
+
+    free(process);
 }
 
 static void add_thread(thread_t* thread)
@@ -131,6 +152,7 @@ void scheduler_init()
     paging_get_current(kernel_process->paging);
     kernel_process->n_threads = 0;
     kernel_process->executable = NULL;
+    kernel_process->threads = darray(thread_t*, 0);
 }
 
 void scheduler_start()
@@ -142,6 +164,7 @@ void scheduler_start()
     current_thread->proc = kernel_process;
     current_thread->next_thread = current_thread;
     current_thread->prev_thread = current_thread;
+    darray_append(kernel_process->threads, current_thread);
 
     isr_set(LAPIC_ISR, scheduler_tick);
     scheduler_yield();
@@ -162,6 +185,7 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
     paging_map(proc->paging, new->kstack_base, new->kstack_base, THREAD_STACK_SIZE * PFA_PAGE_SIZE, PAGE_PRIVILEGE_KERNEL);
 
     proc->n_threads++;
+    darray_append(proc->threads, new);
     add_thread(new);
 }
 
@@ -172,6 +196,7 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
     proc->n_threads = 0;
     proc->executable = NULL;
     proc->resources = darray(resource_t, 0);
+    proc->threads = darray(thread_t*, 0);
 
     address_low = ptr(ALIGN_4K_DOWN(address_low));
     address_high = ptr(ALIGN_4K_UP(address_high));
@@ -211,6 +236,7 @@ void scheduler_create_kernel_task(void* entry_point)
     new->kstack_base = new->stack_base = stack_base;
 
     kernel_process->n_threads++;
+    darray_append(kernel_process->threads, new);
     add_thread(new);
 }
 
@@ -226,22 +252,51 @@ thread_t* get_next_thread()
 
 void scheduler_terminate_thread()
 {
-    thread_t* old;
     scheduler_atomic({
+        process_t* proc = current_thread->proc;
+        thread_t* old;
+
         current_thread->prev_thread->next_thread = current_thread->next_thread;
         current_thread->next_thread->prev_thread = current_thread->prev_thread;
 
         old = current_thread;
         current_thread = current_thread->next_thread;
+    
+        destroy_thread(old);
+        if(proc->n_threads == 0)
+            destroy_process(proc);
+
+        if(current_thread == old)
+            kernel_panic("No more threads to schedule");
+        
+        scheduler_replace_switch(current_thread);
+        kernel_panic("Thread termination failed");
     });
+}
 
-    destroy_thread(old);
+void __attribute__((noreturn)) scheduler_terminate_process()
+{
+    scheduler_atomic({
+        process_t* proc = current_thread->proc;
+        thread_t* old;
+        
+        while(current_thread->proc == proc)
+        {
+            current_thread->prev_thread->next_thread = current_thread->next_thread;
+            current_thread->next_thread->prev_thread = current_thread->prev_thread;
 
-    if(current_thread == old)
-        kernel_panic("No more threads to schedule");
+            old = current_thread;
+            current_thread = current_thread->next_thread;
+        }
 
-    scheduler_replace_switch(current_thread);
-    kernel_panic("Thread termination failed");
+        destroy_process(proc);
+
+        if(current_thread == old)
+            kernel_panic("No more threads to schedule");
+
+        scheduler_replace_switch(current_thread);
+        kernel_panic("Process termination failed");
+    });
 }
 
 int scheduler_alloc_resource(void* resource, resource_type_t type)
