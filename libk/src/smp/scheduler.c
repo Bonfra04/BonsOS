@@ -310,8 +310,7 @@ void scheduler_terminate_process()
 
 void scheduler_terminate_thread()
 {
-    // scheduler_atomic({
-        asm ("cli");
+    scheduler_atomic({
         process_t* proc = current_thread->proc;
         thread_t* old;
 
@@ -333,7 +332,7 @@ void scheduler_terminate_thread()
         
         scheduler_replace_switch(current_thread);
         kernel_panic("Thread termination failed");
-    // });
+    });
 }
 
 int scheduler_alloc_resource(void* resource, resource_type_t type)
