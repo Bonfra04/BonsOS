@@ -41,3 +41,4 @@ typedef struct registers4
 uint64_t rdmsr(uint32_t id);
 void wrmsr(uint32_t id, uint64_t value);
 void cpuid(uint32_t code, registers4_t *regs);
+uint64_t get_flags();

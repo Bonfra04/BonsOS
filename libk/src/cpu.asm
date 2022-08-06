@@ -4,6 +4,7 @@ section .text
     global rdmsr
     global wrmsr
     global cpuid
+    global get_flags
 
 ;-----------------------------------------------------------------------------
 ; @brief        Read the model-specific register and return the result.
@@ -53,4 +54,9 @@ cpuid:
     mov [rsi + 8 * 3],  rdx
 
     pop rbx
+    ret
+
+get_flags:
+    pushfq
+    pop rax
     ret
