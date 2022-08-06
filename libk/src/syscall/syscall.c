@@ -4,7 +4,7 @@
 
 #include "syscalls.h"
 
-#define MAX_SYSCALLS 7
+#define MAX_SYSCALLS 8
 
 extern void syscall_handle();
 
@@ -19,6 +19,7 @@ void syscall_init()
     syscall_handlers[4] = syscall_map_mem;
     syscall_handlers[5] = syscall_thread_exit;
     syscall_handlers[6] = syscall_process_exit;
+    syscall_handlers[7] = syscall_exec;
 }
 
 void syscall_enable()

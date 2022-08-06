@@ -15,6 +15,7 @@
 #define SYSCALL_MAP_MEM 4
 #define SYSCALL_THREAD_EXIT 5
 #define SYSCALL_PROCESS_EXIT 6
+#define SYSCALL_EXEC 7
 
 uint64_t sys(uint64_t id, uint64_t arg1, uint64_t arg2, uint64_t arg3);
 
@@ -25,3 +26,4 @@ size_t sys_write_file(int fd, const char* buff, size_t count);
 void* sys_map_mem(void* ph_addr, size_t size);
 void sys_thread_exit();
 void sys_process_exit();
+void sys_exec(const char* path, const char** argv);
