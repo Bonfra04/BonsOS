@@ -142,7 +142,8 @@ static void thread_destroy(thread_t* thread)
 
 static void process_cleanup(process_t* process, bool clean_resources)
 {
-    vmm_destroy(process->paging);
+    if(process != kernel_process)
+        vmm_destroy(process->paging);
     if(process->executable)
         executable_unload(process->executable);
 
@@ -285,23 +286,20 @@ void scheduler_create_kernel_task(void* entry_point)
 void scheduler_terminate_process()
 {
     scheduler_atomic({
+        if(current_thread == current_thread->next_thread)
+            kernel_panic("No more threads to schedule");
+
         process_t* proc = current_thread->proc;
-        
-        thread_t* old;
+
         while(current_thread->proc == proc)
         {
             current_thread->prev_thread->next_thread = current_thread->next_thread;
             current_thread->next_thread->prev_thread = current_thread->prev_thread;
-
-            old = current_thread;
             current_thread = current_thread->next_thread;
         }
 
         process_cleanup(proc, true);
         free(proc);
-
-        if(current_thread == old)
-            kernel_panic("No more threads to schedule");
 
         scheduler_replace_switch(current_thread);
         kernel_panic("Process termination failed");
@@ -311,6 +309,9 @@ void scheduler_terminate_process()
 void scheduler_terminate_thread()
 {
     scheduler_atomic({
+        if(current_thread == current_thread->next_thread)
+            kernel_panic("No more threads to schedule");
+
         process_t* proc = current_thread->proc;
         thread_t* old;
 
@@ -326,9 +327,6 @@ void scheduler_terminate_thread()
             process_cleanup(proc, true);
             free(proc);
         }
-
-        if(current_thread == old)
-            kernel_panic("No more threads to schedule");
         
         scheduler_replace_switch(current_thread);
         kernel_panic("Thread termination failed");
