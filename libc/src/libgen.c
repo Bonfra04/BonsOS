@@ -26,3 +26,16 @@ const char* basename(const char* filename )
     const char *p = strrchr(filename, '/');
     return p ? p + 1 :filename;
 }
+
+bool is_absolute(const char* path)
+{
+    while(*path)
+    {
+        if(*path == '/')
+            return false;
+        else if(*path == ':')
+            return true;
+        path++;
+    }
+    return false;
+}
