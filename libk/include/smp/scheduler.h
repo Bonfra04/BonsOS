@@ -4,6 +4,7 @@
 #include <executable/executable.h>
 #include <cpu.h>
 
+#include <stdnoreturn.h>
 #include <stdint.h>
 
 typedef struct process process_t;
@@ -101,12 +102,12 @@ void scheduler_yield();
 /**
  * @brief Terminates the calling thread
  */
-void __attribute__((noreturn)) scheduler_terminate_thread();
+noreturn void scheduler_terminate_thread();
 
 /**
  * @brief Terminates the calling process
  */
-void __attribute__((noreturn)) scheduler_terminate_process();
+noreturn void scheduler_terminate_process();
 
 /**
  * @brief Executes a block of code ensuring that the scheduler won't tick while it is executing
