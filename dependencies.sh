@@ -1,5 +1,8 @@
 ROOT_DIR=$(pwd)
 
+sudo apt-get update
+sudo apt-get upgrade
+
 # Packages:
 sudo apt-get install --assume-yes make
 sudo apt-get install --assume-yes gcc
