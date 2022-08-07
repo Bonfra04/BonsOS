@@ -224,11 +224,16 @@ void scheduler_replace_process(const executable_t* executable, char* args[])
         process_t* proc = current_thread->proc;
 
         thread_t* prev_thread = current_thread->prev_thread;
-        while(prev_thread->proc == proc)
-            prev_thread = prev_thread->prev_thread;
         thread_t* next_thread = current_thread->next_thread;
-        while(next_thread->proc == proc)
-            next_thread = next_thread->next_thread;
+        if(prev_thread == current_thread)
+            prev_thread = next_thread = NULL;
+        else
+        {
+            while(prev_thread->proc == proc)
+                prev_thread = prev_thread->prev_thread;
+            while(next_thread->proc == proc)
+                next_thread = next_thread->next_thread;
+        }
 
         process_cleanup(proc, false);
 
@@ -241,10 +246,18 @@ void scheduler_replace_process(const executable_t* executable, char* args[])
         scheduler_attach_thread(proc, vt_entry, args);
 
         thread_t* new_thread = proc->threads[0];
-        prev_thread->next_thread = new_thread;
-        next_thread->prev_thread = new_thread;
-        new_thread->prev_thread = prev_thread;
-        new_thread->next_thread = next_thread;
+        if(prev_thread)
+        {
+            prev_thread->next_thread = new_thread;
+            next_thread->prev_thread = new_thread;
+            new_thread->prev_thread = prev_thread;
+            new_thread->next_thread = next_thread;
+        }
+        else
+        {
+            new_thread->prev_thread = new_thread;
+            new_thread->next_thread = new_thread;
+        }
 
         scheduler_replace_switch(new_thread);
         kernel_panic("Process replacement failed");
