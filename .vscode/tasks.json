@@ -54,43 +54,6 @@
             ]
         },
         {
-            "label": "run vmware",
-            "type": "shell",
-            "command": "qemu-img convert BonsOS.img -O vmdk /mnt/c/Users/bonfr/Desktop/BonsOS/BonsOS.vmdk && cmd.exe /c \"vmrun.exe start C:\\Users\\bonfr\\Desktop\\BonsOS\\vmware\\BonsOS.vmx\"",
-            "isBackground": true,
-            "presentation": {
-                "clear": true,
-                "showReuseMessage": false,
-                "revealProblems": "never",
-                "reveal": "silent",
-                "panel": "dedicated",
-                "echo": false,
-                "close": true,
-                "focus": false
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "compile"
-            ],
-            "problemMatcher": [
-                {
-                    "pattern": [
-                        {
-                            "regexp": ".",
-                            "file": 1,
-                            "location": 2,
-                            "message": 3
-                        }
-                    ],
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": ".",
-                        "endsPattern": "."
-                    }
-                }
-            ]
-        },
-        {
             "label": "compile",
             "command": "make",
             "presentation": {
