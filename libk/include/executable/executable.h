@@ -13,6 +13,7 @@ typedef struct executable
     void* base_address;
     size_t num_pages;
     void* entry_point;
+    char* fullpath;
 } executable_t;
 
 /**

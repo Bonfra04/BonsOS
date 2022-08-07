@@ -14,6 +14,7 @@ struc process_t
     .executable:     resq 1
     .resources:      resq 1
     .threads:        resq 1
+    .workdir:        resq 1
 endstruc
 
 struc thread_t

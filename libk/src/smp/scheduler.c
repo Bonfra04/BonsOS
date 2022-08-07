@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <libgen.h>
 
 #define LAPIC_ISR 0x20
 
@@ -101,6 +102,7 @@ void scheduler_init()
     kernel_process->executable = NULL;
     kernel_process->threads = darray(thread_t*, 0);
     kernel_process->resources = NULL;
+    kernel_process->workdir = NULL;
     
     current_thread = malloc(sizeof(thread_t));
     current_thread->proc = kernel_process;
@@ -153,6 +155,7 @@ static void process_cleanup(process_t* process, bool clean_resources)
         thread_destroy(process->threads[i]);
 
     darray_destroy(process->threads);
+    free(process->workdir);
     
     if(clean_resources && process->resources)
     {
@@ -172,10 +175,12 @@ static void process_cleanup(process_t* process, bool clean_resources)
     }
 }
 
-static void process_init(process_t* proc, void* address_low, void* address_high, bool init_resources)
+static void process_init(process_t* proc, void* address_low, void* address_high, const char* workdir, bool init_resources)
 {
     proc->paging = paging_create();
     proc->threads = darray(thread_t*, 0);
+    proc->workdir = workdir;
+
     if(init_resources)
         proc->resources = darray(resource_t, 0);
 
@@ -198,7 +203,7 @@ process_t* scheduler_create_process(void* address_low, void* address_high, void*
     process_t* proc = malloc(sizeof(process_t));
     proc->executable = NULL;
 
-    process_init(proc, address_low, address_high, true);
+    process_init(proc, address_low, address_high, NULL, true);
 
     void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low);
     scheduler_attach_thread(proc, vt_entry, args);
@@ -212,7 +217,7 @@ process_t* scheduler_run_executable(const executable_t* executable, char* args[]
     proc->executable = executable;
 
     void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
-    process_init(proc, executable->base_address, address_high, true);
+    process_init(proc, executable->base_address, address_high, dirname(strdup(executable->fullpath)), true);
 
     void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
     scheduler_attach_thread(proc, vt_entry, args);
@@ -242,7 +247,7 @@ void scheduler_replace_process(const executable_t* executable, char* args[])
         proc->executable = executable;
 
         void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
-        process_init(proc, executable->base_address, address_high, false);
+        process_init(proc, executable->base_address, address_high, dirname(strdup(executable->fullpath)), false);
 
         void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
         scheduler_attach_thread(proc, vt_entry, args);

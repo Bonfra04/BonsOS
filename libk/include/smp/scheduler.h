@@ -41,6 +41,7 @@ typedef struct process
     const executable_t* executable;
     resource_t* resources;
     thread_t** threads;
+    const char* workdir;
 } process_t;
 
 extern thread_t* current_thread;
