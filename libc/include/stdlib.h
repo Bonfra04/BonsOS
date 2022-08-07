@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdnoreturn.h>
 
 #define RAND_MAX 0xFFFFFFFF
 
@@ -62,7 +63,7 @@ int atexit(void (*func)());
 void exit(int status);
 int at_quick_exit(void (*func)());
 void quick_exit(int status);
-_Noreturn void _Exit(int status);
+noreturn void _Exit(int status);
 
 void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
 void qsort(void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
