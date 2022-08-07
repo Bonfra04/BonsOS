@@ -36,7 +36,7 @@ FILE* fopen(const char* filename, const char* mode)
     if(stream == NULL)
         return NULL;
 
-    stream->fd = sys_open_file(filename, mode[0]);
+    stream->fd = sys_open_file(filename, open_mode);
     if (stream->fd < 0)
     {
         free(stream);
