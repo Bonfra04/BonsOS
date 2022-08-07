@@ -25,6 +25,10 @@ typedef struct
     long long rem;
 } lldiv_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int atoi(const char* str);
 long atol(const char* str);
 long long atoll(const char* str);
@@ -58,7 +62,7 @@ int atexit(void (*func)());
 void exit(int status);
 int at_quick_exit(void (*func)());
 void quick_exit(int status);
-void __attribute__((noreturn)) _Exit(int status);
+_Noreturn void _Exit(int status);
 
 void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
 void qsort(void* base, size_t num, size_t size, int (*compar)(const void*, const void*));
@@ -69,3 +73,7 @@ long long llabs(long long n);
 div_t div(int numer, int denom);
 ldiv_t ldiv(long numer, long denom);
 lldiv_t lldiv(long long numer, long long denom);
+
+#ifdef __cplusplus
+}
+#endif

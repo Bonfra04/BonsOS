@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 char cmax(char a, char b);
 char cmin(char a, char b);
 short smax(short a, short b);
@@ -21,3 +25,7 @@ unsigned long ulmax(unsigned long a, unsigned long b);
 unsigned long ulmin(unsigned long a, unsigned long b);
 unsigned long long ullmax(unsigned long long a, unsigned long long b);
 unsigned long long ullmin(unsigned long long a, unsigned long long b);
+
+#ifdef __cplusplus
+}
+#endif
