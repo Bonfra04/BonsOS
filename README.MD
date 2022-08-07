@@ -21,5 +21,5 @@ Open the folder in VSCode and install the [Native Debug](https://marketplace.vis
 ### Troubleshooting
 If when pressing F5 in VSCode qemu idle with "Guest has not initialized the display (yet)" try increasing the sleep amount in the `tasks.json` config file.
 
-### Credits
+## Credits
 A big portion of the code present in the bootloader is inspired (copied) by [Limine](https://github.com/limine-bootloader/limine), do not assume i know anything about that code :P
