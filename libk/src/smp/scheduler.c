@@ -45,16 +45,17 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     uint64_t ph_stack_base = (uint64_t)paging_get_ph(proc->paging, vt_stack_base);
     uint64_t sp = ph_stack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
 
-    int argc = 0;
     uint64_t argv_ptr = 0;
+    size_t argc = 0;
     if(args)
     {
-        char** arg_ptrs = darray(char*, 0);
+        for(; args[argc]; argc++);
+        char* arg_ptrs[argc];
 
         // push arguments
-        for(char** arg = args; *arg; arg++)
+        for(size_t i = 0; i < argc; i++)
         {
-            size_t len = strlen(*arg);
+            size_t len = strlen(args[i]);
 
             // pad to qwrod align
             while((sp - (len + 1)) % 8 != 0)
@@ -62,17 +63,18 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
 
             sp = stack_push8(sp, 0); // null term
             for(int j = len - 1; j >= 0; j--)
-                sp = stack_push8(sp, (*arg)[j]);
+                sp = stack_push8(sp, args[i][j]);
 
-            darray_append(arg_ptrs, (uint64_t)vt_stack_base + (sp - ph_stack_base));
-            argc++;
+            arg_ptrs[i] = vt_stack_base + (sp - ph_stack_base);
         }
+
+        // pad to qwrod align
+        while(sp % 8 != 0)
+            sp = stack_push8(sp, 0);
 
         // push pointer to arguments
         for(int i = argc - 1; i >= 0; i--)
             sp = stack_push64(sp, (uint64_t)arg_ptrs[i]);
-
-        darray_destroy(arg_ptrs);
 
         argv_ptr = sp;
     }
@@ -273,8 +275,16 @@ void scheduler_replace_process(const executable_t* executable, char* args[])
 
 void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
 {
+    size_t argc = 0;
+    if(args)
+        for(; args[argc]; argc++);
+    char* argv[argc + 2];
+    argv[0] = proc->executable->fullpath;
+    memcpy(argv + 1, args, sizeof(char*) * argc);
+    argv[argc + 1] = NULL;
+
     void* stack_base = vmm_alloc(proc->paging, PAGE_PRIVILEGE_USER, THREAD_STACK_SIZE);
-    void* rsp = create_stack(proc, stack_base, entry_point, false, args);
+    void* rsp = create_stack(proc, stack_base, entry_point, false, argv);
 
     thread_t* new = malloc(sizeof(thread_t));
     new->rsp = (uint64_t)rsp;
