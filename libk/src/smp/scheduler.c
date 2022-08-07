@@ -142,8 +142,10 @@ static void thread_destroy(thread_t* thread)
 
 static void process_cleanup(process_t* process, bool clean_resources)
 {
-    if(process != kernel_process)
-        vmm_destroy(process->paging);
+    if(process == kernel_process)
+        return;
+
+    vmm_destroy(process->paging);
     if(process->executable)
         executable_unload(process->executable);
 

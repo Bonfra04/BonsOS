@@ -130,15 +130,7 @@ void main(const bootinfo_t* bootinfo)
     if(!executable)
         kernel_panic("Couldn't load init process");
 
-    char* args[] = { "miao", "bau", 0 };
-    scheduler_run_executable(executable, args);
+    scheduler_run_executable(executable, NULL);
 
-    // TODO: remove this (move to shutdown sequence)
-    for(;;)
-    {
-        scheduler_atomic({
-            storage_flush(0);
-        });
-        scheduler_yield();
-    }
+    scheduler_terminate_thread();
 }
