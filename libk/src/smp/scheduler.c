@@ -157,7 +157,7 @@ static void process_cleanup(process_t* process, bool clean_resources)
         thread_destroy(process->threads[i]);
 
     darray_destroy(process->threads);
-    free(process->workdir);
+    free((char*)process->workdir);
     
     if(clean_resources && process->resources)
     {
