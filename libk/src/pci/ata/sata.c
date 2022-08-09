@@ -288,12 +288,19 @@ bool sata_write(size_t disk, uint64_t lba, size_t sectors, void* buffer)
 
 size_t sata_get_capacity(size_t disk)
 {
-    return sata_devices[disk].ident.lba_capacity * sata_devices[disk].ident.sector_bytes;
+    return sata_devices[disk].ident.lba_capacity * sata_get_sector_size(disk);
 }
 
 size_t sata_get_sector_size(size_t disk)
 {
-    return sata_devices[disk].ident.sector_bytes;
+    ahci_ident_t* ident = &sata_devices[disk].ident;
+    uint16_t sector_size = ident->sector_sz;
+
+    if(sector_size & (1 << 14) && !(sector_size & (1 << 15))) // field contains valid info
+        if(sector_size & (1 << 12)) // logical sectors are larger than 512
+            return ident->words_per_sector;
+
+    return 512;
 }
 
 void sata_get_model(size_t disk, char* model)
