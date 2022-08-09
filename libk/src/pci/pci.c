@@ -116,7 +116,7 @@ static void register_device(uint8_t bus, uint8_t dev, uint8_t func)
     case PCI_CLASS_ATA:
         ata_register_device(bus, dev, func);
         break;
-    
+
     default:
         kernel_warn("Ignoring PCI device [class: %02X]", class);
     }
@@ -142,7 +142,7 @@ void pci_init()
             {
                 header_type = pci_get_header_type(bus, dev, func);
                 header_type &= ~MULTI_FUNCTION;
-                
+
                 if(header_type != PCI_HEADER_DEVICE)
                     continue;
 
@@ -168,6 +168,6 @@ pci_device_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function)
 
     for(int i = 0; i < sizeof(pci_device_t) / sizeof(uint32_t); i++)
         dev_ptr[i] = pci_read_32(bus, device, function, i << 2);
-    
+
     return dev;
 }

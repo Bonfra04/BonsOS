@@ -44,7 +44,7 @@ bool sata_write(size_t disk, uint64_t lba, size_t sectors, void* buffer);
  * @brief returns the capacity of a disk in bytes
  * @param[in] disk the disk index
  * @return the capacity of the disk in bytes
- */ 
+ */
 size_t sata_get_capacity(size_t disk);
 
 /**

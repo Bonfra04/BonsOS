@@ -108,7 +108,7 @@ paging_data_t paging_create()
 
 void paging_destroy(paging_data_t data)
 {
-    uint64_t* pml4 = (uint64_t*)data;    
+    uint64_t* pml4 = (uint64_t*)data;
     for(uint16_t pml4_off = 0; pml4_off < 512; pml4_off++)
     {
         if((pml4[pml4_off] & PML_PRESENT )== 0)
@@ -164,7 +164,7 @@ void* paging_get_ph(paging_data_t data, const void* virtual_addr)
 
     if(pd[pd_offset] & PML_SIZE)
         return (uint8_t*)PML_GET_ADDRESS(pd[pd_offset]) + offset_2m;
-    
+
     uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
     if((pt[pt_offset] & PML_PRESENT) == 0)
         return 0;
@@ -196,7 +196,7 @@ page_privilege_t paging_get_privilege(paging_data_t data, void* virtual_addr)
 
     if(pd[pd_offset] & PML_SIZE)
         return pd[pd_offset] & PML_PRIVILEGE;
-    
+
     uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
     if((pt[pt_offset] & PML_PRESENT) == 0)
         return PAGE_PRIVILEGE_ERROR;
@@ -236,7 +236,7 @@ uint8_t paging_get_attr(paging_data_t data, void* vt_addr)
 bool paging_set_attr(paging_data_t data, void* vt_addr, uint8_t attr)
 {
     data = data ?: kernel_paging;
-    
+
     uint64_t vt = ALIGN_4K_DOWN(vt_addr);
 
     uint64_t pml4_off = ((uint64_t)vt >> 39) & 0x01FF;
@@ -468,7 +468,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
 
     size_t amt_2mb = length_aligned / 0x200000;
     size_t amt_4kb = (length_aligned - (amt_2mb * 0x200000)) / 0x1000;
-    
+
     bool error = false;
 
     while(amt_4kb > 0 && vh_aligned % 0x200000 != 0)
@@ -533,7 +533,7 @@ static bool detach_page(paging_data_t data, void* virtual_addr, bool size)
     {
         uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
         pt[pt_offset] = 0;
-    }    
+    }
     else
         pd[pd_offset] = 0;
 
@@ -584,7 +584,7 @@ bool paging_unmap(paging_data_t data, void* virtual_addr, size_t length)
             split_page(data, pml4_offset, pdp_offset, pd_offset);
             if(!detach_page(data, (void*)vt, false))
                 error = true;
-            
+
             amt_4k--;
             vt += 0x1000;
         }

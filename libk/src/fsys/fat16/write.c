@@ -27,11 +27,11 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
             }
 
             entry->cluster = new_cluster;
-            
+
             if(entry->first_cluster == 0)
             {
                 entry->first_cluster = new_cluster;
-                
+
                 if(storage_seek_write(data->storage_id, data->offset + entry->entry_addr + offsetof(dir_entry_t, first_cluster), sizeof(uint16_t), &new_cluster) != sizeof(uint16_t))
                     return false;
             }

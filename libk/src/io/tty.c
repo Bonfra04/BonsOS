@@ -190,9 +190,9 @@ static void cursor_blink_toggle()
 static void buffer_line()
 {
     size_t advance = 0;
-    
+
     uint64_t start_time = hpet_current_nanos();
-    
+
     while(true)
     {
         while(keyboard_has_event())
@@ -220,6 +220,6 @@ size_t tty_read(char* buf, size_t size)
     size_t i = size;
     while(i-- && deque_size(&line_queue) > 0)
         *buf++ = (char)(uint64_t)deque_pop_front(&line_queue);
-    
+
     return size - i;
 }

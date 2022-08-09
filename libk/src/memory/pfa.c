@@ -51,7 +51,7 @@ static uint64_t bitmap_first_frees(size_t size)
                     {
                         if(!bitmap_test(startingBit + count))
                             free++;
-                        else 
+                        else
                             break;
                         if(free == size)
                             return i * 32 + j;

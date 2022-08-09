@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_BUF 256    
+#define MAX_BUF 256
 
 void qsort(void* base, size_t num, size_t size, int (*compar)(const void*, const void*))
 {
@@ -35,7 +35,7 @@ void qsort(void* base, size_t num, size_t size, int (*compar)(const void*, const
                 }
                 ++i, qi += size;
             }
-        
+
         }
         if (qi != qp)
         {

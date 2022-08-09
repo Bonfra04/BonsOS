@@ -6,7 +6,7 @@
 
 void _assert(const char* expression, const char* file, int line)
 {
-    __kernel_panic("Assertion failed: %s (%s:%d)\n", expression, file, line);    
+    __kernel_panic("Assertion failed: %s (%s:%d)\n", expression, file, line);
 }
 
 #else

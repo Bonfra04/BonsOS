@@ -93,7 +93,7 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     context->gs = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->ss = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->cs = is_kernel ? SELECTOR_KERNEL_CODE : (SELECTOR_USER_CODE | 3);
-    
+
     return ptr(context->rsp = (uint64_t)vt_stack_base + (sp - ph_stack_base));
 }
 
@@ -105,7 +105,7 @@ void scheduler_init()
     kernel_process->threads = darray(thread_t*, 0);
     kernel_process->resources = NULL;
     kernel_process->workdir = NULL;
-    
+
     current_thread = malloc(sizeof(thread_t));
     current_thread->proc = kernel_process;
     current_thread->next_thread = current_thread;
@@ -134,7 +134,7 @@ static void thread_insert(thread_t* thread)
 static void thread_destroy(thread_t* thread)
 {
     process_t* proc = thread->proc;
-    
+
     if(thread->stack_base)
         vmm_free(proc->paging, thread->stack_base, THREAD_STACK_SIZE);
     if(thread->kstack_base)
@@ -158,7 +158,7 @@ static void process_cleanup(process_t* process, bool clean_resources)
 
     darray_destroy(process->threads);
     free((char*)process->workdir);
-    
+
     if(clean_resources && process->resources)
     {
         for(size_t i = 0; i < darray_length(process->resources); i++)
@@ -350,14 +350,14 @@ void scheduler_terminate_thread()
 
         old = current_thread;
         current_thread = current_thread->next_thread;
-    
+
         thread_destroy(old);
         if(darray_length(proc->threads) == 0)
         {
             process_cleanup(proc, true);
             free(proc);
         }
-        
+
         scheduler_replace_switch(current_thread);
         kernel_panic("Thread termination failed");
     });

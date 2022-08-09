@@ -7,7 +7,7 @@
 #define PART_TYPE_FREE  0x00
 #define PART_TYPE_FAT16 0x06
 
-typedef bool (*storage_function_t)(size_t internal_id, uint64_t lba, uint64_t num_sectors, void* address); 
+typedef bool (*storage_function_t)(size_t internal_id, uint64_t lba, uint64_t num_sectors, void* address);
 
 typedef struct storage_data
 {
@@ -43,7 +43,7 @@ void storage_init();
  * @param[in] data the storage device data
  * @return the id of the storage device
  */
-uint64_t storage_register_device(storage_data_t data); 
+uint64_t storage_register_device(storage_data_t data);
 
 /**
  * @brief unregisters a storage device abstraction
@@ -84,7 +84,7 @@ bool storage_flush(size_t id);
  * @param[in] id the id of the device to set the cursor
  * @param[in] position the position to set the cursor to in bytes
  * @return true if the device was found and the cursor was set, false otherwise
- */ 
+ */
 bool storage_seek(size_t id, size_t position);
 
 /**

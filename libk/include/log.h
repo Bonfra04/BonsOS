@@ -3,7 +3,7 @@
 #ifdef NDEBUG
     #define kernel_trace(format, ...) ((void)0)
     #define kernel_warn(format, ...) ((void)0)
-#else 
+#else
 
 #define kernel_trace(format, ...) __kernel_log("[Trace] %s:%d: " format "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define kernel_warn(format, ...) __kernel_log("[Warn] %s:%d: " format "\n", __FILE__, __LINE__, ##__VA_ARGS__)

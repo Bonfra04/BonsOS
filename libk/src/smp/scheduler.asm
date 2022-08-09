@@ -10,7 +10,7 @@ section .text
     extern kernel_paging
 
 struc process_t
-    .paging:         resq 1 
+    .paging:         resq 1
     .executable:     resq 1
     .resources:      resq 1
     .threads:        resq 1
@@ -22,7 +22,7 @@ struc thread_t
     .stack_base:     resq 1
 
     .kstack_pointer: resq 1
-    .kstack_base:    resq 1 
+    .kstack_base:    resq 1
 
     .process:        resq 1
 
@@ -64,7 +64,7 @@ scheduler_tick:
 
     mov rax, [ rdi + interrupt_context_t.r_cs ] ; get code segment
     test rax, 0b11                              ; check if coming from kernel
-    jnz .not_kernel                             
+    jnz .not_kernel
 .kernel:                                        ; if so save kernel stack
     mov rax, [ current_thread ]
     mov [ rax + thread_t.kstack_pointer ], rsp  ; save kernel stack pointer
@@ -86,7 +86,7 @@ scheduler_tick:
     pop rdi
 scheduler_replace_switch:
     mov rbx, rdi                                ; copy argument address
-    
+
     mov r15, [ rbx + thread_t.kstack_pointer ]  ; get thread kstack
     mov rdi, r15
     call tss_set_kstack                         ; set kstack in the address

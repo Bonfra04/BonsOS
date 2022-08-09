@@ -266,7 +266,7 @@ file_t fat16_open_dir(fs_data_t* fs, const char* dirpath)
 
     if(entry.type != FAT16_DIR)
         return pack_file(INVALID_ENTRY);
-    
+
     return pack_file(entry);
 }
 

@@ -178,7 +178,7 @@ void ioapic_init()
     ioapics = darray(ioapic_t, 0);
 
     madt_header_t* madt = acpi_find_entry("APIC");
-    
+
     for(madt_entry_t* entry = madt->entries_begin; (uint8_t*)entry < (uint8_t*)madt + madt->header.length; entry = (madt_entry_t*)((uint8_t*)entry + entry->record_lenght))
     {
         switch (entry->entry_type)

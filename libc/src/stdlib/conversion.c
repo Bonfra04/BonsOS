@@ -171,7 +171,7 @@ static char* numtostr(long long value, char* str, int base)
     while(value != 0)
     {
         long long rem = value % base;
-        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';  
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
         value /= base;
     }
 
@@ -196,7 +196,7 @@ char* unumtostr(unsigned long long value, char* str, int base)
     while(value != 0)
     {
         unsigned long long rem = value % base;
-        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';  
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
         value /= base;
     }
 

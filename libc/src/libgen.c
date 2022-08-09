@@ -4,10 +4,10 @@
 char* dirname(char* path)
 {
     static char dot[] = ".";
-    
+
     if(!path)
         return NULL;
-    
+
     char* p = (char*)strrchr(path, '/');
     if(!p)
         return dot;

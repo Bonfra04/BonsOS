@@ -114,7 +114,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 width = width * 10 + *format++ - '0';
         if(width < 0)
             flags |= FLAG_LEFT, width = -width;
-        
+
         int precision = 0;
         if(*format == '.')
         {
@@ -260,7 +260,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
 
                 if(spec == SPEC_o && flags & FLAG_ALT)
                     buffer[0] = '0';
-                
+
                 int base = spec == SPEC_o ? 8 : spec == SPEC_X || spec == SPEC_x ? 16 : 10;
                 ulltoa(num, buffer + (spec == SPEC_o && flags & FLAG_ALT), base);
                 size_t len = strlen(buffer);
@@ -295,7 +295,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
                 strtoupper(buffer + 2);
             }
             break;
-        
+
             case SPEC_n:
             {
                 if(length == LEN_hh)

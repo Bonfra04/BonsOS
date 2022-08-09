@@ -21,7 +21,7 @@ typedef struct pci_device
     uint32_t base1;
     uint32_t base2;
     uint32_t base3;
-    uint32_t base4; 
+    uint32_t base4;
     uint32_t base5;
     uint32_t cardbus;
     uint16_t subsys_vendor_id;
@@ -48,7 +48,7 @@ void pci_init();
  * @param device the device number
  * @param function the function number
  * @param enable true to enable, false to disable
- */ 
+ */
 void pci_toggle_bus_master(uint8_t bus, uint8_t device, uint8_t function, bool enable);
 
 /**

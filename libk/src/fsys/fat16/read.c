@@ -65,11 +65,11 @@ bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
             del = true;
         if(d.flags == ENTRY_VOLUME_ID)
             goto skip;
-        
+
         if((d.flags & ENTRY_LFN) == ENTRY_LFN)
         {
             lng = true;
-            
+
             uint64_t internal_advance = 0;
             lfn_entry_t* lfn = (lfn_entry_t*)&d;
 
@@ -85,7 +85,7 @@ bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
             for(uint8_t i = 0; i < 2; i++)
                 if(lfn->name2[i] != 0xFFFF)
                     dirent->name[CHARS_PER_LFN * order + internal_advance++] = lfn->name2[i] & 0xFF;
-        
+
             if((lfn->order & 0xF0) == LFN_END_MASK)
                 dirent->name[CHARS_PER_LFN * order + internal_advance] = '\0';
         }
@@ -113,7 +113,7 @@ bool list_dir(const fat16_data_t* data, fat16_entry_t* dir, direntry_t* dirent)
 fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* directory, const char* filename)
 {
     fat16_entry_t entry = *directory;
-    
+
     char* fname = strdup(filename);
     char* name = strtok(fname, "/");
     while(name != NULL && name[0] != '\0')

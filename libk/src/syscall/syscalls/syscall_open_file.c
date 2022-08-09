@@ -22,7 +22,7 @@ int syscall_open_file(const char* path, int mode)
         strcat(fullpath, "/");
     }
     strcat(fullpath, path);
-        
+
     file_t* f = malloc(sizeof(file_t));
     if(f == NULL)
         return -1;
@@ -33,6 +33,6 @@ int syscall_open_file(const char* path, int mode)
         free(f);
         return -1;
     }
-    
+
     return scheduler_alloc_resource(f, RES_FILE);
 }

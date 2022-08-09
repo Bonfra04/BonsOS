@@ -62,7 +62,7 @@ const kb_layout_t kb_layout_en_us = {
     [0x34] = { .physical = KEY_PERIOD, .altered = Altered({ .mods = 0, .vk = VK_PERIOD }, { .mods = VK_MOD_SHIFT, .vk = VK_GREATER_THAN }) },
     [0x35] = { .physical = KEY_FORWARD_SLASH, .altered = Altered({ .mods = 0, .vk = VK_FORWARD_SLASH }, { .mods = VK_MOD_SHIFT, .vk = VK_QUESTION_MARK }) },
     [0x36] = { .physical = KEY_RIGHT_SHIFT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_RIGHT_SHIFT }) },
-    
+
     [0x1D] = { .physical = KEY_LEFT_CONTROL, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_LEFT_CONTROL }) },
     [0x38] = { .physical = KEY_LEFT_ALT, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_LEFT_ALT }) },
     [0x39] = { .physical = KEY_SPACE, .altered = Altered({ .mods = VK_MOD_IGNORE, .vk = VK_SPACE }) },

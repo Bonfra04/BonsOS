@@ -78,7 +78,7 @@ static void isr_fatal(const interrupt_context_t* context)
     const char* exstr = i < ((int)(sizeof(exceptionstr) / sizeof(exceptionstr[0])))
                         ? exceptionstr[i] : "Unknown exception.";
 
-    char context_str[1024]; 
+    char context_str[1024];
     dump_context(context, context_str);
 
     tty_set_textcolor(0xFFFFFFFF, 0xFFFF0000); // white, red

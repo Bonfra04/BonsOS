@@ -14,7 +14,7 @@ section .text
     global isr_set
     extern kernel_paging
 
-isr_handlers: times 256 dq 0 
+isr_handlers: times 256 dq 0
 
 ; rdi interrupt, rsi function pointer
 isr_set:
@@ -95,7 +95,7 @@ isr_dispatcher:
     mov rax, [isr_handlers + 8 * rax]   ; get the handler
     cmp rax, 0
     je .pop_context
-    
+
     ; call the handler
     cld
     lea rdi, [rsp]

@@ -33,13 +33,13 @@ size_t screen_get_pitch();
 /**
  * @brief clears the screen with a specific color
  * @param[in] color RGB color to clear with
- */ 
+ */
 void screen_clear(uint32_t color);
 
 /**
  * @brief plots a colored pixel to the screen
  * @param[in] x x coordinate
  * @param[in] y y coordinate
- * @param[in] color RGB color of the pixel 
- */ 
+ * @param[in] color RGB color of the pixel
+ */
 void screen_plot_pixel(uint64_t x, uint64_t y, uint32_t color);

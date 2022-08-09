@@ -19,7 +19,7 @@ static file_system_t* fsys_instantiate(partition_descriptor_t partition)
 {
     file_system_t* fs = malloc(sizeof(file_system_t));
     memset(fs, 0, sizeof(file_system_t));
-    
+
     for(size_t i = 0; i < darray_length(fsys_registry); i++)
     {
         if(fsys_registry[i].type == partition.type)
@@ -45,7 +45,7 @@ void fsys_auto_mount()
     for(size_t dev = 0; dev < storage_ndevices(); dev++)
     {
         storage_descriptor_t desc = storage_info(dev);
-        
+
         for (size_t part = 0; part < desc.partitions_count; part++)
         {
             partition_descriptor_t partition = storage_get_partition(dev, part);
@@ -68,7 +68,7 @@ bool fsys_mount(partition_descriptor_t partition, const char* name)
     file_system_t* fs = fsys_instantiate(partition);
     if(fs->type == 0)
         return false;
-    
+
     fs->data.disk_id = partition.device_id;
     fs->data.offset = partition.start;
     fs->data.length = partition.length;
@@ -119,7 +119,7 @@ file_t fsys_open_file(const char* filename, fsys_file_mode_t mode)
     free(fsys);
     if(!fs)
         return INVALID_FILE;
-    
+
     file_t file = fs->open_file(&fs->data, fname, mode);
     file.fsys = fs;
     return file;
@@ -163,7 +163,7 @@ bool fsys_create_file(const char* filename)
     free(fsys);
     if(!fs)
         return false;
-    
+
     return fs->create_file(&fs->data, fname);
 }
 
@@ -178,7 +178,7 @@ bool fsys_delete_file(const char* filename)
     free(fsys);
     if(!fs)
         return false;
-    
+
     return fs->delete_file(&fs->data, fname);
 }
 
@@ -208,7 +208,7 @@ bool fsys_delete_dir(const char* dirpath)
     free(fsys);
     if(!fs)
         return false;
-    
+
     return fs->delete_dir(&fs->data, dname);
 }
 
@@ -271,7 +271,7 @@ file_t fsys_open_dir(const char* dirpath)
     free(fsys);
     if(!fs)
         return INVALID_FILE;
-    
+
     file_t dir = fs->open_dir(&fs->data, dname);
     dir.fsys = fs;
     return dir;

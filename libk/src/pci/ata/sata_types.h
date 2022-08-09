@@ -43,22 +43,22 @@ typedef struct hba_cmd_header
     uint8_t  a : 1;      // ATAPI
     uint8_t  w : 1;      // Write, 1: H2D, 0: D2H
     uint8_t  p : 1;      // Prefetchable
- 
+
     uint8_t  r : 1;      // Reset
     uint8_t  b : 1;      // BIST
     uint8_t  c : 1;      // Clear busy upon R_OK
     uint8_t  reserved0 : 1; // Reserved
     uint8_t  pmp : 4;    // Port multiplier port
- 
+
     uint16_t prdtl;     // Physical region descriptor table length in entries
- 
+
     // DW1
     volatile int32_t prdbc; // Physical region descriptor byte count transferred
- 
+
     // DW2, 3
     uint32_t ctba;      // Command table descriptor base address
     uint32_t ctbau;     // Command table descriptor base address upper 32 bits
- 
+
     // DW4 - 7
     uint32_t reserved1[4]; // Reserved
 } __attribute__ ((packed)) hba_cmd_header_t;
@@ -67,32 +67,32 @@ typedef struct fis_reg_h2d
 {
     // DWORD 0
     uint8_t  fis_type;   // FIS_TYPE_REG_H2D
- 
+
     uint8_t  pmport : 4; // Port multiplier
     uint8_t  reserved0 : 3;// Reserved
     uint8_t  c : 1;      // 1: Command, 0: Control
- 
+
     uint8_t  command;    // Command register
     uint8_t  featurel;   // Feature register, 7:0
- 
+
     // DWORD 1
     uint8_t  lba0;       // LBA low register, 7:0
     uint8_t  lba1;       // LBA mid register, 15:8
     uint8_t  lba2;       // LBA high register, 23:16
     uint8_t  device;      // Device register
- 
+
     // DWORD 2
     uint8_t  lba3;       // LBA register, 31:24
     uint8_t  lba4;       // LBA register, 39:32
     uint8_t  lba5;       // LBA register, 47:40
     uint8_t  featureh;   // Feature register, 15:8
- 
+
     // DWORD 3
     uint8_t  countl;     // Count register, 7:0
     uint8_t  counth;     // Count register, 15:8
     uint8_t  icc;        // Isochronous command completion
     uint8_t  control;    // Control register
- 
+
     // DWORD 4
     uint8_t  reserved1[4];// Reserved
 } __attribute__ ((packed)) fis_reg_h2d_t;
@@ -102,7 +102,7 @@ typedef struct hba_prdt_entry
     uint32_t dba;       // Data base address
     uint32_t dbau;      // Data base address upper 32 bits
     uint32_t rsv0;      // Reserved
- 
+
     // DW3
     uint32_t dbc : 22;  // Byte count, 4M max
     uint32_t rsv1 : 9;  // Reserved
@@ -155,10 +155,10 @@ typedef struct hba_mem
     uint32_t em_ctl;    // 0x20, Enclosure management control
     uint32_t cap2;      // 0x24, Host capabilities extended
     uint32_t bohc;      // 0x28, BIOS/OS handoff control and status
- 
+
     uint8_t  reserved[0x74];
     uint8_t  vendor[0x60];
- 
+
     volatile hba_port_t ports[];    // 1 ~ 32
 } __attribute__ ((packed)) hba_mem_t;
 

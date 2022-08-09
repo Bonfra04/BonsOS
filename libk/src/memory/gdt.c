@@ -123,7 +123,7 @@ void gdt_install()
     uint8_t core_id = lapic_get_id();
 
     gdt_t* gdt = gdt_create(0);
-    
+
     gdtr_t* gdtr = core_id == 0 ? &boot_gdtr : malloc(sizeof(gdtr_t));
     gdtr->size = sizeof(gdt_t) - 1;
     gdtr->offset = (uint64_t)gdt;

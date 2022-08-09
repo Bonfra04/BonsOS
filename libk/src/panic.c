@@ -16,10 +16,10 @@ void __kernel_panic(const char* format, ...)
     vsnprintf(buff, sizeof(buff), format, args);
 
     va_end(args);
-    
+
     tty_set_textcolor(0xFFFF00, 0xFF0000);
     kernel_log(buff);
-    
+
     for(;;)
     {
         cli();

@@ -23,7 +23,7 @@ static void load_font(psf1_header_t* header)
         for (int i = 0; i < header->charsize; i++)
             bitmaps[ch][i] = ((uint8_t*)header)[advance + i];
         advance += header->charsize;
-    }   
+    }
 }
 
 void text_renderer_init()

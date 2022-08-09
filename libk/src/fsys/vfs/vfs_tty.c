@@ -31,7 +31,7 @@ file_system_t vfs_tty_instantiate(partition_descriptor_t partition)
     fs.list_dir = vfs_tty_list_dir;
     fs.close_dir = vfs_tty_close_dir;
     fs.error = vfs_tty_error;
-    
+
     return fs;
 }
 
@@ -41,7 +41,7 @@ file_t vfs_tty_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t m
 
     uint64_t id = atoull(filename + 1);
     // TODO: check valid tty
-    
+
     file_t f;
     *(uint64_t*)f.fs_data = id;
     return f;

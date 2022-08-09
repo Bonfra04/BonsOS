@@ -57,7 +57,7 @@ typedef struct file_system
 
     size_t (*get_position)(fs_data_t* fs, const file_t* file);
     bool (*set_position)(fs_data_t* fs, file_t* file, size_t offset);
-    
+
     bool (*exists_file)(fs_data_t* fs, const char* filename);
     bool (*exists_dir)(fs_data_t* fs, const char* dirpath);
 
@@ -72,12 +72,12 @@ typedef file_system_t (*fsys_instantiate_t)(partition_descriptor_t partition);
 
 /**
  * @brief initializes the file system abstraction
- */ 
+ */
 void fsys_init();
 
 /**
  * @brief fetches all connected devices and registers all known file systems
- * @note should only be called once 
+ * @note should only be called once
  */
 void fsys_auto_mount();
 

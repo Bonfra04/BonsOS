@@ -39,7 +39,7 @@ static void idle_ports(volatile hba_mem_t* hba)
         if(hba->pi & (1 << bit)) // bit is set device exists
         {
             volatile hba_port_t* port = &hba->ports[bit];
-            
+
             port->cmd &= ~HBA_PxCMD_ST;
             port->cmd &= ~HBA_PxCMD_CR;
             port->cmd &= ~HBA_PxCMD_FR;
@@ -76,7 +76,7 @@ static bool init_port(volatile hba_port_t* port)
     port->cmd |= HBA_PxCMD_FRE;
     port->cmd |= HBA_PxCMD_SUD;
 
-    pit_prepare_one_shot(1); 
+    pit_prepare_one_shot(1);
     pit_perform_one_shot();
 
     uint64_t spin = 0;
@@ -135,7 +135,7 @@ static void init_device(volatile hba_mem_t* hba)
     idle_ports(hba);
     ahci_reset(hba);
     enable_ahci_mode(hba);
-    
+
     for(uint8_t bit = 0; bit < 32; bit++)
         if(hba->pi & (1 << bit)) // bit is set device exists
         {
@@ -192,7 +192,7 @@ static void send_cmd(sata_device_t* device, uint8_t cmd_slot)
 }
 
 static bool identify(sata_device_t* device)
-{   
+{
     volatile ahci_ident_t* result = &device->ident;
 
     uint8_t cmd_slot = find_cmd_slot(device);
@@ -254,7 +254,7 @@ static bool ahci_rw(sata_device_t* device, uint64_t lba, void* address, size_t s
     cmd->lba3 = (lba_low >> 24) & 0xFF;
     cmd->lba4 = lba_high & 0xFF;
     cmd->lba5 = (lba_high >> 8) & 0xFF;
- 
+
     cmd->countl = sectors & 0xFF;
     cmd->counth = (sectors >> 8) & 0xFF;
 

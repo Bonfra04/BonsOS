@@ -28,7 +28,7 @@ linked_list_t __linked_list_append(linked_list_t list, size_t element_size, void
         list = node;
         return list;
     }
-    
+
     linked_list_node_t* current = list;
     while (current->next != NULL)
         current = current->next;

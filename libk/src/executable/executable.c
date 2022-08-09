@@ -46,7 +46,7 @@ void executable_unload(const executable_t* executable)
     case EXEC_ELF:
         elf_unload(executable);
         break;
-    
+
     default:
         break;
     }

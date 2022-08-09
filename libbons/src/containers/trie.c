@@ -49,7 +49,7 @@ static const trie_node_t* find_node(const trie_node_t* root, const char* key)
     for(uint64_t i = 0; i < len; i++)
         if((node = node->children[key[i] - 'a']) == NULL)
             return NULL;
-    
+
     return node;
 }
 
@@ -90,7 +90,7 @@ void trie_remove(trie_node_t* root, const char* key)
 }
 
 void* trie_get(const trie_node_t* root, const char* key)
-{    
+{
     const trie_node_t* node = find_node(root, key);
     if(node == NULL)
         return NULL;

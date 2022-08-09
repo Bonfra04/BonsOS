@@ -66,9 +66,9 @@ static uint32_t lapic_read(uint16_t reg)
 static void timer_calibrate()
 {
     pit_prepare_one_shot(10);
-    
+
     lapic_write(LAPIC_TIMER_INITCNT, UINT32_MAX);
-    
+
     pit_perform_one_shot();
 
     ticks_in_10ms = UINT32_MAX - lapic_read(LAPIC_TIMER_CURRCNT);
@@ -78,7 +78,7 @@ static void timer_setup()
 {
     lapic_write(LAPIC_REG_LVT_TIMER, TIMER_ISR | TIMER_MODE_PERIODIC);
     lapic_write(LAPIC_REG_TIMER_DIV, TIMER_DIV_16);
-    
+
     if(ticks_in_10ms == -1)
         timer_calibrate();
 

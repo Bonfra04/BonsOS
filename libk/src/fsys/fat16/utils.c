@@ -22,7 +22,7 @@ file_t pack_file(fat16_entry_t entry)
 bool get_next_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64_t* next_cluster)
 {
     uint64_t addr = data->fat_offset + current_cluster * sizeof(uint16_t);
-    
+
     *next_cluster = 0;
     if(storage_seek_read(data->storage_id, data->offset + addr, sizeof(uint16_t), next_cluster) != sizeof(uint16_t))
         return false;
@@ -121,7 +121,7 @@ bool allocate_cluster(const fat16_data_t* data, uint64_t current_cluster, uint64
     if(current_cluster != 0)
         if(storage_seek_write(data->storage_id, data->offset + data->fat_offset + current_cluster * sizeof(uint16_t), sizeof(uint16_t), &cluster) != sizeof(uint16_t))
             return false;
-    
+
     *new_cluster = cluster;
     return true;
 }
@@ -286,7 +286,7 @@ dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, con
     for(size_t i = *num_entries; i > 1; i--)
     {
         uint64_t adv = 0;
-     
+
         uint8_t order = i - 1;
         lfn_entry_t* lfn = (lfn_entry_t*)&entries[*num_entries - i];
         memset(lfn, 0, sizeof(lfn_entry_t));
@@ -336,7 +336,7 @@ bool free_cluster_chain(const fat16_data_t* data, uint64_t first_cluster)
         uint64_t addr = data->fat_offset + cluster * sizeof(uint16_t);
         if(storage_seek_write(data->storage_id, data->offset + addr, sizeof(uint16_t), &free_cluster) != sizeof(uint16_t))
             return false;
-    
+
         cluster = next_cluster;
     }
 

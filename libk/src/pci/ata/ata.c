@@ -29,7 +29,7 @@ void ata_register_device(uint8_t bus, uint8_t dev, uint8_t fun)
         pci_toggle_bus_master(bus, dev, fun, true);
         sata_register_device(&device);
         break;
-    
+
     default:
         kernel_warn("Ignoring ATA device [subclass: %02X]", device.subclass);
         break;

@@ -30,7 +30,7 @@ static bool mods_match(uint8_t mods)
 {
     if(mods & VK_MOD_IGNORE)
         return true;
-    
+
     bool is_shift = (ph_keystates[KEY_LEFT_SHIFT] | ph_keystates[KEY_RIGHT_SHIFT]);
     bool is_maiusc = kb_state.capslock ^ is_shift;
     bool is_alt = ph_keystates[KEY_LEFT_ALT] && !ph_keystates[KEY_RIGHT_ALT];
@@ -48,7 +48,7 @@ static bool mods_match(uint8_t mods)
     if(is_ctrl && !(mods & VK_MOD_CTRL))
         return false;
 
-    return true;   
+    return true;
 }
 
 static void keyboard_isr(const interrupt_context_t* context)
@@ -87,7 +87,7 @@ static void keyboard_isr(const interrupt_context_t* context)
                     break;
                 }
 
-                keyevent_t event = { 
+                keyevent_t event = {
                     .is_pressed = is_pressed,
                     .vt_keycode = alt_entry->vk,
                     .ph_keycode = entry->physical
