@@ -104,6 +104,7 @@ static const char* split_name(const char* filename, char** fname)
 
     char* fsys = malloc(separator - filename + 1);
     memcpy(fsys, filename, separator - filename);
+    fsys[separator - filename] = '\0';
     return fsys;
 }
 
