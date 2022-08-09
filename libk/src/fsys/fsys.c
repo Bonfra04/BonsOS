@@ -101,8 +101,10 @@ static const char* split_name(const char* filename, char** fname)
 {
     char* separator = (char*)strchr(filename, ':');
     *fname = separator + 1;
-    *separator = '\0';
-    return filename;
+
+    char* fsys = malloc(separator - filename + 1);
+    memcpy(fsys, filename, separator - filename);
+    return fsys;
 }
 
 file_t fsys_open_file(const char* filename, fsys_file_mode_t mode)
@@ -110,18 +112,14 @@ file_t fsys_open_file(const char* filename, fsys_file_mode_t mode)
     if(!filename)
         return INVALID_FILE;
 
-    filename = strdup(filename);
     char* fname;
     const char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
         return INVALID_FILE;
-        free(filename);
-    }
     
     file_t file = fs->open_file(&fs->data, fname, mode);
-    free(filename);
     file.fsys = fs;
     return file;
 }
@@ -158,19 +156,14 @@ bool fsys_create_file(const char* filename)
     if(!filename)
         return false;
 
-    filename = strdup(filename);
     char* fname;
     const char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(filename);   
         return false;
-    }
     
-    bool res = fs->create_file(&fs->data, fname);
-    free(filename);
-    return res;
+    return fs->create_file(&fs->data, fname);
 }
 
 bool fsys_delete_file(const char* filename)
@@ -178,19 +171,14 @@ bool fsys_delete_file(const char* filename)
     if(!filename)
         return false;
 
-    filename = strdup(filename);
     char* fname;
     const char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(filename);
         return false;
-    }
     
-    bool res = fs->delete_file(&fs->data, fname);
-    free(filename);
-    return res;
+    return fs->delete_file(&fs->data, fname);
 }
 
 bool fsys_create_dir(const char* dirpath)
@@ -198,19 +186,14 @@ bool fsys_create_dir(const char* dirpath)
     if(!dirpath)
         return false;
 
-    dirpath = strdup(dirpath);
     char* dname;
     const char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(dirpath);
         return false;
-    }
-    
-    bool res = fs->create_dir(&fs->data, dname);
-    free(dirpath);
-    return res;
+
+    return fs->create_dir(&fs->data, dname);
 }
 
 bool fsys_delete_dir(const char* dirpath)
@@ -218,19 +201,14 @@ bool fsys_delete_dir(const char* dirpath)
     if(!dirpath)
         return false;
 
-    dirpath = strdup(dirpath);
     char* dname;
     const char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(dirpath);
         return false;
-    }
     
-    bool res = fs->delete_dir(&fs->data, dname);
-    free(dirpath);
-    return res;
+    return fs->delete_dir(&fs->data, dname);
 }
 
 size_t fsys_get_position(file_t* file)
@@ -256,19 +234,14 @@ bool fsys_exists_file(const char* filename)
     if(!filename)
         return false;
 
-    filename = strdup(filename);
     char* fname;
     const char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(filename);
         return false;
-    }
-    
-    bool res = fs->exists_file(&fs->data, fname);
-    free(filename);
-    return res;
+
+    return fs->exists_file(&fs->data, fname);
 }
 
 bool fsys_exists_dir(const char* dirpath)
@@ -276,19 +249,14 @@ bool fsys_exists_dir(const char* dirpath)
     if(!dirpath)
         return false;
 
-    dirpath = strdup(dirpath);
     char* dname;
     const char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(dirpath);
         return false;
-    }
-    
-    bool res = fs->exists_dir(&fs->data, dname);
-    free(dirpath);
-    return res;
+
+    return fs->exists_dir(&fs->data, dname);
 }
 
 file_t fsys_open_dir(const char* dirpath)
@@ -296,18 +264,14 @@ file_t fsys_open_dir(const char* dirpath)
     if(!dirpath)
         return INVALID_FILE;
 
-    dirpath = strdup(dirpath);
     char* dname;
     const char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
+    free(fsys);
     if(!fs)
-    {
-        free(dirpath);
         return INVALID_FILE;
-    }
     
     file_t dir = fs->open_dir(&fs->data, dname);
-    free(dirpath);
     dir.fsys = fs;
     return dir;
 }
