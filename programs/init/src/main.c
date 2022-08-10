@@ -10,7 +10,7 @@ int main()
     fopen("tty:/0", "w"); // open stdout
     fopen("tty:/0", "w"); // open stderr
 
-    sys_exec("a:/bin/shell.elf", NULL);
+    sys_exec("a:/bin/shell.elf", NULL, NULL);
 
     return 0;
 }

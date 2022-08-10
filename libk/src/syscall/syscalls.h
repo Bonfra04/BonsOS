@@ -10,4 +10,4 @@ size_t syscall_write_file(int fd, char* buff, size_t count);
 void* syscall_map_mem(void* ph_addr, size_t size);
 void syscall_thread_exit();
 void syscall_process_exit();
-void syscall_exec(const char* path, const char** argv);
+void syscall_exec(const char* path, const char** argv, const char** env);

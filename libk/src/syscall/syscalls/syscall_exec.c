@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-void syscall_exec(const char* path, const char** argv)
+void syscall_exec(const char* path, const char** argv, const char** env)
 {
     path = paging_get_ph(current_thread->proc->paging, path);
     argv = paging_get_ph(current_thread->proc->paging, argv);
@@ -18,12 +18,12 @@ void syscall_exec(const char* path, const char** argv)
     if(argv)
         for(; argv[num_args]; num_args++);
 
-    char* args[num_args + 1];
+    const char* args[num_args + 1];
     for(size_t i = 0; i < num_args; i++)
         args[i] = paging_get_ph(current_thread->proc->paging, argv[i]);
     args[num_args] = NULL;
 
     char* copy = strdup(path);
-    scheduler_run_executable(exec, current_thread->proc->workdir, args, NULL);
+    scheduler_run_executable(exec, current_thread->proc->workdir, args, env);
     free(copy);
 }

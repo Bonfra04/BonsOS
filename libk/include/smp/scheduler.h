@@ -64,7 +64,7 @@ void scheduler_start();
  * @param[in] env Null terminated string array of environment variables
  * @return The created process
  */
-process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, char* args[], char* env[]);
+process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, const char* args[], const char* env[]);
 
 /**
  * @brief Attaches a thread to a process
@@ -72,7 +72,7 @@ process_t* scheduler_run_executable(const executable_t* executable, const char* 
  * @param[in] entry_point Virtual address of the entry point inside the process
  * @param[in] args Null terminated string array of arguments
  */
-void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[]);
+void scheduler_attach_thread(process_t* proc, void* entry_point, const char* args[]);
 
 /**
  * @brief Creates a task that runs in kernel space

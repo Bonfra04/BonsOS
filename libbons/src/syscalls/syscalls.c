@@ -35,7 +35,7 @@ void sys_process_exit()
     sys(SYSCALL_PROCESS_EXIT, 0, 0, 0);
 }
 
-void sys_exec(const char* path, const char** argv)
+void sys_exec(const char* path, const char** argv, const char** env)
 {
-    sys(SYSCALL_EXEC, (uint64_t)path, (uint64_t)argv, 0);
+    sys(SYSCALL_EXEC, (uint64_t)path, (uint64_t)argv, (uint64_t)env);
 }
