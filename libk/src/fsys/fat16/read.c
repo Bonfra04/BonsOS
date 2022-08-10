@@ -29,7 +29,7 @@ size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, 
             chunk_length = ullmin(chunk_length, entry->length - entry->advance);
 
         // read chunk
-        uint64_t addr = (entry->cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry->cluster_offset;
+        uint64_t addr = get_entry_pos(data, entry);
         if(storage_seek_read(data->storage_id, data->offset + addr, chunk_length, buffer) != chunk_length)
             return -1;
 
@@ -129,7 +129,7 @@ fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* directory
         while(list_dir(data, &entry, &dirent))
             if(strlen(dirent.name) == strlen(name) && strcmp(dirent.name, name) == 0)
             {
-                uint64_t entry_addr = (entry.cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry.cluster_offset - sizeof(dir_entry_t);
+                uint64_t entry_addr = get_entry_pos(data, &entry);
                 direntry_to_fatentry(&dirent, &entry, entry_addr);
                 break;
             }

@@ -38,17 +38,16 @@ file_system_t fat16_instantiate(partition_descriptor_t partition)
     fs.error = fat16_error;
     bios_parameter_block_t* bpb = &bootsector.bpb;
 
-    uint64_t root_offset = ((bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors) * bpb->bytes_per_sector;
-
     fat16_data_t* data = (fat16_data_t*)&fs.data.fs_specific;
     data->offset = partition.start;
     data->storage_id = partition.device_id;
     data->bytes_per_cluster = bpb->sectors_per_cluster * bpb->bytes_per_sector;
-    data->data_start = root_offset + bpb->root_entries * sizeof(dir_entry_t);
+    data->root_offset = ((bpb->number_of_fats * bpb->sectors_per_fat) + bpb->reserved_sectors) * bpb->bytes_per_sector;
+    data->data_start = data->root_offset + bpb->root_entries * sizeof(dir_entry_t);
     data->fat_offset = bpb->reserved_sectors * bpb->bytes_per_sector;
 
     fat16_entry_t root_dir;
-    root_dir.first_cluster = (root_offset - data->data_start) / data->bytes_per_cluster + 2;
+    root_dir.first_cluster = 0;
     root_dir.type = FAT16_DIR;
     root_dir.cluster_offset = 0;
     root_dir.advance = 0;

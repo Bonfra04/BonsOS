@@ -342,3 +342,10 @@ bool free_cluster_chain(const fat16_data_t* data, uint64_t first_cluster)
 
     return true;
 }
+
+uint64_t get_entry_pos(const fat16_data_t* data, const fat16_entry_t* entry)
+{
+    uint64_t pos = entry->cluster ? (entry->cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start : data->root_offset;
+    pos += entry->cluster_offset;
+    return pos;
+}

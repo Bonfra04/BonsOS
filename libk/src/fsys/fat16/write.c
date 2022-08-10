@@ -41,7 +41,7 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
         size_t chunk_length = ullmin(length, data->bytes_per_cluster - entry->cluster_offset);
 
         // write chunk
-        uint64_t addr = (entry->cluster - FIRST_CLUSTER_OFFSET) * data->bytes_per_cluster + data->data_start + entry->cluster_offset;
+        uint64_t addr = get_entry_pos(data, entry);
         if(storage_seek_write(data->storage_id, data->offset + addr, chunk_length, buffer) != chunk_length)
         {
             error = true;

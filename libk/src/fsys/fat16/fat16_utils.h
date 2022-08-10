@@ -105,6 +105,7 @@ typedef struct fat16_data
 {
     uint64_t offset;
     fat16_entry_t root_dir;
+    uint64_t root_offset;
     uint64_t storage_id;
     uint64_t bytes_per_cluster;
     uint64_t data_start;
@@ -125,6 +126,7 @@ uint64_t dir_chain_len(const fat16_data_t* data, const fat16_entry_t* dir);
 dir_entry_t* gen_entries(const fat16_data_t* data, const fat16_entry_t* dir, const char* entryname, size_t* num_entries, uint8_t flags);
 dir_entry_t construct_dir_entry(uint8_t flags);
 bool free_cluster_chain(const fat16_data_t* data, uint64_t first_cluster);
+uint64_t get_entry_pos(const fat16_data_t* data, const fat16_entry_t* entry);
 
 // read
 size_t read_entry(const fat16_data_t* data, fat16_entry_t* entry, void* buffer, size_t length);
