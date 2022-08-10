@@ -3,6 +3,10 @@
 #include <memory/paging.h>
 #include <executable/executable.h>
 
+#include <libgen.h>
+#include <string.h>
+#include <stdlib.h>
+
 void syscall_exec(const char* path, const char** argv)
 {
     path = paging_get_ph(current_thread->proc->paging, path);
@@ -19,5 +23,7 @@ void syscall_exec(const char* path, const char** argv)
         args[i] = paging_get_ph(current_thread->proc->paging, argv[i]);
     args[num_args] = NULL;
 
-    scheduler_replace_process(exec, args);
+    char* copy = strdup(path);
+    scheduler_run_executable(exec, dirname(copy), args, NULL);
+    free(copy);
 }

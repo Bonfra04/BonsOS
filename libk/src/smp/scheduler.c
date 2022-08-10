@@ -20,6 +20,11 @@
 #define THREAD_STACK_SIZE 256
 #define USER_PROCESS_BASE_ADDRESS 0x8000000000
 
+static const size_t resources_size[] = {
+    [RES_FILE] = sizeof(file_t),
+    [RES_UNUSED] = 0
+};
+
 static process_t* kernel_process;
 thread_t* current_thread;
 
@@ -103,8 +108,8 @@ void scheduler_init()
     kernel_process->paging = kernel_paging;
     kernel_process->executable = NULL;
     kernel_process->threads = darray(thread_t*, 0);
-    kernel_process->resources = NULL;
-    kernel_process->workdir = NULL;
+    kernel_process->resources = darray(resource_t*, 0);
+    kernel_process->workdir = "";
 
     current_thread = malloc(sizeof(thread_t));
     current_thread->proc = kernel_process;
@@ -144,14 +149,13 @@ static void thread_destroy(thread_t* thread)
     darray_remove(proc->threads, darray_find(proc->threads, thread));
 }
 
-static void process_cleanup(process_t* process, bool clean_resources)
+static void process_cleanup(process_t* process)
 {
     if(process == kernel_process)
         return;
 
     vmm_destroy(process->paging);
-    if(process->executable)
-        executable_unload(process->executable);
+    executable_unload(process->executable);
 
     for(size_t i = 0; i < darray_length(process->threads); i++)
         thread_destroy(process->threads[i]);
@@ -159,32 +163,29 @@ static void process_cleanup(process_t* process, bool clean_resources)
     darray_destroy(process->threads);
     free((char*)process->workdir);
 
-    if(clean_resources && process->resources)
+    for(size_t i = 0; i < darray_length(process->resources); i++)
     {
-        for(size_t i = 0; i < darray_length(process->resources); i++)
+        resource_t* resource = &process->resources[i];
+        void* data = resource->resource;
+        switch (resource->type)
         {
-            resource_t* resource = &process->resources[i];
-            void* data = resource->resource;
-            switch (resource->type)
-            {
-            case RES_FILE:
-                fsys_close_file(data);
-                break;
-            }
-            free(data);
+        case RES_FILE:
+            fsys_close_file(data);
+            break;
         }
-        darray_destroy(process->resources);
+        free(data);
     }
+    darray_destroy(process->resources);
+
+    free(process);
 }
 
-static void process_init(process_t* proc, void* address_low, void* address_high, const char* workdir, bool init_resources)
+static void process_init(process_t* proc, void* address_low, void* address_high, const char* workdir)
 {
     proc->paging = paging_create();
     proc->threads = darray(thread_t*, 0);
-    proc->workdir = workdir;
-
-    if(init_resources)
-        proc->resources = darray(resource_t, 0);
+    proc->workdir = strdup(workdir);
+    proc->resources = darray(resource_t, 0);
 
     address_low = ptr(ALIGN_4K_DOWN(address_low));
     address_high = ptr(ALIGN_4K_UP(address_high));
@@ -200,77 +201,39 @@ static void process_init(process_t* proc, void* address_low, void* address_high,
     paging_map(proc->paging, __kernel_start_addr, ptr(kernel_start_aligned), kernel_size, PAGE_PRIVILEGE_KERNEL);
 }
 
-process_t* scheduler_create_process(void* address_low, void* address_high, void* entry_point, char* args[])
+static void inherit_resourcess(process_t* parent, process_t* child)
 {
-    process_t* proc = malloc(sizeof(process_t));
-    proc->executable = NULL;
+    resource_t* parent_resources = parent->resources;
+    for(size_t i = 0; i < darray_length(parent_resources); i++)
+    {
+        resource_t* parent_res = &parent_resources[i];
+        
+        resource_t res;
+        res.type = parent_res->type;
+        res.resource = malloc(resources_size[parent_res->type]);
+        memcpy(res.resource, parent_res->resource, resources_size[parent_res->type]);
 
-    process_init(proc, address_low, address_high, NULL, true);
-
-    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)entry_point - (uint64_t)address_low);
-    scheduler_attach_thread(proc, vt_entry, args);
-
-    return proc;
+        darray_append(child->resources, res);
+    }
 }
 
-process_t* scheduler_run_executable(const executable_t* executable, char* args[])
+process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, char* args[], char* env[])
 {
+    // TODO: use env
+
+    void* address_low = executable->base_address;
+    void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
+    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
+
     process_t* proc = malloc(sizeof(process_t));
     proc->executable = executable;
 
-    void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
-    process_init(proc, executable->base_address, address_high, dirname(strdup(executable->fullpath)), true);
+    process_init(proc, address_low, address_high, workdir);
+    inherit_resourcess(current_thread->proc, proc);
 
-    void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
     scheduler_attach_thread(proc, vt_entry, args);
 
     return proc;
-}
-
-void scheduler_replace_process(const executable_t* executable, char* args[])
-{
-    scheduler_atomic({
-        process_t* proc = current_thread->proc;
-
-        thread_t* prev_thread = current_thread->prev_thread;
-        thread_t* next_thread = current_thread->next_thread;
-        if(prev_thread == current_thread)
-            prev_thread = next_thread = NULL;
-        else
-        {
-            while(prev_thread->proc == proc)
-                prev_thread = prev_thread->prev_thread;
-            while(next_thread->proc == proc)
-                next_thread = next_thread->next_thread;
-        }
-
-        process_cleanup(proc, false);
-
-        proc->executable = executable;
-
-        void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
-        process_init(proc, executable->base_address, address_high, dirname(strdup(executable->fullpath)), false);
-
-        void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
-        scheduler_attach_thread(proc, vt_entry, args);
-
-        thread_t* new_thread = proc->threads[0];
-        if(prev_thread)
-        {
-            prev_thread->next_thread = new_thread;
-            next_thread->prev_thread = new_thread;
-            new_thread->prev_thread = prev_thread;
-            new_thread->next_thread = next_thread;
-        }
-        else
-        {
-            new_thread->prev_thread = new_thread;
-            new_thread->next_thread = new_thread;
-        }
-
-        scheduler_replace_switch(new_thread);
-        kernel_panic("Process replacement failed");
-    });
 }
 
 void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
@@ -328,8 +291,7 @@ void scheduler_terminate_process()
             current_thread = current_thread->next_thread;
         }
 
-        process_cleanup(proc, true);
-        free(proc);
+        process_cleanup(proc);
 
         scheduler_replace_switch(current_thread);
         kernel_panic("Process termination failed");
@@ -353,10 +315,7 @@ void scheduler_terminate_thread()
 
         thread_destroy(old);
         if(darray_length(proc->threads) == 0)
-        {
-            process_cleanup(proc, true);
-            free(proc);
-        }
+            process_cleanup(proc);
 
         scheduler_replace_switch(current_thread);
         kernel_panic("Thread termination failed");
