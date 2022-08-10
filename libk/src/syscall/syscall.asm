@@ -73,6 +73,9 @@ syscall_handle:
     push r13
     push r14
     push r15
+    ; save important registers
+    push r11
+    push r10
 
     ; enable interrupts
     sti
@@ -91,6 +94,9 @@ syscall_handle:
     ; disable interrupts
     cli
 
+    ; restore important registers
+    pop r10
+    pop r11
     ; restore preserved registers
     pop r15
     pop r14
