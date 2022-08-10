@@ -39,3 +39,13 @@ void sys_exec(const char* path, const char** argv, const char** env)
 {
     sys(SYSCALL_EXEC, (uint64_t)path, (uint64_t)argv, (uint64_t)env);
 }
+
+char* sys_getcwd(char* buff, size_t size)
+{
+    return (char*)sys(SYSCALL_GETCWD, (uint64_t)buff, (uint64_t)size, 0);
+}
+
+int sys_setcwd(char* buff)
+{
+    return (int)sys(SYSCALL_SETCWD, (uint64_t)buff, 0, 0);
+}
