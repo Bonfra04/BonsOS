@@ -24,6 +24,6 @@ void syscall_exec(const char* path, const char** argv)
     args[num_args] = NULL;
 
     char* copy = strdup(path);
-    scheduler_run_executable(exec, dirname(copy), args, NULL);
+    scheduler_run_executable(exec, current_thread->proc->workdir, args, NULL);
     free(copy);
 }
