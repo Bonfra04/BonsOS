@@ -108,7 +108,7 @@ void scheduler_init()
     kernel_process->paging = kernel_paging;
     kernel_process->executable = NULL;
     kernel_process->threads = darray(thread_t*, 0);
-    kernel_process->resources = darray(resource_t*, 0);
+    kernel_process->resources = darray(resource_t, 0);
     kernel_process->workdir = "";
 
     current_thread = malloc(sizeof(thread_t));
@@ -217,7 +217,7 @@ static void inherit_resourcess(process_t* parent, process_t* child)
     }
 }
 
-process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, char* args[], char* env[])
+process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, const char* args[], const char* env[])
 {
     // TODO: use env
 
@@ -236,7 +236,7 @@ process_t* scheduler_run_executable(const executable_t* executable, const char* 
     return proc;
 }
 
-void scheduler_attach_thread(process_t* proc, void* entry_point, char* args[])
+void scheduler_attach_thread(process_t* proc, void* entry_point, const char* args[])
 {
     size_t argc = 0;
     if(args)
