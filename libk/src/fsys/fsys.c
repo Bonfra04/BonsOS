@@ -97,7 +97,7 @@ uint8_t fsys_type(const char* name)
     return fs->type;
 }
 
-static const char* split_name(const char* filename, char** fname)
+static char* split_name(const char* filename, char** fname)
 {
     char* separator = (char*)strchr(filename, ':');
     *fname = separator + 1;
@@ -114,7 +114,7 @@ file_t fsys_open_file(const char* filename, fsys_file_mode_t mode)
         return INVALID_FILE;
 
     char* fname;
-    const char* fsys = split_name(filename, &fname);
+    char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -158,7 +158,7 @@ bool fsys_create_file(const char* filename)
         return false;
 
     char* fname;
-    const char* fsys = split_name(filename, &fname);
+    char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -173,7 +173,7 @@ bool fsys_delete_file(const char* filename)
         return false;
 
     char* fname;
-    const char* fsys = split_name(filename, &fname);
+    char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -188,7 +188,7 @@ bool fsys_create_dir(const char* dirpath)
         return false;
 
     char* dname;
-    const char* fsys = split_name(dirpath, &dname);
+    char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -203,7 +203,7 @@ bool fsys_delete_dir(const char* dirpath)
         return false;
 
     char* dname;
-    const char* fsys = split_name(dirpath, &dname);
+    char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -236,7 +236,7 @@ bool fsys_exists_file(const char* filename)
         return false;
 
     char* fname;
-    const char* fsys = split_name(filename, &fname);
+    char* fsys = split_name(filename, &fname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -251,7 +251,7 @@ bool fsys_exists_dir(const char* dirpath)
         return false;
 
     char* dname;
-    const char* fsys = split_name(dirpath, &dname);
+    char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
@@ -266,7 +266,7 @@ file_t fsys_open_dir(const char* dirpath)
         return INVALID_FILE;
 
     char* dname;
-    const char* fsys = split_name(dirpath, &dname);
+    char* fsys = split_name(dirpath, &dname);
     file_system_t* fs = trie_get(fsys_instances, fsys);
     free(fsys);
     if(!fs)
