@@ -4,6 +4,7 @@
 #include <io/keyboard/keyboard.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 void vfs_tty_init()
 {
@@ -35,41 +36,53 @@ file_system_t vfs_tty_instantiate(partition_descriptor_t partition)
     return fs;
 }
 
+typedef enum tty_mode
+{
+    TTY_RAW, TTY_COOKED
+} tty_mode_t;
+
 file_t vfs_tty_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mode)
 {
     (void)fs; (void)mode;
 
-    uint64_t id = atoull(filename + 1);
-    // TODO: check valid tty
+    tty_mode_t tty_mode;
+    if(strcmp(filename, "/raw") == 0)
+        tty_mode = TTY_RAW;
+    else if(strcmp(filename, "/cooked") == 0)
+        tty_mode = TTY_COOKED;
+    else
+        return INVALID_FILE;
 
     file_t f;
-    *(uint64_t*)f.fs_data = id;
+    *(tty_mode_t*)f.fs_data = tty_mode;
     return f;
 }
 
 bool vfs_tty_close_file(fs_data_t* fs, file_t* file)
 {
-    (void)fs; (void)file;
-    return false;
+    (void)fs;
+    memset(file, 0, sizeof(file_t));
+    return true;
 }
 
 size_t vfs_tty_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
 {
     (void)fs;
 
-    uint64_t id = *(uint64_t*)file->fs_data;
-    // TODO: use id
+    tty_mode_t mode = *(tty_mode_t*)file->fs_data;
+    
+    if(mode == TTY_COOKED)
+        return tty_read(buffer, length);
 
-    return tty_read(buffer, length);
+    uint8_t* buf = buffer;
+    for(size_t i = 0; i < length; i++)
+        *buf++ = tty_read_raw();
+    return length;
 }
 
 size_t vfs_tty_write_file(fs_data_t* fs, file_t* file, const void* buffer, size_t length)
 {
-    (void)fs;
-
-    uint64_t id = *(uint64_t*)file->fs_data;
-    // TODO: use id
-
+    (void)fs; (void)file;
     tty_print((char*)buffer);
     return length;
 }
@@ -112,8 +125,9 @@ bool vfs_tty_set_position(fs_data_t* fs, file_t* file, size_t position)
 
 bool vfs_tty_exists_file(fs_data_t* fs, const char* filename)
 {
-    (void)fs; (void)filename;
-    return false;
+    (void)fs;
+
+    return strcmp(filename , "/raw") == 0 || strcmp(filename, "/cooked") == 0;
 }
 
 bool vfs_tty_exists_dir(fs_data_t* fs, const char* dirpath)

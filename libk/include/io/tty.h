@@ -69,8 +69,15 @@ void tty_clear();
 void tty_print(const char* str);
 
 /**
+ * @brief reads uncooked characters from the keyboard
+ * @return uncooked character
+ */
+uint8_t tty_read_raw();
+
+/**
  * @brief reads an entire line from the screen and returns the first size characters
  * @param[in] buf buffer to store the line
  * @param[in] size maximum number of characters to read
  */
 size_t tty_read(char* buf, size_t size);
+
