@@ -47,6 +47,29 @@ FILE* fopen(const char* filename, const char* mode)
     return stream;
 }
 
+FILE* freopen(const char* filename, const char* mode, FILE* stream)
+{
+    if(!filename || !mode)
+        return NULL;
+
+    int open_mode = mode[0] == 'r' ? OPEN_READ : mode[0] == 'w' ? OPEN_WRITE : mode[0] == 'a' ? OPEN_APPEND : -1;
+    if(open_mode == -1)
+        return NULL;
+
+    if(!sys_close_file(stream->fd))
+        return NULL;
+
+    stream->fd = sys_open_file(filename, open_mode);
+    if (stream->fd < 0)
+    {
+        free(stream);
+        return NULL;
+    }
+    stream->flags = _IONBF;
+
+    return stream;
+}
+
 int fclose(FILE* stream)
 {
     if(!stream)
