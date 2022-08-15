@@ -117,7 +117,7 @@
 #define VK_RIGHT_BRACE       '}'
 #define VK_BACKSLASH         '\\'
 #define VK_PIPE              '|'
-#define VK_CAPS_LOCK         0x00
+#define VK_CAPS_LOCK         0xFF00
 #define VK_a                 'a'
 #define VK_A                 'A'
 #define VK_s                 's'
@@ -141,7 +141,7 @@
 #define VK_QUOTE             '\''
 #define VK_DOUBLE_QUOTE      '"'
 #define VK_RETURN            '\n'
-#define VK_LEFT_SHIFT        0x01
+#define VK_LEFT_SHIFT        0xFF01
 #define VK_z                 'z'
 #define VK_Z                 'Z'
 #define VK_x                 'x'
@@ -162,13 +162,16 @@
 #define VK_GREATER_THAN      '>'
 #define VK_FORWARD_SLASH     '/'
 #define VK_QUESTION_MARK     '?'
-#define VK_RIGHT_SHIFT       0x02
-#define VK_LEFT_CONTROL      0x03
-#define VK_LEFT_ALT          0x04
+#define VK_RIGHT_SHIFT       0xFF02
+#define VK_LEFT_CONTROL      0xFF03
+#define VK_LEFT_ALT          0xFF04
 #define VK_SPACE             ' '
-#define VK_RIGHT_ALT         0x05
-#define VK_RIGHT_CONTROL     0x06
-#define VK_ARROW_UP          0x07
-#define VK_ARROW_LEFT        0x08
-#define VK_ARROW_DOWN        0x09
-#define VK_ARROW_RIGHT       0x0A
+#define VK_RIGHT_ALT         0xFF05
+#define VK_RIGHT_CONTROL     0xFF06
+#define VK_ARROW_UP          0xFF07
+#define VK_ARROW_LEFT        0xFF08
+#define VK_ARROW_DOWN        0xFF09
+#define VK_ARROW_RIGHT       0xFF0A
+
+#define VK_NONE 0xFFFF
+ 

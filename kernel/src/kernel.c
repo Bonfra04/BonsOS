@@ -14,7 +14,7 @@
 
 #include <io/uart.h>
 #include <io/tty.h>
-#include <io/keyboard.h>
+#include <io/keyboard/keyboard.h>
 
 #include <interrupts/pic.h>
 #include <interrupts/idt.h>

@@ -1,7 +1,7 @@
 #include <fsys/vfs/vfs_tty.h>
 #include <fsys/fsys.h>
 #include <io/tty.h>
-#include <io/keyboard.h>
+#include <io/keyboard/keyboard.h>
 
 #include <stdlib.h>
 
