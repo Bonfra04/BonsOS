@@ -2,42 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
-int sprintf(char* buf, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = vsprintf(buf, format, args);
-    va_end(args);
-    return result;
-}
-
-int vsprintf(char* buf, const char* format, va_list args)
-{
-    return vsnprintf(buf, 0, format, args);
-}
-
-int snprintf(char* buf, size_t n, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = vsnprintf(buf, n, format, args);
-    va_end(args);
-    return result;
-}
-
-static void addchar(char* buf, size_t n, int* result, char ch)
-{
-    if(n != 0 && *result <= n)
-        buf[*result] = ch;
-    (*result)++;
-}
-
-static void addstring(char* buf, size_t n, int* result, char* str)
-{
-    while(*str)
-        addchar(buf, n, result, *str++);
-}
+#include <stdbool.h>
 
 typedef enum flag
 {
@@ -74,7 +39,25 @@ typedef enum specifier
     SPEC_p,
 } specifier_t;
 
-int vsnprintf(char* buf, size_t n, const char* format, va_list args)
+typedef struct printer
+{
+    bool (*print)(void* where, char what);
+    void* where;
+} printer_t;
+
+static bool printer_buffer(char** where, char what)
+{
+    **where = what;
+    (*where)++;
+    return true;
+}
+
+static int printer_stream(FILE* where, char what)
+{
+    return fputc(what, where) != EOF;
+}
+
+static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, va_list args)
 {
     // TODO: implement flags -+0
 
@@ -87,7 +70,7 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
 
         if(ch != '%')
         {
-            addchar(buf, n, &result, ch);
+            result += printer->print(printer->where, ch);
             continue;
         }
 
@@ -318,9 +301,75 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
             break;
         }
 
-        addstring(buf, n, &result, buffer);
+        {
+            char* buf = buffer;
+            while(*buf)
+                result += printer->print(printer->where, *buf++);
+        }
     }
 
-    buf[result] = '\0';
+    printer->print(printer->where, '\0');
     return result;
+}
+
+int sprintf(char* buf, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = vsprintf(buf, format, args);
+    va_end(args);
+    return result;
+}
+
+int vsprintf(char* buf, const char* format, va_list args)
+{
+    return vsnprintf(buf, 0, format, args);
+}
+
+int snprintf(char* buf, size_t n, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = vsnprintf(buf, n, format, args);
+    va_end(args);
+    return result;
+}
+
+int vsnprintf(char* buf, size_t n, const char* format, va_list args)
+{
+    printer_t printer;
+    printer.print = printer_buffer;
+    printer.where = &buf;
+    return vsnprintf_internal(&printer, n, format, args);
+}
+
+int fprintf(FILE* stream, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = vfprintf(stream, format, args);
+    va_end(args);
+    return result;
+}
+
+int printf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = vfprintf(stdout, format, args);
+    va_end(args);
+    return result;
+}
+
+int vprintf(const char * format, va_list arg)
+{
+    return vfprintf(stdout, format, arg);
+}
+
+int vfprintf(FILE* stream, const char* format, va_list arg)
+{
+    printer_t printer;
+    printer.print = printer_stream;
+    printer.where = stream;
+    return vsnprintf_internal(&printer, 0, format, arg);
 }

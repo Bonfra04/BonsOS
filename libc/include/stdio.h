@@ -56,6 +56,11 @@ int vsprintf(char* buf, const char* format, va_list args);
 int snprintf(char* buf, size_t n, const char* format, ...);
 int vsnprintf(char* buf, size_t n, const char* format, va_list args);
 
+int fprintf(FILE* stream, const char* format, ...);
+int vfprintf(FILE* stream, const char* format, va_list arg);
+int vprintf(const char * format, va_list arg);
+int printf(const char* format, ...);
+
 #ifdef __cplusplus
 }
 #endif
