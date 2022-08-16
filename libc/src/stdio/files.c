@@ -285,3 +285,8 @@ void clearerr(FILE* stream)
     stream->flags &= ~FILE_ERROR;
     stream->flags &= ~FILE_EOF;
 }
+
+int remove(const char* filename)
+{
+    return sys_delete_file(filename) ? 0 : -1;
+}

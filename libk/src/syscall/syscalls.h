@@ -13,3 +13,4 @@ void syscall_process_exit();
 void syscall_exec(const char* path, const char** argv, const char** env);
 char* syscall_getcwd(char* buff, size_t size);
 int syscall_setcwd(char* buff);
+bool syscall_delete_file(const char* path);
