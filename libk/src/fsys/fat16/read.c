@@ -129,7 +129,7 @@ fat16_entry_t get_entry(const fat16_data_t* data, const fat16_entry_t* directory
         while(list_dir(data, &entry, &dirent))
             if(strlen(dirent.name) == strlen(name) && strcmp(dirent.name, name) == 0)
             {
-                uint64_t entry_addr = get_entry_pos(data, &entry);
+                uint64_t entry_addr = get_entry_pos(data, &entry) - sizeof(dir_entry_t);
                 direntry_to_fatentry(&dirent, &entry, entry_addr);
                 break;
             }

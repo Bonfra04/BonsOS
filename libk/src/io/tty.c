@@ -209,11 +209,11 @@ static void enqueue_key(keyevent_t k)
     bool is_ctrl = keyboard_get_key(VK_LEFT_CONTROL) || keyboard_get_key(VK_RIGHT_CONTROL);
     if(isalpha(ch) && is_ctrl)
     {
-        queue_enqueue(&key_packet, (void*)(ch - 'a' + 1));
+        queue_enqueue(&key_packet, (void*)(uint64_t)(ch - 'a' + 1));
         return;
     }
 
-    queue_enqueue(&key_packet, (void*)ch);
+    queue_enqueue(&key_packet, (void*)(uint64_t)ch);
 }
 
 uint8_t tty_read_raw()
@@ -226,7 +226,7 @@ uint8_t tty_read_raw()
             enqueue_key(keyboard_pull());
 
         if(queue_size(&key_packet) > 0)
-            return (uint8_t)queue_dequeue(&key_packet);
+            return (uint64_t)queue_dequeue(&key_packet);
 
         if(hpet_current_nanos() - start_time > 100000000 * 5)
         {
@@ -261,7 +261,7 @@ static void buffer_line()
             continue;
         }
         print_char(ch);
-        deque_push_back(&line_queue, (void*)ch);
+        deque_push_back(&line_queue, (void*)(uint64_t)ch);
         line_pos++;
     }
     while(ch != '\n');

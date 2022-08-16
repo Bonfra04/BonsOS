@@ -219,7 +219,7 @@ static void inherit_resourcess(process_t* parent, process_t* child)
 
 process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, const char* args[], const char* env[])
 {
-    // TODO: use env
+    (void)env; // TODO: use env
 
     void* address_low = executable->base_address;
     void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;

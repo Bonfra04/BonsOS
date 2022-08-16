@@ -44,7 +44,7 @@ static void keyboard_isr(const interrupt_context_t* context)
 
         ph_keystates[keycode] = is_pressed;
         keyevent_t event = { .is_pressed = is_pressed, .keycode = keycode };
-        tsqueue_enqueue(&key_queue, (void*)event.value);
+        tsqueue_enqueue(&key_queue, (void*)(uint64_t)event.value);
 
         switch (keycode)
         {

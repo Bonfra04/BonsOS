@@ -12,7 +12,8 @@ size_t write_entry(const fat16_data_t* data, fat16_entry_t* entry, const void* b
     while(length > 0)
     {
         // prepare next cluster
-        if(entry->cluster_offset == data->bytes_per_cluster || entry->cluster == 0)
+        if(entry->cluster_offset == data->bytes_per_cluster
+            || (entry->cluster == 0 && entry->type == FAT16_FILE))
         {
             entry->cluster_offset = 0;
 

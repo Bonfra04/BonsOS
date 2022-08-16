@@ -49,3 +49,8 @@ int sys_setcwd(char* buff)
 {
     return (int)sys(SYSCALL_SETCWD, (uint64_t)buff, 0, 0);
 }
+
+bool sys_delete_file(const char* path)
+{
+    return (bool)sys(SYSCALL_DELETE_FILE, (uint64_t)path, 0, 0);
+}
