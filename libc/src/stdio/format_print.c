@@ -45,15 +45,17 @@ typedef struct printer
     void* where;
 } printer_t;
 
-static bool printer_buffer(char** where, char what)
+static bool printer_buffer(void* where_, char what)
 {
+    char** where = where_;
     **where = what;
     (*where)++;
     return true;
 }
 
-static int printer_stream(FILE* where, char what)
+static bool printer_stream(void* where_, char what)
 {
+    FILE* where = where_;
     return fputc(what, where) != EOF;
 }
 

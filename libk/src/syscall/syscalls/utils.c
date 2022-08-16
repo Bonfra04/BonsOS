@@ -2,6 +2,8 @@
 #include <smp/scheduler.h>
 
 #include <stdlib.h>
+#include <string.h>
+#include <libgen.h>
 
 char* expand_path(const char* path)
 {

@@ -3,8 +3,11 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 
-int syscall_setcwd(char* buff, size_t size)
+#include "utils.h"
+
+int syscall_setcwd(char* buff)
 {
     buff = paging_get_ph(current_thread->proc->paging, buff);
 
@@ -18,7 +21,7 @@ int syscall_setcwd(char* buff, size_t size)
         return -1;
     }
 
-    free(current_thread->proc->workdir);
+    free((char*)current_thread->proc->workdir);
     current_thread->proc->workdir = path;
 
     return 0;
