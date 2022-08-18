@@ -6,7 +6,9 @@
             "includePath": [
                 "${workspaceFolder}/libc/include/*",
                 "${workspaceFolder}/libk/include/*",
-                "${workspaceFolder}/libbons/include/*"
+                "${workspaceFolder}/libbons/include/*",
+
+                "${workspaceFolder}/programs/shell/include/*"
             ],
             "defines": [
                 "BONSOS",
