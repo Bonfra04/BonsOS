@@ -183,12 +183,12 @@ static void enqueue_key(keyevent_t k)
         queue_enqueue(&key_packet, (void*)'[');
         queue_enqueue(&key_packet, (void*)'B');
         return;
-    case KEY_ARROW_LEFT:
+    case KEY_ARROW_RIGHT:
         queue_enqueue(&key_packet, (void*)27);
         queue_enqueue(&key_packet, (void*)'[');
         queue_enqueue(&key_packet, (void*)'D');
         return;
-    case KEY_ARROW_RIGHT:
+    case KEY_ARROW_LEFT:
         queue_enqueue(&key_packet, (void*)27);
         queue_enqueue(&key_packet, (void*)'[');
         queue_enqueue(&key_packet, (void*)'C');
