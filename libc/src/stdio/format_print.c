@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
 
 typedef enum flag
 {
@@ -59,10 +60,202 @@ static bool printer_stream(void* where_, char what)
     return fputc(what, where) != EOF;
 }
 
+typedef struct format_data
+{
+    flag_t flags;
+    int width;
+    int precision;
+    length_t length;
+    specifier_t specifier;
+} format_data_t;
+
+static size_t format_numeric(format_data_t format, printer_t* printer, const char* prefix, const char* buf)
+{
+    size_t printed_chars = 0;
+    size_t len = strlen(buf);
+
+    bool pad_left = format.flags & FLAG_LEFT;
+    bool pad_zero = format.flags & FLAG_ZERO;
+    bool use_sign = format.flags & FLAG_SIGN;
+    bool use_space = format.flags & FLAG_SPACE;
+
+    if(pad_zero && buf[0] != '-')
+        if(use_sign)
+        {
+            if(printer->print(printer->where, '+'))
+                printed_chars++, len++;
+        }
+        else if(use_space)
+        {
+            if(printer->print(printer->where, ' '))
+                printed_chars++, len++;
+        }
+
+    size_t pref_len = prefix ? strlen(prefix) : 0;
+    for(size_t i = 0; i < pref_len; i++)
+        if(printer->print(printer->where, prefix[i]))
+            printed_chars++, len++;
+
+    size_t prec = format.precision < 0 ? 0 : len < format.precision ? format.precision - len : 0;
+    size_t pad = prec + len < format.width ? format.width - (prec + len) : 0;
+
+    if(!pad_left)
+        for(size_t i = 0; i < pad; i++)
+            printed_chars += printer->print(printer->where, pad_zero ? '0' : ' ');
+
+    if(!pad_zero && buf[0] != '-')
+        if(use_sign)
+        {
+            if(printer->print(printer->where, '+'))
+                printed_chars++, len++;
+        }
+        else if(use_space)
+        {
+            if(printer->print(printer->where, ' '))
+                printed_chars++, len++;
+        }
+
+    for(size_t i = 0; i < prec; i++)
+        printed_chars += printer->print(printer->where, '0');
+
+    for(size_t i = 0; i < len; i++)
+        printed_chars += printer->print(printer->where, buf[i]);
+    
+    if(pad_left)
+        for(size_t i = 0; i < pad; i++)
+            printed_chars += printer->print(printer->where, ' ');
+
+    return printed_chars;
+}
+
+static void eval_format(format_data_t format, va_list args, printer_t* printer, uint64_t* printed_chars)
+{
+    switch(format.specifier)
+    {
+        case SPEC_c:
+        {
+            if(format.length == LEN_l)
+            {
+                // TODO: wchar_t
+            }
+            else
+            {
+                unsigned char arg = (unsigned char)va_arg(args, int);
+                *printed_chars += printer->print(printer->where, arg);
+            }
+        }
+        break;
+
+        case SPEC_s:
+        {
+            if(format.length == LEN_l)
+            {
+                // TODO: wchar_t*
+            }
+            else
+            {
+                char* arg = va_arg(args, char*);
+                size_t len = ullmin(strlen(arg), format.precision);
+                size_t pad = len < format.width ? format.width - len : 0;
+
+                if(format.flags & FLAG_LEFT)
+                    for(size_t i = 0; i < pad; i++)
+                        *printed_chars += printer->print(printer->where, ' ');
+                for(size_t i = 0; i < len; i++)
+                    *printed_chars += printer->print(printer->where, arg[i]);
+                if(!(format.flags & FLAG_LEFT))
+                    for(size_t i = 0; i < pad; i++)
+                        *printed_chars += printer->print(printer->where, ' ');
+            }
+        }
+        break;
+
+        case SPEC_d:
+        {
+            long long num;
+            if(format.length == LEN_hh)
+                num = (signed char)va_arg(args, int);
+            else if(format.length == LEN_h)
+                num = (short)va_arg(args, int);
+            else if(format.length == LEN_l)
+                num = va_arg(args, long);
+            else if(format.length == LEN_ll)
+                num = va_arg(args, long long);
+            else if(format.length == LEN_j)
+                num = va_arg(args, intmax_t);
+            else if(format.length == LEN_z)
+                num = va_arg(args, size_t);
+            else if(format.length == LEN_t)
+                num = va_arg(args, ptrdiff_t);
+            else
+                num = va_arg(args, int);
+
+            char buf[32];
+            lltoa(num, buf, 10);
+            *printed_chars += format_numeric(format, printer, NULL, buf);
+        }
+        break;
+
+        case SPEC_o: case SPEC_x: case SPEC_X: case SPEC_u:
+        {
+            unsigned long long num;
+            if(format.length == LEN_hh)
+                num = (unsigned char)va_arg(args, unsigned int);
+            else if(format.length == LEN_h)
+                num = (unsigned short)va_arg(args, unsigned int);
+            else if(format.length == LEN_l)
+                num = va_arg(args, unsigned long);
+            else if(format.length == LEN_ll)
+                num = va_arg(args, unsigned long long);
+            else if(format.length == LEN_j)
+                num = va_arg(args, uintmax_t);
+            else if(format.length == LEN_z)
+                num = va_arg(args, size_t);
+            else if(format.length == LEN_t)
+                num = va_arg(args, ptrdiff_t);
+            else
+                num = va_arg(args, unsigned int);
+
+            int base = 10;
+            char* prefix = NULL;
+            switch (format.specifier)
+            {
+                case SPEC_o: 
+                    base = 8;
+                    prefix = format.flags & FLAG_ALT ? "0" : NULL;
+                    break;
+                case SPEC_x:
+                    base = 16;
+                    prefix = format.flags & FLAG_ALT ? "0x" : NULL;
+                    break;
+                case SPEC_X:
+                    base = 16;
+                    prefix = format.flags & FLAG_ALT ? "0X" : NULL;
+                    break;
+                default:
+                case SPEC_u: base = 10, prefix = NULL; break;
+            } 
+
+            char buf[32];
+            ulltoa(num, buf, base);
+            *printed_chars += format_numeric(format, printer, prefix, buf);
+        }
+        break;
+
+        case SPEC_p:
+        {
+            void* arg = va_arg(args, void*);
+            char buf[32];
+            ulltoa((unsigned long long)arg, buf, 16);
+            strtoupper(buf);
+            *printed_chars += format_numeric(format, printer, "0x", buf);
+        }
+        break;
+    }
+}
+
 static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, va_list args)
 {
-    // TODO: implement flags -+0
-
     n--;
     int result = 0;
 
@@ -100,20 +293,23 @@ static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, 
         if(width < 0)
             flags |= FLAG_LEFT, width = -width;
 
-        int precision = 0;
+        int precision = -1;
         if(*format == '.')
         {
             format++;
             if(*format == '*')
+            {
                 precision = va_arg(args, int), format++;
+                if(precision < 0)
+                    precision = 0;
+            }
             else
+            {
+                precision = 0;
                 while(*format >= '0' && *format <= '9')
                     precision = precision * 10 + *format++ - '0';
-            if(precision < 0)
-                precision = 0;
+            }
         }
-        else
-            precision = -1;
 
         length_t length = LEN_NONE;
         if(*format == 'h' && *(format + 1) == 'h')
@@ -131,183 +327,30 @@ static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, 
         else if(*format == 't')
             length = LEN_t, format++;
 
-        specifier_t spec;
+        specifier_t specifier;
         if(*format == 'c')
-            spec = SPEC_c, format++;
+            specifier = SPEC_c, format++;
         else if(*format == 's')
-            spec = SPEC_s, format++;
+            specifier = SPEC_s, format++;
         else if(*format == 'd' || *format == 'i')
-            spec = SPEC_d, format++;
+            specifier = SPEC_d, format++;
         else if(*format == 'o')
-            spec = SPEC_o, format++;
+            specifier = SPEC_o, format++;
         else if(*format == 'x')
-            spec = SPEC_x, format++;
+            specifier = SPEC_x, format++;
         else if(*format == 'X')
-            spec = SPEC_X, format++;
+            specifier = SPEC_X, format++;
         else if(*format == 'u')
-            spec = SPEC_u, format++;
+            specifier = SPEC_u, format++;
         else if(*format == 'n')
-            spec = SPEC_n, format++;
+            specifier = SPEC_n, format++;
         else if(*format == 'p')
-            spec = SPEC_p, format++;
+            specifier = SPEC_p, format++;
         else
             continue;
 
-        char buffer[1024]; // TODO: better calculate this size dinamically
-        memset(buffer, '\0', sizeof(buffer));
-
-        switch(spec)
-        {
-            case SPEC_c:
-            {
-                if(length == LEN_l)
-                {
-                    // TODO: wchar_t
-                }
-                else
-                {
-                    unsigned char arg = (unsigned char)va_arg(args, int);
-                    buffer[0] = arg;
-                }
-            }
-            break;
-
-            case SPEC_s:
-            {
-                if(length == LEN_l)
-                {
-                    // TODO: wchar_t*
-                }
-                else
-                {
-                    char* arg = va_arg(args, char*);
-                    if(precision != -1)
-                        arg[precision] = '\0';
-                    if(width > 0)
-                        strncpy(buffer, arg, width);
-                    else
-                        strcpy(buffer, arg);
-                }
-            }
-            break;
-
-            case SPEC_d:
-            {
-                long long num;
-                if(length == LEN_hh)
-                    num = (signed char)va_arg(args, int);
-                else if(length == LEN_h)
-                    num = (short)va_arg(args, int);
-                else if(length == LEN_l)
-                    num = va_arg(args, long);
-                else if(length == LEN_ll)
-                    num = va_arg(args, long long);
-                else if(length == LEN_j)
-                    num = va_arg(args, intmax_t);
-                else if(length == LEN_z)
-                    num = va_arg(args, size_t);
-                else if(length == LEN_t)
-                    num = va_arg(args, ptrdiff_t);
-                else
-                    num = va_arg(args, int);
-
-                lltoa(num, buffer, 10);
-                size_t len = strlen(buffer);
-                if(precision != -1 && precision > len)
-                {
-                    memcpy(buffer + (precision - len), buffer, len);
-                    memset(buffer, '0', precision - len);
-                }
-                if(precision == 0 && num == 0)
-                    buffer[0] = '\0';
-            }
-            break;
-
-            case SPEC_o: case SPEC_x: case SPEC_X: case SPEC_u:
-            {
-                unsigned long long num;
-                if(length == LEN_hh)
-                    num = (unsigned char)va_arg(args, unsigned int);
-                else if(length == LEN_h)
-                    num = (unsigned short)va_arg(args, unsigned int);
-                else if(length == LEN_l)
-                    num = va_arg(args, unsigned long);
-                else if(length == LEN_ll)
-                    num = va_arg(args, unsigned long long);
-                else if(length == LEN_j)
-                    num = va_arg(args, uintmax_t);
-                else if(length == LEN_z)
-                    num = va_arg(args, size_t);
-                else if(length == LEN_t)
-                    num = va_arg(args, ptrdiff_t);
-                else
-                    num = va_arg(args, unsigned int);
-
-                if(spec == SPEC_o && flags & FLAG_ALT)
-                    buffer[0] = '0';
-
-                int base = spec == SPEC_o ? 8 : spec == SPEC_X || spec == SPEC_x ? 16 : 10;
-                ulltoa(num, buffer + (spec == SPEC_o && flags & FLAG_ALT), base);
-                size_t len = strlen(buffer);
-                if(precision != -1 && precision > len)
-                {
-                    memmove(buffer + (precision - len), buffer, len);
-                    memset(buffer, '0', precision - len);
-                    len += precision - len;
-                }
-
-                if((spec == SPEC_X || spec == SPEC_x) && num != 0 && flags & FLAG_ALT)
-                {
-                    memmove(buffer + 2, buffer, len);
-                    buffer[0] = '0';
-                    buffer[1] = 'x';
-                }
-
-                if(spec == SPEC_X)
-                    strtoupper(buffer);
-
-                if(precision == 0 && num == 0)
-                    buffer[0] = '\0';
-            }
-            break;
-
-            case SPEC_p:
-            {
-                void* arg = va_arg(args, void*);
-                buffer[0] = '0';
-                buffer[1] = 'x';
-                ulltoa((unsigned long long)arg, buffer + 2, 16);
-                strtoupper(buffer + 2);
-            }
-            break;
-
-            case SPEC_n:
-            {
-                if(length == LEN_hh)
-                    *va_arg(args, signed char*) = (signed char)result;
-                else if(length == LEN_h)
-                    *va_arg(args, short*) = (short)result;
-                else if(length == LEN_l)
-                    *va_arg(args, long*) = (long)result;
-                else if(length == LEN_ll)
-                    *va_arg(args, long long*) = (long long)result;
-                else if(length == LEN_j)
-                    *va_arg(args, intmax_t*) = (intmax_t)result;
-                else if(length == LEN_z)
-                    *va_arg(args, size_t*) = (size_t)result;
-                else if(length == LEN_t)
-                    *va_arg(args, ptrdiff_t*) = (ptrdiff_t)result;
-                else
-                    *va_arg(args, int*) = (int)result;
-            }
-            break;
-        }
-
-        {
-            char* buf = buffer;
-            while(*buf)
-                result += printer->print(printer->where, *buf++);
-        }
+        format_data_t format_data = {flags, width, precision, length, specifier};
+        eval_format(format_data, args, printer, &result);
     }
 
     printer->print(printer->where, '\0');
