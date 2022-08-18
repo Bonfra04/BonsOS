@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 64 // TODO: dynamic string is better
 
 typedef struct history
 {
