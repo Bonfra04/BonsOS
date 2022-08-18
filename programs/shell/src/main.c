@@ -44,5 +44,7 @@ int main()
         free(command);
     }
 
+    line_free(line);
+
     return 0;
 }
