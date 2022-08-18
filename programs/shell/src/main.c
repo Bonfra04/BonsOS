@@ -5,40 +5,16 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <shell.h>
+#include <line.h>
 
-escape_key_t read_escape()
-{
-    if (getchar() != '[')
-        return ESCAPE_NONE;
-
-    switch (getchar())
-    {
-    case 'A': // ARROW UP
-        return ARROW_UP;
-
-    case 'B': // ARROW DOWN
-        return ARROW_DOWN;
-
-    case 'C': // ARROW RIGHT
-        return ARROW_RIGHT;
-
-    case 'D': // ARROW LEFT
-        return ARROW_LEFT;
-    default:
-        return ESCAPE_NONE;
-    }
-
-    return ESCAPE_NONE;
-}
+#include <syscalls.h>
 
 int main()
 {
     freopen("tty:/raw", "r", stdin);
     
-    shell_t* shell = shell_init();
-
-    if (!shell || !shell->buff_left || !shell->buff_right)
+    line_t* line = line_init();
+    if (!line || !line->buff_left || !line->buff_right)
     {
         fputs("calloc of input buffer failed\n", stderr);
         return -1;
@@ -46,25 +22,26 @@ int main()
 
     while(1)
     {
-        int input_char = getchar();
+        char wd[257];
+        sys_getcwd(wd, 256);
+        strcat(wd, "/");
 
-        if (input_char == EOF)
+        fputs(wd, stdout);
+        fputs(" $> ", stdout);
+        char* command = line_read(line);
+        if (!command)
             continue;
 
-        switch (input_char)
-        {
-        case '\r':
-            shell_submit(shell);
+        if(strncmp(command, "cd", 2) == 0)
+            sys_setcwd(command + 3);
+        else if(strncmp(command, "echo ", 5) == 0)
+            puts(command + 5);
+        else if(strncmp(command, "exit", 4) == 0)
             break;
-        case 127:
-            shell_delete(shell);
-            break;
-        case 27:
-            shell_handle_escape(shell, read_escape());
-            break;
-        default:
-            shell_print(shell, input_char);
-        }
+        else
+            puts("Unknown command");
+
+        free(command);
     }
 
     return 0;
