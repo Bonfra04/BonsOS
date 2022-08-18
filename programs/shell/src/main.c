@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include <line.h>
 
@@ -14,7 +11,7 @@ int main()
     freopen("tty:/raw", "r", stdin);
     
     line_t* line = line_init();
-    if (!line || !line->buff_left || !line->buff_right)
+    if (!line)
     {
         fputs("calloc of input buffer failed\n", stderr);
         return -1;
