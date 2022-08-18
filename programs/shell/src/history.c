@@ -22,6 +22,9 @@ history_t* history_init()
         }
     }
 
+    memset(history->cache, 0, BUFFER_SIZE);
+    history->cache_index = 0;
+
     return history;
 }
 
@@ -58,7 +61,20 @@ const char* history_get_next(history_t* history)
 
 const char* history_get_prev(history_t* history)
 {
+    if(history->index == 0)
+        return history->cache;
+
     history->index -= history->index != 0;
     char* command = history->commands[history->index];
     return command;
+}
+
+void history_update_cache(history_t* history, char c) 
+{
+    history->cache[history->cache_index++] = c;
+}
+
+void history_reset_cache(history_t* history) {
+    memset(history->cache, 0, BUFFER_SIZE);
+    history->cache_index = 0;
 }

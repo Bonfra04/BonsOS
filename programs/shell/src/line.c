@@ -85,6 +85,8 @@ char* line_submit(line_t* line)
 
         line->length = 0;
         line->offset = 0;
+
+        history_reset_cache(line->history);
     }
     putchar('\n');
 
@@ -144,6 +146,8 @@ void line_print(line_t* line, char c)
         update_line(line);
         line->offset++;
         line->length++;
+    
+        history_update_cache(line->history, c);
     }
 }
 
