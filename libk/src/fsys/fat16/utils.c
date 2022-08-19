@@ -68,6 +68,12 @@ bool set_pos(const fat16_data_t* data, fat16_entry_t* entry, size_t position)
     uint64_t nclusters = position / data->bytes_per_cluster;
     uint64_t offset = position % data->bytes_per_cluster;
 
+    if(offset == 0)
+    {
+        nclusters--;
+        offset = data->bytes_per_cluster;
+    }
+
     entry->cluster = entry->first_cluster;
 
     while(nclusters--)
