@@ -142,7 +142,7 @@ static void register_ioapic(ioapic_entry_t* entry)
         entry.destMode = DEST_PHYS;
         entry.delvStatus = 0;
         entry.pinPolarity = PIN_AHIGH;
-        entry.remoteIRR = 0; // TODO: tf is this
+        entry.remoteIRR = 0;
         entry.triggerMode = TRIG_EDGE;
         entry.mask = 1;
         entry.destination = lapic_get_boot_id();
