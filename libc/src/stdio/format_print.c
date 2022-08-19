@@ -69,10 +69,11 @@ typedef struct format_data
     specifier_t specifier;
 } format_data_t;
 
-static size_t format_numeric(format_data_t format, printer_t* printer, const char* prefix, const char* buf)
+static int format_numeric(format_data_t format, printer_t* printer, const char* prefix, const char* buf)
 {
-    size_t printed_chars = 0;
+    int printed_chars = 0;
     size_t len = strlen(buf);
+    size_t offset = len;
 
     bool pad_left = format.flags & FLAG_LEFT;
     bool pad_zero = format.flags & FLAG_ZERO;
@@ -83,21 +84,21 @@ static size_t format_numeric(format_data_t format, printer_t* printer, const cha
         if(use_sign)
         {
             if(printer->print(printer->where, '+'))
-                printed_chars++, len++;
+                printed_chars++, offset++;
         }
         else if(use_space)
         {
             if(printer->print(printer->where, ' '))
-                printed_chars++, len++;
+                printed_chars++, offset++;
         }
 
     size_t pref_len = prefix ? strlen(prefix) : 0;
     for(size_t i = 0; i < pref_len; i++)
         if(printer->print(printer->where, prefix[i]))
-            printed_chars++, len++;
+            printed_chars++, offset++;
 
-    size_t prec = format.precision < 0 ? 0 : len < format.precision ? format.precision - len : 0;
-    size_t pad = prec + len < format.width ? format.width - (prec + len) : 0;
+    size_t prec = format.precision < 0 ? 0 : offset < format.precision ? format.precision - offset : 0;
+    size_t pad = prec + offset < format.width ? format.width - (prec + offset) : 0;
 
     if(!pad_left)
         for(size_t i = 0; i < pad; i++)
@@ -107,12 +108,12 @@ static size_t format_numeric(format_data_t format, printer_t* printer, const cha
         if(use_sign)
         {
             if(printer->print(printer->where, '+'))
-                printed_chars++, len++;
+                printed_chars++;
         }
         else if(use_space)
         {
             if(printer->print(printer->where, ' '))
-                printed_chars++, len++;
+                printed_chars++;
         }
 
     for(size_t i = 0; i < prec; i++)
@@ -128,7 +129,7 @@ static size_t format_numeric(format_data_t format, printer_t* printer, const cha
     return printed_chars;
 }
 
-static void eval_format(format_data_t format, va_list args, printer_t* printer, uint64_t* printed_chars)
+static void eval_format(format_data_t format, va_list args, printer_t* printer, int* printed_chars)
 {
     switch(format.specifier)
     {
@@ -262,7 +263,6 @@ static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, 
     while(*format != '\0')
     {
         char ch = *format++;
-
         if(ch != '%')
         {
             result += printer->print(printer->where, ch);
