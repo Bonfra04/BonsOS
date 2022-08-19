@@ -38,6 +38,17 @@ static void find_rsdt()
             break;
         }
 
+    if(rsdp == NULL)
+    {
+        uint64_t EBDA = (*(uint16_t*)0x40E << 4);
+        for(uint64_t addr = EBDA; addr < EBDA+1024; addr += 16)
+            if(memcmp((void*)addr, "RSD PTR ", 8) == 0)
+            {
+                rsdp = (rsdp_descriptor_t*)addr;
+                break;
+            }
+    }
+
     // TODO: check extended bios area
 
     if(rsdp == NULL)
