@@ -243,7 +243,7 @@ static bool ahci_rw(sata_device_t* device, uint64_t lba, void* address, size_t s
     cmd->fis_type = FIS_TYPE_REG_H2D;
     cmd->c = 1;
     cmd->command = write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX;
-    cmd->device = 1 << 6; // TODO: why?
+    cmd->device = 1 << 6; // standard requires this bit to be set
 
     uint32_t lba_low = lba & 0xFFFFFFFFLL;
     uint32_t lba_high = (lba >> 32) & 0xFFFFFFFFLL;
