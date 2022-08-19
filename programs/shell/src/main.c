@@ -13,7 +13,7 @@ int main()
     line_t* line = line_init();
     if (!line)
     {
-        fputs("calloc of input buffer failed\n", stderr);
+        fputs("Cannot instantiate line handler\n", stderr);
         return -1;
     }
 
