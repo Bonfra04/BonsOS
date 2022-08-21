@@ -28,6 +28,8 @@ static const size_t resources_size[] = {
 static process_t* kernel_process;
 thread_t* current_thread;
 
+static bool scheduling = false;
+
 extern void scheduler_tick(const interrupt_context_t* context);
 extern void scheduler_replace_switch(thread_t* thread);
 
@@ -123,6 +125,7 @@ void scheduler_start()
     asm volatile ("mov %0, rsp" : "=r"(current_thread->rsp) : : "memory");
 
     isr_set(LAPIC_ISR, scheduler_tick);
+    scheduling = true;
     scheduler_yield();
 }
 
@@ -369,7 +372,8 @@ bool scheduler_free_resource(int id, resource_type_t type)
 
 void scheduler_yield()
 {
-    asm("int 0x20");
+    if(scheduling)
+        asm("int 0x20");
 }
 
 thread_t* get_next_thread()
