@@ -41,9 +41,6 @@ bool is_absolute(const char* path)
     return false;
 }
 
-/*
-this function translate paths like "a:/bin/.." to "a:/", or "a:/bin/../bar" to "a:/bar"
-*/
 char* eval_path(const char* path)
 {
     if(!path)
