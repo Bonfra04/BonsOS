@@ -130,7 +130,7 @@ void main(const bootinfo_t* bootinfo)
     if(!executable)
         kernel_panic("Couldn't load init process");
 
-    scheduler_run_executable(executable, "a:", NULL, NULL);
+    scheduler_run_executable(executable, "a:/", NULL, NULL);
 
     scheduler_terminate_thread();
 }

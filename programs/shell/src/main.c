@@ -19,9 +19,8 @@ int main()
 
     while(1)
     {
-        char wd[257];
+        char wd[256];
         sys_getcwd(wd, 256);
-        strcat(wd, "/");
 
         fputs(wd, stdout);
         fputs(" $> ", stdout);

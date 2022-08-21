@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <libgen.h>
 
 #include "utils.h"
 
@@ -21,8 +22,11 @@ int syscall_setcwd(char* buff)
         return -1;
     }
 
+    char* simple = eval_path(path);
+    free(path);
+
     free((char*)current_thread->proc->workdir);
-    current_thread->proc->workdir = path;
+    current_thread->proc->workdir = simple;
 
     return 0;
 }
