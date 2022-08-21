@@ -77,5 +77,7 @@ char* eval_path(const char* path)
         free(stack[i]);
     }
 
+    darray_destroy(stack);
+
     return result;
 }
