@@ -54,6 +54,8 @@ void history_add(history_t* history, char* command)
 
 const char* history_get_next(history_t* history)
 {
+    if(history->size == 0)
+        return NULL;
     history->index += history->index != history->size - 1;
     char* command = history->commands[history->index];
     return command;
@@ -61,6 +63,8 @@ const char* history_get_next(history_t* history)
 
 const char* history_get_prev(history_t* history)
 {
+    if(history->size == 0)
+        return NULL;
     if(history->index == 0)
         return history->cache;
 

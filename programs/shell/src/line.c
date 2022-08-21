@@ -41,6 +41,8 @@ static void update_line(const line_t* line)
 
 static void replace(line_t* line, const char* str)
 {
+    if(str == NULL)
+        return;
     for (int i = 0; i < line->length; i++)
         putchar('\b');
 
