@@ -1,5 +1,8 @@
 #include <libgen.h>
 #include <string.h>
+#include <stdlib.h>
+
+#include <containers/darray.h>
 
 char* dirname(char* path)
 {
@@ -36,4 +39,43 @@ bool is_absolute(const char* path)
         path++;
     }
     return false;
+}
+
+/*
+this function translate paths like "a:/bin/.." to "a:/", or "a:/bin/../bar" to "a:/bar"
+*/
+char* eval_path(const char* path)
+{
+    if(!path)
+        return NULL;
+
+    char** stack = darray(char*, 0);
+
+    char* copy = strdup(path);
+    char* p = strtok(copy, "/");
+    while(p != NULL)
+    {
+        if(strcmp(p, "..") == 0)
+            darray_remove(stack, darray_length(stack) - 1);
+        else if(strcmp(p, ".") != 0 && strlen(p) > 0)
+            darray_append(stack, strdup(p));
+
+        p = strtok(NULL, "/");
+    }
+    free(copy);
+
+    size_t len = 0;
+    for(size_t i = 0; i < darray_length(stack); i++)
+        len += strlen(stack[i]) + 1;
+
+    char* result = malloc(len + 1);
+    result[0] = '\0';
+    for(size_t i = 0; i < darray_length(stack); i++)
+    {
+        strcat(result, stack[i]);
+        strcat(result, "/");
+        free(stack[i]);
+    }
+
+    return result;
 }
