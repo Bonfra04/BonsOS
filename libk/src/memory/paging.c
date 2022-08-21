@@ -1,9 +1,11 @@
 #include <memory/paging.h>
 #include <memory/pfa.h>
 #include <memory/mmap.h>
+#include <panic.h>
+
 #include <linker.h>
 #include <alignment.h>
-#include <panic.h>
+#include <atomic/mutex.h>
 
 #define PML_PRESENT (1ull << 0)
 #define PML_READWRITE (1ull << 1)
@@ -29,6 +31,7 @@
 #define PML_UPDATE_ADDRESS(entry, val) (PML_CLEAR_ADDRESS(entry), PML_SET_ADDRESS(entry, val))
 
 paging_data_t kernel_paging;
+static mutex_t paging_mutex = 0;
 
 static void clean_structure(paging_data_t data)
 {
@@ -93,6 +96,34 @@ static void clean_structure(paging_data_t data)
     }
 }
 
+static bool get_node(paging_data_t data, uint64_t pml4_offset, uint64_t pdp_offset, uint64_t pd_offset, uint64_t pt_offset, uint64_t** node)
+{
+   uint64_t* pml4 = data;
+    if((pml4[pml4_offset] & PML_PRESENT) == 0)
+        return false;
+
+    uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_offset]);
+    if((pdp[pdp_offset] & PML_PRESENT) == 0)
+        return false;
+
+    uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_offset]);
+    if((pd[pd_offset] & PML_PRESENT) == 0)
+        return false;
+
+    if(pd[pd_offset] & PML_SIZE)
+    {
+        *node = &pd[pd_offset];
+        return true;
+    }
+
+    uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
+    if((pt[pt_offset] & PML_PRESENT) == 0)
+        return false;
+
+    *node = &pt[pt_offset];
+    return true; 
+}
+
 void paging_init()
 {
     kernel_paging = paging_create();
@@ -111,7 +142,7 @@ void paging_destroy(paging_data_t data)
     uint64_t* pml4 = (uint64_t*)data;
     for(uint16_t pml4_off = 0; pml4_off < 512; pml4_off++)
     {
-        if((pml4[pml4_off] & PML_PRESENT )== 0)
+        if((pml4[pml4_off] & PML_PRESENT) == 0)
             continue;
 
         uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_off]);
@@ -150,26 +181,15 @@ void* paging_get_ph(paging_data_t data, const void* virtual_addr)
     uint64_t pd_offset = ((uint64_t)vt >> 21) & 0x01FF;
     uint64_t pt_offset = ((uint64_t)vt >> 12) & 0x01FF;
 
-    uint64_t* pml4 = data;
-    if((pml4[pml4_offset] & PML_PRESENT) == 0)
-        return 0;
+    mutex_acquire(&paging_mutex);
 
-    uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_offset]);
-    if((pdp[pdp_offset] & PML_PRESENT) == 0)
-        return 0;
-
-    uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_offset]);
-    if((pd[pd_offset] & PML_PRESENT) == 0)
-        return 0;
-
-    if(pd[pd_offset] & PML_SIZE)
-        return (uint8_t*)PML_GET_ADDRESS(pd[pd_offset]) + offset_2m;
-
-    uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
-    if((pt[pt_offset] & PML_PRESENT) == 0)
-        return 0;
-
-    return (uint8_t*)PML_GET_ADDRESS(pt[pt_offset]) + offset_4k;
+    void* phaddr = NULL;
+    uint64_t* node;
+    if(get_node(data, pml4_offset, pdp_offset, pd_offset, pt_offset, &node))
+        phaddr = (uint8_t*)PML_GET_ADDRESS(*node) + ((*node & PML_SIZE) ? offset_2m : offset_4k);
+    
+    mutex_release(&paging_mutex);
+    return phaddr;
 }
 
 page_privilege_t paging_get_privilege(paging_data_t data, void* virtual_addr)
@@ -182,26 +202,15 @@ page_privilege_t paging_get_privilege(paging_data_t data, void* virtual_addr)
     uint64_t pd_offset = ((uint64_t)vt >> 21) & 0x01FF;
     uint64_t pt_offset = ((uint64_t)vt >> 12) & 0x01FF;
 
-    uint64_t* pml4 = data;
-    if((pml4[pml4_offset] & PML_PRESENT) == 0)
-        return PAGE_PRIVILEGE_ERROR;
+    mutex_acquire(&paging_mutex);
 
-    uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_offset]);
-    if((pdp[pdp_offset] & PML_PRESENT) == 0)
-        return PAGE_PRIVILEGE_ERROR;
+    page_privilege_t priv = PAGE_PRIVILEGE_ERROR;
+    uint64_t* node;
+    if(get_node(data, pml4_offset, pdp_offset, pd_offset, pt_offset, &node))
+        priv = *node & PML_PRIVILEGE;
 
-    uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_offset]);
-    if((pd[pd_offset] & PML_PRESENT) == 0)
-        return PAGE_PRIVILEGE_ERROR;
-
-    if(pd[pd_offset] & PML_SIZE)
-        return pd[pd_offset] & PML_PRIVILEGE;
-
-    uint64_t* pt = PML_GET_ADDRESS(pd[pd_offset]);
-    if((pt[pt_offset] & PML_PRESENT) == 0)
-        return PAGE_PRIVILEGE_ERROR;
-
-    return pt[pt_offset] & PML_PRIVILEGE;
+    mutex_release(&paging_mutex);
+    return priv;
 }
 
 uint8_t paging_get_attr(paging_data_t data, void* vt_addr)
@@ -215,22 +224,15 @@ uint8_t paging_get_attr(paging_data_t data, void* vt_addr)
     uint64_t pd_off = ((uint64_t)vt >> 21) & 0x01FF;
     uint64_t pt_off = ((uint64_t)vt >> 12) & 0x01FF;
 
-    uint64_t* pml4 = (uint64_t*)data;
-    if((pml4[pml4_off] & PML_PRESENT) == 0)
-        return 0xFF;
+    mutex_acquire(&paging_mutex);
 
-    uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_off]);
-    if((pdp[pdp_off] & PML_PRESENT) == 0)
-        return 0xFF;
+    uint64_t attr = 0xFF;
+    uint64_t* node;
+    if(get_node(data, pml4_off, pdp_off, pd_off, pt_off, &node))
+        attr = (*node & PML_AVAILABLE) >> 9;
 
-    uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_off]);
-    if((pd[pd_off] & PML_PRESENT) == 0)
-        return 0xFF;
-    if(pt_off == -1)
-        return (pd[pd_off] & PML_AVAILABLE) >> 9;
-
-    uint64_t* pt = PML_GET_ADDRESS(pd[pd_off]);
-    return (pt[pt_off] & PML_AVAILABLE) >> 9;
+    mutex_release(&paging_mutex);
+    return attr;
 }
 
 bool paging_set_attr(paging_data_t data, void* vt_addr, uint8_t attr)
@@ -244,26 +246,18 @@ bool paging_set_attr(paging_data_t data, void* vt_addr, uint8_t attr)
     uint64_t pd_off = ((uint64_t)vt >> 21) & 0x01FF;
     uint64_t pt_off = ((uint64_t)vt >> 12) & 0x01FF;
 
-    uint64_t* pml4 = (uint64_t*)data;
-    if((pml4[pml4_off] & PML_PRESENT) == 0)
-        return false;
+    mutex_acquire(&paging_mutex);
 
-    uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_off]);
-    if((pdp[pdp_off] & PML_PRESENT) == 0)
-        return false;
-
-    uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_off]);
-    if((pd[pd_off] & PML_PRESENT) == 0)
-        return false;
-    if(pt_off != -1)
+    uint64_t* node;
+    bool done = false;
+    if(get_node(data, pml4_off, pdp_off, pd_off, pt_off, &node))
     {
-        uint64_t* pt = PML_GET_ADDRESS(pd[pd_off]);
-        PML_UPDATE_ADDRESS(pt[pt_off], attr);
+        done = true;
+        PML_UPDATE_AVAILABLE(*node, attr);
     }
-    else
-        PML_UPDATE_AVAILABLE(pd[pd_off], attr);
-
-    return true;
+    
+    mutex_release(&paging_mutex);
+    return done;
 }
 
 static void split_page(paging_data_t data, uint16_t pml4_offset, uint16_t pdp_offset, uint16_t pd_offset)
@@ -292,6 +286,8 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
     uint64_t pdp_offset = ((uint64_t)vt >> 30) & 0x01FF;
     uint64_t pd_offset = ((uint64_t)vt >> 21) & 0x01FF;
     uint64_t pt_offset = ((uint64_t)vt >> 12) & 0x01FF;
+
+    mutex_acquire(&paging_mutex);
 
     if(count > INT64_MAX)
         kernel_panic("paging_set_attr_range: count too big");
@@ -353,34 +349,41 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
             }
         }
     }
+
+    mutex_release(&paging_mutex);
 }
 
 bool paging_exists_page(paging_data_t data, uint16_t pml4_off, uint16_t pdp_off, uint16_t pd_off, uint16_t pt_off)
 {
     data = data ?: kernel_paging;
 
+    mutex_acquire(&paging_mutex);
+
     uint64_t* pml4 = (uint64_t*)data;
     if((pml4[pml4_off] & PML_PRESENT) == 0)
-        return false;
+        return mutex_relase_return(&paging_mutex, false);
     if(pdp_off == UINT16_MAX)
-        return true;
+        return mutex_relase_return(&paging_mutex, true);
 
     uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_off]);
     if((pdp[pdp_off] & PML_PRESENT) == 0)
-        return false;
+        return mutex_relase_return(&paging_mutex, false);
     if(pd_off == UINT16_MAX)
-        return true;
+        return mutex_relase_return(&paging_mutex, true);
 
     uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_off]);
     if((pd[pd_off] & PML_PRESENT) == 0)
-        return false;
+        return mutex_relase_return(&paging_mutex, false);
     if((pd[pd_off] & PML_SIZE) != 0)
-        return true;
+        return mutex_relase_return(&paging_mutex, true);
     if(pt_off == UINT16_MAX)
-        return true;
+        return mutex_relase_return(&paging_mutex, true);
 
     uint64_t* pt = PML_GET_ADDRESS(pd[pd_off]);
-    return (pt[pt_off] & PML_PRESENT) != 0;
+    bool present = (pt[pt_off] & PML_PRESENT) != 0;
+
+    mutex_release(&paging_mutex);
+    return present;
 }
 
 static bool attach_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege, bool size)
@@ -448,16 +451,6 @@ static bool attach_page(paging_data_t data, void* physical_addr, void* virtual_a
     return true;
 }
 
-bool paging_attach_4kb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege)
-{
-    return attach_page(data ?: kernel_paging, physical_addr, virtual_addr, privilege, 0);
-}
-
-bool paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege)
-{
-    return attach_page(data ?: kernel_paging, physical_addr, virtual_addr, privilege, 1);
-}
-
 bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege)
 {
     data = data ?: kernel_paging;
@@ -470,6 +463,8 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
     size_t amt_4kb = (length_aligned - (amt_2mb * 0x200000)) / 0x1000;
 
     bool error = false;
+
+    mutex_acquire(&paging_mutex);
 
     while(amt_4kb > 0 && vh_aligned % 0x200000 != 0)
     {
@@ -501,6 +496,7 @@ bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, siz
         amt_4kb--;
     }
 
+    mutex_release(&paging_mutex);
     return !error;
 }
 
@@ -541,16 +537,6 @@ static bool detach_page(paging_data_t data, void* virtual_addr, bool size)
     return true;
 }
 
-bool paging_detach_4kb_page(paging_data_t data, void* virtual_addr)
-{
-    return detach_page(data ?: kernel_paging, virtual_addr, false);
-}
-
-bool paging_detach_2mb_page(paging_data_t data, void* virtual_addr)
-{
-    return detach_page(data ?: kernel_paging, virtual_addr, true);
-}
-
 bool paging_unmap(paging_data_t data, void* virtual_addr, size_t length)
 {
     data = data ?: kernel_paging;
@@ -561,6 +547,9 @@ bool paging_unmap(paging_data_t data, void* virtual_addr, size_t length)
     size_t amt_4k = length_aligned / 0x1000;
 
     bool error = false;
+
+    mutex_acquire(&paging_mutex);
+
     while(amt_4k)
     {
         if(detach_page(data, (void*)vt, false))
@@ -590,5 +579,6 @@ bool paging_unmap(paging_data_t data, void* virtual_addr, size_t length)
         }
     }
 
+    mutex_release(&paging_mutex);
     return !error;
 }

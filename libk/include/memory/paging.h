@@ -86,26 +86,6 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
 bool paging_exists_page(paging_data_t data, uint16_t pml4_off, uint16_t pdp_off, uint16_t pd_off, uint16_t pt_off);
 
 /**
- * @brief attaches a page to a paging structure
- * @param[in] data data structure to modify (NULL if refearing to kernel identity structure)
- * @param[in] physical_addr 4KB aligned physical address to map form
- * @param[in] virtual_addr 4KB aligned virtual address to map to
- * @param[in] privilege page privilege
- * @return success
- */
-bool paging_attach_4kb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege);
-
-/**
- * @brief attaches a page to a paging structure
- * @param[in] data data structure to modify (NULL if refearing to kernel identity structure)
- * @param[in] physical_addr 2MB aligned physical address to map form
- * @param[in] virtual_addr 2MB aligned virtual address to map to
- * @param[in] privilege page privilege
- * @return success
- */
-bool paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtual_addr, page_privilege_t privilege);
-
-/**
  * @brief automatically creates and attaches pages to a paging structure
  * @param[in] data data structure to modify (NULL if refearing to kernel identity structure)
  * @param[in] physical_addr 4KB aligned physical address to map form
@@ -114,22 +94,6 @@ bool paging_attach_2mb_page(paging_data_t data, void* physical_addr, void* virtu
  * @param[in] privilege page privilege
  */
 bool paging_map(paging_data_t data, void* physical_addr, void* virtual_addr, size_t length, page_privilege_t privilege);
-
-/**
- * @brief detaches a page from a paging structure
- * @param[in] data data structure to modify (NULL if refearing to kernel identity structure)
- * @param[in] virtual_addr 4KB aligned virtual address of the page to detach
- * @return success
- */
-bool paging_detach_4kb_page(paging_data_t data, void* virtual_addr);
-
-/**
- * @brief detaches a page from a paging structure
- * @param[in] data data structure to modify (NULL if refearing to kernel identity structure)
- * @param[in] virtual_addr 2MB aligned virtual address to map to
- * @return success
- */
-bool paging_detach_2mb_page(paging_data_t data, void* virtual_addr);
 
 /**
  * @brief automatically detaches pages from a paging structure

@@ -1,8 +1,10 @@
 #include <memory/pfa.h>
 #include <memory/mmap.h>
+#include <panic.h>
+
 #include <linker.h>
 #include <alignment.h>
-#include <panic.h>
+#include <atomic/mutex.h>
 
 #include <string.h>
 #include <stdbool.h>
@@ -12,6 +14,8 @@
 static uint32_t* bitmap;
 static size_t max_pages;
 static size_t used_pages;
+
+static mutex_t alloc_mutext = 0;
 
 static inline uint64_t free_pages()
 {
@@ -86,6 +90,8 @@ void pfa_init()
 
 void* pfa_alloc(size_t count)
 {
+    mutex_acquire(&alloc_mutext);
+
     if(free_pages() < count)
         kernel_panic("pfa_alloc: not enough free pages");
 
@@ -98,6 +104,8 @@ void* pfa_alloc(size_t count)
         bitmap_set(frame + i);
 
     used_pages += count;
+
+    mutex_release(&alloc_mutext);
     return (void*)(frame * PFA_PAGE_SIZE);
 }
 
@@ -112,10 +120,14 @@ void pfa_free(void* ptr, size_t count)
 {
     uint64_t frame = (uint64_t)ptr / PFA_PAGE_SIZE;
 
+    mutex_acquire(&alloc_mutext);
+    
     for(size_t i = 0; i < count; i++)
         bitmap_unset(frame + i);
 
     used_pages -= count;
+
+    mutex_release(&alloc_mutext);
 }
 
 void pfa_init_region(void* base_address, size_t length)
@@ -131,11 +143,13 @@ void pfa_init_region(void* base_address, size_t length)
     size_t pages = length_aligned / PFA_PAGE_SIZE;
     uint64_t page_index = base_aligned / PFA_PAGE_SIZE;
 
+    mutex_acquire(&alloc_mutext);
     while(pages--)
     {
         bitmap_unset(page_index++);
         used_pages--;
     }
+    mutex_release(&alloc_mutext);
 }
 
 void pfa_deinit_region(void* base_address, size_t length)
@@ -146,9 +160,11 @@ void pfa_deinit_region(void* base_address, size_t length)
     size_t pages = length_aligned / PFA_PAGE_SIZE;
     uint64_t page_index = base_aligned / PFA_PAGE_SIZE;
 
+    mutex_acquire(&alloc_mutext);
     while(pages--)
     {
         bitmap_set(page_index++);
         used_pages++;
     }
+    mutex_release(&alloc_mutext);
 }
