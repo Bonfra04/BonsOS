@@ -13,3 +13,4 @@ void mutex_acquire(mutex_t* mutex);
  * @brief releases a mutex
  */
 void mutex_release(mutex_t* mutex);
+#define mutex_relase_return(mutex, value) ({ mutex_release(mutex); value; })
