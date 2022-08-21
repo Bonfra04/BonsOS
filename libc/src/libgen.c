@@ -52,9 +52,9 @@ char* eval_path(const char* path)
     char* p = strtok(copy, "/");
     while(p != NULL)
     {
-        if(strcmp(p, "..") == 0)
+        if(strcmp(p, "..") == 0 && strlen(p) == 2)
             darray_remove(stack, darray_length(stack) - 1);
-        else if(strcmp(p, ".") != 0 && strlen(p) > 0)
+        else if(!(strcmp(p, ".") == 0 && strlen(p) == 1) && strlen(p) > 0)
             darray_append(stack, strdup(p));
 
         p = strtok(NULL, "/");
@@ -65,7 +65,7 @@ char* eval_path(const char* path)
     for(size_t i = 0; i < darray_length(stack); i++)
         len += strlen(stack[i]) + 1;
 
-    char* result = malloc(len + 1);
+    char* result = malloc(len + 2);
     result[0] = '\0';
     for(size_t i = 0; i < darray_length(stack); i++)
     {
@@ -75,6 +75,5 @@ char* eval_path(const char* path)
     }
 
     darray_destroy(stack);
-
     return result;
 }
