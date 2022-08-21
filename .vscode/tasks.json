@@ -19,7 +19,7 @@
         {
             "label": "run qemu (debug)",
             "type": "shell",
-            "command": "sleep 1 && (qemu-system-x86_64 -d int -D qemu.log -smp 1 -M q35 -m 512M -drive file=./BonsOS.img,index=0,media=disk,format=raw -no-reboot -no-shutdown -S -gdb tcp::9000 | echo .)",
+            "command": "sleep 1 && (./scripts/run_qemu.sh DEBUG | echo .)",
             "isBackground": true,
             "presentation": {
                 "clear": true,

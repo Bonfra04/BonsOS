@@ -13,7 +13,7 @@ Run `$ ./dependencies.sh` to install al the needed dependencies and build a cros
 To compile the code and generate the `BonsOS.img` output file you can either run `$ make` or in VSCode you can run the `compile` task.
 
 ## Run the project:
-You can either run it manually via any virtual machine or inside VSCode running the `run qemu (debug)` task.
+You can either run it manually via any virtual machine or inside VSCode running the `run qemu (debug)` task. The script `./scripts/run_qemu.sh` runs the image in qemu with the correct flags
 
 ### Debug the project:
 Open the folder in VSCode and install the [Native Debug](https://marketplace.visualstudio.com/items?itemName=webfreak.debug) extension. Hit F5 to start the debugger.
