@@ -372,7 +372,7 @@ bool scheduler_free_resource(int id, resource_type_t type)
 
 void scheduler_yield()
 {
-    if(scheduling)
+    if(scheduling && (get_flags() & CPU_EFLAGS_INTERRUPT))
         asm("int 0x20");
 }
 
