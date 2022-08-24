@@ -65,7 +65,7 @@ char* eval_path(const char* path)
     for(size_t i = 0; i < darray_length(stack); i++)
         len += strlen(stack[i]) + 1;
 
-    char* result = malloc(len + 2);
+    char* result = malloc(len + 1);
     result[0] = '\0';
     for(size_t i = 0; i < darray_length(stack); i++)
     {
