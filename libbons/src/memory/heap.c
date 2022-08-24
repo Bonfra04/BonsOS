@@ -67,6 +67,9 @@ void* heap_malloc(size_t size)
                 new_region->free = true;
                 new_region->chunk_id = current_region->chunk_id;
 
+                if(new_region->next_region)
+                    new_region->next_region->previous_region = new_region;
+
                 current_region->next_region = new_region;
                 current_region->length = size + sizeof(heap_region_t);
             }
