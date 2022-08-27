@@ -54,3 +54,8 @@ bool sys_delete_file(const char* path)
 {
     return (bool)sys(SYSCALL_DELETE_FILE, (uint64_t)path, 0, 0);
 }
+
+void sys_sched_yield()
+{
+    sys(SYSCALL_SCHED_YIELD, 0, 0, 0);
+}

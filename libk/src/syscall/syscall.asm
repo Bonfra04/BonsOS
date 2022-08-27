@@ -29,7 +29,7 @@ endstruc
 SELECTOR_KERNEL_DATA equ 0x10
 SELECTOR_USER_DATA equ 0x18
 
-MAX_SYSCALLS equ 11
+MAX_SYSCALLS equ 12
 
 syscall_handle:
     push r11        ; save flags
