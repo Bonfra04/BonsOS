@@ -81,7 +81,7 @@ void* vmm_assign_pages(paging_data_t paging_data, page_privilege_t privilege, si
     uint64_t vt_addr = (uint64_t)paging_vt_from_indexes(candidate_pml4, candidate_pdp, candidate_pd, candidate_pt);
 
     if(!paging_map(paging_data, ph_addr, (void*)vt_addr, count * PFA_PAGE_SIZE, privilege))
-        return vt_addr = NULL;
+        vt_addr = NULL;
 
     mutex_release(&assign_mutex);
     return (void*)vt_addr;
