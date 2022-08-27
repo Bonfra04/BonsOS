@@ -2,7 +2,7 @@
 
 #include <stdatomic.h>
 
-typedef atomic_uchar mutex_t;
+typedef uint64_t mutex_t;
 
 /**
  * @brief waits for a mutex to be released, then locks it and return
