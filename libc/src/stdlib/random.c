@@ -2,7 +2,7 @@
 
 static unsigned int _seed;
 
-void __attribute__((constructor)) __random_init()
+void __random_init()
 {
     _seed = 1;
 }

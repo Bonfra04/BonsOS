@@ -8,7 +8,7 @@ FILE* stdin;
 FILE* stdout;
 FILE* stderr;
 
-static void __attribute__((constructor)) __files_init()
+void __files_init()
 {
     stdin = calloc(sizeof(FILE), 1);
     stdin->fd = 0;

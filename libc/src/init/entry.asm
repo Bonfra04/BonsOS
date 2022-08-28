@@ -5,17 +5,22 @@ bits 64
 section .text
     global _start
     extern main
+    extern __libc_init
     extern call_ctors
+    extern call_dtors
     extern exit
 
 _start:
-    push rdi ; save argc
-    push rsi ; save argv
+    push rdi    ; save argc
+    push rsi    ; save argv
+    call __libc_init
     call call_ctors
-    pop rsi ; restore argv
-    pop rdi ; restore argc
+    pop rsi     ; restore argv
+    pop rdi     ; restore argc
     call main
-    mov rax, rdi ; exit status
+    push rax    ; save exit code
+    call call_dtors
+    pop rdi     ; restore exit code
     call exit
 
 %endif

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void __attribute__((constructor)) __memory_init()
+void __memory_init()
 {
     heap_init();
 }
