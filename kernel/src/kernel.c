@@ -29,6 +29,7 @@
 #include <fsys/fsys.h>
 #include <fsys/fat16/fat16.h>
 #include <fsys/vfs/vfs_tty.h>
+#include <fsys/vfs/vfs_fb.h>
 
 #include <smp/scheduler.h>
 
@@ -119,6 +120,7 @@ void init(const bootinfo_t* bootinfo)
 
     // virtual file systems
     vfs_tty_init();
+    vfs_fb_init();
 }
 
 void main(const bootinfo_t* bootinfo)
