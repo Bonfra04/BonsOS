@@ -75,6 +75,8 @@ static bool is_valid_id(uint64_t id)
 
 file_t vfs_fb_open_file(fs_data_t* fs, const char* filename, fsys_file_mode_t mode)
 {
+    (void)fs, (void)mode;
+
     if(!vfs_fb_exists_file(fs, filename))
         return INVALID_FILE;
 
@@ -98,6 +100,8 @@ bool vfs_fb_close_file(fs_data_t* fs, file_t* file)
 
 size_t vfs_fb_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length)
 {
+    (void)fs;
+
     fb_entry_t* entry = unpack_file(file);
     if(entry->is_dir)
         return 0;
@@ -112,6 +116,8 @@ size_t vfs_fb_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t length
 
 size_t vfs_fb_write_file(fs_data_t* fs, file_t* file, const void* buffer, size_t length)
 {
+    (void)fs;
+
     fb_entry_t* entry = unpack_file(file);
     if(entry->is_dir)
         return 0;
@@ -179,6 +185,8 @@ bool vfs_fb_set_position(fs_data_t* fs, file_t* file, size_t position)
 
 bool vfs_fb_exists_file(fs_data_t* fs, const char* filename)
 {
+    (void)fs;
+
     if(filename[0] != '/')
         return false;
 
@@ -231,5 +239,6 @@ bool vfs_fb_close_dir(fs_data_t* fs, file_t* dir)
 
 bool vfs_fb_error(fs_data_t* fs, const file_t* file)
 {
+    (void)fs, (void)file;
     return false;
 }
