@@ -38,6 +38,7 @@
 #include <executable/executable.h>
 
 #include <timers/hpet.h>
+#include <timers/rtc.h>
 
 #include <log.h>
 
@@ -82,6 +83,9 @@ void init(const bootinfo_t* bootinfo)
 
     // hpet timer
     hpet_init();
+
+    // rtc timer
+    rtc_init();
 
     // interrupts
     pic_disable();
