@@ -43,3 +43,31 @@ void screen_clear(uint32_t color);
  * @param[in] color RGB color of the pixel
  */
 void screen_plot_pixel(uint64_t x, uint64_t y, uint32_t color);
+
+/**
+ * @brief reads a pixel value from the screen
+ * @param[in] x x coordinate
+ * @param[in] y y coordinate
+ * @return RGB color of the pixel
+ */
+void screen_get_pixel(uint64_t x, uint64_t y);
+
+/**
+ * @brief sets a screen area to the colors specified in the given array
+ * @param[in] x x coordinate of the start of the area
+ * @param[in] y y coordinate of the start of the area
+ * @param[in] size number of contiguous pixels from the coordinates on
+ * @param[in] pixels array of pixels (RGB format) to copy to the screen
+ * @return number of pixels correctly written
+ */
+size_t screen_set_area(uint64_t x, uint64_t y, uint64_t size, const uint32_t* pixels);
+
+/**
+ * @brief reads a screen area to the specified pixels array
+ * @param[in] x x coordinate of the start of the area
+ * @param[in] y y coordinate of the start of the area
+ * @param[in] size number of contiguous pixels from the coordinates on
+ * @param[in] pixels array of pixels (RGB format) to populate
+ * @return number of pixels correctly read
+ */
+size_t screen_get_area(uint64_t x, uint64_t y, uint64_t size, uint32_t* pixels);
