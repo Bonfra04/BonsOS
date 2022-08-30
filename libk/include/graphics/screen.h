@@ -50,7 +50,7 @@ void screen_plot_pixel(uint64_t x, uint64_t y, uint32_t color);
  * @param[in] y y coordinate
  * @return RGB color of the pixel
  */
-void screen_get_pixel(uint64_t x, uint64_t y);
+uint32_t screen_get_pixel(uint64_t x, uint64_t y);
 
 /**
  * @brief sets a screen area to the colors specified in the given array

@@ -57,10 +57,10 @@ void screen_plot_pixel(uint64_t x, uint64_t y, uint32_t color)
     *(uint32_t*)(pixel_offset + framebuffer) = color;
 }
 
-void screen_get_pixel(uint64_t x, uint64_t y)
+uint32_t screen_get_pixel(uint64_t x, uint64_t y)
 {
     if(x >= screen_width || y >= screen_height)
-        return;
+        return 0;
 
     uint32_t pixel_offset = y * screen_pitch + (x * (SCREEN_BPP / 8));
     return *(uint32_t*)(pixel_offset + framebuffer);
