@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 int syscall_open_file(const char* path, int mode);
 bool syscall_close_file(int fd);
@@ -15,3 +16,4 @@ char* syscall_getcwd(char* buff, size_t size);
 int syscall_setcwd(char* buff);
 bool syscall_delete_file(const char* path);
 void syscall_sched_yield();
+uint64_t syscall_time();

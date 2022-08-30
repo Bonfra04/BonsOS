@@ -59,3 +59,8 @@ void sys_sched_yield()
 {
     sys(SYSCALL_SCHED_YIELD, 0, 0, 0);
 }
+
+uint64_t sys_time()
+{
+    return sys(SYSCALL_TIME, 0, 0, 0);
+}

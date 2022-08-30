@@ -20,6 +20,7 @@
 #define SYSCALL_SETCWD 9
 #define SYSCALL_DELETE_FILE 10
 #define SYSCALL_SCHED_YIELD 11
+#define SYSCALL_TIME 12
 
 uint64_t sys(uint64_t id, uint64_t arg1, uint64_t arg2, uint64_t arg3);
 
@@ -35,3 +36,4 @@ char* sys_getcwd(char* buff, size_t size);
 int sys_setcwd(char* buff);
 bool sys_delete_file(const char* path);
 void sys_sched_yield();
+uint64_t sys_time();

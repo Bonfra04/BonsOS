@@ -4,7 +4,7 @@
 
 #include "syscalls.h"
 
-#define MAX_SYSCALLS 12
+#define MAX_SYSCALLS 13
 
 extern void syscall_handle();
 
@@ -24,6 +24,7 @@ void syscall_init()
     syscall_handlers[9] = syscall_setcwd;
     syscall_handlers[10] = syscall_delete_file;
     syscall_handlers[11] = syscall_sched_yield;
+    syscall_handlers[12] = syscall_time;
 }
 
 void syscall_enable()
