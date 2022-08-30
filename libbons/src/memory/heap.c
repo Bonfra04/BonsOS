@@ -1,5 +1,6 @@
 #include <memory/heap.h>
 #include <alignment.h>
+#include <atomic/mutex.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -17,6 +18,7 @@ typedef struct heap_region
 static void* base_address;
 static uint64_t size;
 static heap_region_t* first_region;
+static mutex_t heap_mutex;
 
 #ifdef KERNEL_BUILD
 #include <memory/pfa.h>
@@ -45,6 +47,8 @@ void heap_init()
     first_region->previous_region = NULL;
     first_region->free = true;
     first_region->chunk_id = 0;
+
+    heap_mutex = 0;
 }
 
 void* heap_malloc(size_t size)
@@ -52,6 +56,9 @@ void* heap_malloc(size_t size)
     if(size == 0)
         return NULL;
 
+    mutex_acquire(&heap_mutex);
+
+    retry: {}
     heap_region_t* current_region = first_region;
 
     while(true)
@@ -75,7 +82,9 @@ void* heap_malloc(size_t size)
             }
 
             current_region->free = false;
-            return current_region + 1;
+            void* region = current_region + 1;
+            mutex_release(&heap_mutex);
+            return region;
         }
         else if(current_region->next_region == NULL)
             break;
@@ -92,7 +101,7 @@ void* heap_malloc(size_t size)
 
     current_region->next_region = new_region;
 
-    return heap_malloc(size);
+    goto retry;
 }
 
 void heap_free(void* address)
@@ -101,6 +110,9 @@ void heap_free(void* address)
         return;
 
     heap_region_t* region = (heap_region_t*)address - 1;
+
+    mutex_acquire(&heap_mutex);
+
     region->free = true;
 
     if(region->previous_region != NULL && region->previous_region->free && region->chunk_id == region->previous_region->chunk_id)
@@ -114,4 +126,6 @@ void heap_free(void* address)
         region->length += region->next_region->length;
         region->next_region = region->next_region->next_region;
     }
+
+    mutex_release(&heap_mutex);
 }
