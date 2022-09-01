@@ -131,7 +131,10 @@ bool fsys_close_file(file_t* file)
         return false;
 
     file_system_t* fs = file->fsys;
-    return fs->close_file(&fs->data, file);
+    if(!fs)
+        return false;
+
+    return fs ?: fs->close_file(&fs->data, file);
 }
 
 size_t fsys_read_file(file_t* file, void* buffer, size_t length)
@@ -140,6 +143,9 @@ size_t fsys_read_file(file_t* file, void* buffer, size_t length)
         return 0;
 
     file_system_t* fs = file->fsys;
+    if(!fs)
+        return 0;
+
     return fs->read_file(&fs->data, file, buffer, length);
 }
 
@@ -149,6 +155,9 @@ size_t fsys_write_file(file_t* file, void* buffer, size_t length)
         return 0;
 
     file_system_t* fs = file->fsys;
+    if(!fs)
+        return 0;
+
     return fs->write_file(&fs->data, file, buffer, length);
 }
 
