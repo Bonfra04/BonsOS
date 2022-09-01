@@ -151,14 +151,12 @@ void pci_init()
         }
 }
 
-void pci_toggle_bus_master(uint8_t bus, uint8_t device, uint8_t function, bool enable)
+void pci_set_privileges(pci_device_t* device, uint8_t privileges)
 {
-    uint16_t command = pci_get_command(bus, device, function);
-    if(enable)
-        command |= PCI_BUS_MASTER;
-    else
-        command &= ~PCI_BUS_MASTER;
-    pci_set_command(bus, device, function, command);
+    uint16_t command = device->command_register;
+    command &= ~0b111;
+    command |= privileges;
+    device->command_register = command;
 }
 
 pci_device_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function)

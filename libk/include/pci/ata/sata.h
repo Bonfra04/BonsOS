@@ -12,7 +12,7 @@ void sata_init();
  * @brief registers a sata device
  * @param[in] device the device descriptor
  */
-void sata_register_device(const pci_device_t* device);
+void sata_register_device(pci_device_t* device);
 
 /**
  * @brief returns the number of sata devices

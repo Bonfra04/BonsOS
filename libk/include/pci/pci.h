@@ -37,19 +37,21 @@ typedef struct pci_device
     uint8_t varies[192];
 } __attribute__ ((packed)) pci_device_t;
 
+#define PCI_PRIV_PIO (1 << 0) 
+#define PCI_PRIV_MMIO (1 << 1)
+#define PCI_PRIV_DMA (1 << 2)
+
 /**
  * @brief enumerates the pci bus initializing all connected devices
  */
 void pci_init();
 
 /**
- * @brief sets the bus master bit for the given device
- * @param bus the bus number
- * @param device the device number
- * @param function the function number
- * @param enable true to enable, false to disable
+ * @brief sets privileges for the given device
+ * @param device pointer to device
+ * @param privileges privileges bitmask
  */
-void pci_toggle_bus_master(uint8_t bus, uint8_t device, uint8_t function, bool enable);
+void pci_set_privileges(pci_device_t* device, uint8_t privileges);
 
 /**
  * @brief fetch the pci returning the 256 bytes data structure describing the device

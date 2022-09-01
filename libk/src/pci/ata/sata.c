@@ -56,8 +56,7 @@ static void ahci_reset(volatile hba_mem_t* hba)
 
 static bool init_port(volatile hba_port_t* port)
 {
-    uint64_t page0 = (uint64_t)pfa_alloc(1);
-    memset((void*)page0, 0, PFA_PAGE_SIZE);
+    uint64_t page0 = (uint64_t)pfa_calloc(1);
 
     uint64_t cmd_address = page0;
     uint32_t cmd_low = cmd_address & 0xFFFFFFFFLL;
@@ -98,10 +97,8 @@ static bool init_port(volatile hba_port_t* port)
     port->is = 0;
 
     volatile hba_cmd_header_t* cmd_header = ptr(cmd_address);
-    uint64_t page1 = (uint64_t)pfa_alloc(1);
-    uint64_t page2 = (uint64_t)pfa_alloc(1);
-    memset((void*)page1, 0, PFA_PAGE_SIZE);
-    memset((void*)page2, 0, PFA_PAGE_SIZE);
+    uint64_t page1 = (uint64_t)pfa_calloc(1);
+    uint64_t page2 = (uint64_t)pfa_calloc(1);
 
     for (uint8_t i = 0; i < 32; i++)
     {
@@ -263,8 +260,10 @@ static bool ahci_rw(sata_device_t* device, uint64_t lba, void* address, size_t s
     return true;
 }
 
-void sata_register_device(const pci_device_t* pci_device)
+void sata_register_device(pci_device_t* pci_device)
 {
+    pci_set_privileges(pci_device, PCI_PRIV_DMA | PCI_PRIV_MMIO);
+
     paging_map(NULL, ptr(pci_device->base5), ptr(pci_device->base5), sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL);
     pfa_deinit_region(ptr(pci_device->base5), sizeof(hba_mem_t));
 
