@@ -134,7 +134,7 @@ bool fsys_close_file(file_t* file)
     if(!fs)
         return false;
 
-    return fs ?: fs->close_file(&fs->data, file);
+    return fs->close_file(&fs->data, file);
 }
 
 size_t fsys_read_file(file_t* file, void* buffer, size_t length)
