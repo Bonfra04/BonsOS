@@ -1,5 +1,5 @@
 #include <storage/storage.h>
-#include <pci/ata/sata.h>
+#include <pci/ata/ata.h>
 
 #include <string.h>
 #include <assert.h>
@@ -14,15 +14,15 @@ void storage_init()
 {
     storage_devices = darray(storage_device_t, 0);
 
-    for(size_t i = 0; i < sata_ndisks(); i++)
+    for(size_t i = 0; i < ata_ndevices(); i++)
     {
         storage_data_t data;
         memset(&data, 0, sizeof(storage_data_t));
-        data.capacity = sata_get_capacity(i);
+        data.capacity = ata_capacity(i);
         data.internal_id = i;
-        data.sector_size = sata_get_sector_size(i);
-        data.reader = sata_read;
-        data.writer = sata_write;
+        data.sector_size = ata_sector_size(i);
+        data.reader = ata_read;
+        data.writer = ata_write;
 
         storage_register_device(data);
     }
