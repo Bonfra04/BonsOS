@@ -87,11 +87,6 @@ static inline uint16_t pci_get_vendor(uint8_t bus, uint8_t device, uint8_t funct
     return pci_read_16(bus, device, function, offsetof(pci_device_t, vendor_id));
 }
 
-static inline uint16_t pci_get_command(uint8_t bus, uint8_t device, uint8_t function)
-{
-    return pci_read_16(bus, device, function, offsetof(pci_device_t, command_register));
-}
-
 static inline uint8_t pci_get_header_type(uint8_t bus, uint8_t device, uint8_t function)
 {
     return pci_read_8(bus, device, function, offsetof(pci_device_t, header_type));
@@ -100,11 +95,6 @@ static inline uint8_t pci_get_header_type(uint8_t bus, uint8_t device, uint8_t f
 static inline uint8_t pci_get_class(uint8_t bus, uint8_t device, uint8_t function)
 {
     return pci_read_8(bus, device, function, offsetof(pci_device_t, class));
-}
-
-static inline void pci_set_command(uint8_t bus, uint8_t device, uint8_t function, uint16_t value)
-{
-    pci_write_16(bus, device, function, offsetof(pci_device_t, command_register), value);
 }
 
 static void register_device(uint8_t bus, uint8_t dev, uint8_t func)
