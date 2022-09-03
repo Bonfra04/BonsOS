@@ -32,14 +32,14 @@ static uint8_t get_free_cmd_slot(ahci_device_t* dev)
         }
     }
 
-    return 0xFF;
+    return UINT8_MAX;
 }
 
 static ahci_command_t allocate_command(ahci_device_t* dev)
 {
     uint8_t i = get_free_cmd_slot(dev);
-    if(i == 0xFF)
-        return (ahci_command_t){ .cmd_table = NULL, .index = ~0 };
+    if(i == UINT8_MAX)
+        return (ahci_command_t){ .cmd_table = NULL, .index = UINT8_MAX };
 
     volatile hba_cmd_header_t* header = &dev->cmd_header[i];
     hba_cmd_table_t* table = (void*)(header->ctba | ((uint64_t)header->ctbau << 32));
@@ -57,48 +57,67 @@ static uint32_t calc_bytecount(size_t count)
     return (((count + 1) & ~1) - 1) & 0x3FFFFF;
 }
 
-static void wait_ready(ahci_device_t* dev)
+static void wait_ready(volatile hba_port_t* port)
 {
-    while((dev->port->tfd & HBA_PxTFD_STS_BSY) || (dev->port->tfd & HBA_PxTFD_STS_DRQ))
+    while(port->tfd & (HBA_PxTFD_STS_BSY | HBA_PxTFD_STS_DRQ))
         asm("pause");
 }
 
 static void idle_port(volatile hba_port_t* port)
 {
-    port->cmd &= ~HBA_PxCMD_ST;
-    while(port->cmd & HBA_PxCMD_CR)
-        asm("pause");
+    port->cmd &= ~(HBA_PxCMD_ST | HBA_PxCMD_FRE);
 
-    port->cmd &= ~HBA_PxCMD_FRE;
-    while(port->cmd & HBA_PxCMD_FR)
+    while((port->cmd & HBA_PxCMD_CR) && (port->cmd & HBA_PxCMD_FR))
         asm("pause");
 }
 
-static bool init_port(volatile hba_port_t* port)
-{ 
-    uint8_t det = port->ssts & 0xF;
-    uint8_t ipm = (port->ssts >> 8) & 0xFF;
-    if(det != 3)
-    {
-        if(det == 0)
-            return false; // no Device and no comms
-        else if(det == 1)
-            kernel_panic("Device but no comms, TODO implement COMRESET");
-        else if(det == 4) // port offline
-            return false;
-        else
-            kernel_panic("Unknown PxSSTS.det value %lu", (uint32_t)det);
-    }
-    if(ipm != 1)
-        kernel_panic("TODO Get device out of sleep state");
+static bool reset_port(volatile hba_port_t* port)
+{
+    port->sctl |= HBA_PxSCTL_DET_RESET;
+    pit_prepare_one_shot(1);
+    pit_perform_one_shot();
 
-    uint32_t sig = port->sig;
-    if(sig == 0)
+    port->sctl &= ~HBA_PxSCTL_DET_RESET;
+    pit_prepare_one_shot(1);
+    pit_perform_one_shot();
+
+    port->ie = 0;
+
+    uint64_t spin = 0;
+    while(spin++ < 10000000)
+    {
+        uint8_t det = port->ssts & HBA_PxSSTS_DET;
+        if(det == HBA_PxSCTL_DET_DEV_NO_PHY || det == HBA_PxSCTL_DET_DEV_PHY)
+            break;
+    }
+    if(spin > 10000000)
         return false;
 
-    if(sig != SATA_SIG_ATA && sig != SATA_SIG_ATAPI)
-        kernel_panic("ahci: Unknown PxSIG (%#X)", sig);
+    port->serr = UINT32_MAX;
 
+    spin = 0;
+    while(spin++ < 10000000)
+    {
+        uint8_t det = port->ssts & HBA_PxSSTS_DET;
+        if(det == HBA_PxSCTL_DET_DEV_PHY)
+            break;
+        if(det == HBA_PxSCTL_DET_OFFLINE)
+            return false;
+    }
+    if(spin > 10000000)
+        return false;
+
+    while(port->tfd & HBA_PxTFD_STS_BSY)
+        asm("pause");
+
+    port->serr = UINT32_MAX;
+    port->is = UINT32_MAX;
+
+    return true;
+}
+
+static bool init_port(volatile hba_port_t* port)
+{
     idle_port(port);
 
     uint64_t page0 = (uint64_t)pfa_calloc(1);
@@ -117,20 +136,6 @@ static bool init_port(volatile hba_port_t* port)
     port->fb = fis_low;
     port->fbu = fis_high;
 
-    port->cmd |= HBA_PxCMD_ST | HBA_PxCMD_FRE;
-
-    port->ie = 0;
-    port->is = ~0u;
-
-    pit_prepare_one_shot(1);
-    pit_perform_one_shot();
-
-    if(!(port->cmd & HBA_PxCMD_CR) || !(port->cmd & HBA_PxCMD_FR))
-    {
-        kernel_warn("Failed to start CMD engine");
-        return false;
-    }
-
     volatile hba_cmd_header_t* cmd_header = ptr(cmd_address);
     uint64_t page1 = (uint64_t)pfa_calloc(1);
     uint64_t page2 = (uint64_t)pfa_calloc(1);
@@ -147,13 +152,47 @@ static bool init_port(volatile hba_port_t* port)
         cmd_header[i].ctbau = cmd_addr_high;
     }
 
+    port->cmd = HBA_PxCMD_ICC_ACTIVE | HBA_PxCMD_POD | HBA_PxCMD_SUD;
+    port->cmd |= HBA_PxCMD_FRE;
+
+    if(!reset_port(port))
+        return false;
+
+    while(port->cmd & HBA_PxCMD_CR)
+		asm("pause");
+
+    port->cmd |= HBA_PxCMD_FRE | HBA_PxCMD_ST;
+
+    if(port->sig != AHCI_SIG_ATA) // only support sata drivers for the moment
+        return false;
+
     return true;
+}
+
+static void bios_handoff(volatile hba_mem_t* hba)
+{
+    if(!(hba->cap2 & HBA_CAP2_BOH))
+        return;
+
+    hba->bohc |= HBA_BOHC_OOS;
+    while(!(hba->bohc & HBA_BOHC_OOS) || (hba->bohc & HBA_BOHC_BOS))
+        asm("pause");
+}
+
+static void ahci_reset(volatile hba_mem_t* hba)
+{
+    hba->ghc |= HBA_GHC_HR;
+    while(hba->ghc & HBA_GHC_HR)
+        asm("pause");
+    hba->ghc |= HBA_GHC_AE;
 }
 
 static void init_device(volatile hba_mem_t* hba, void (*registrant)(ata_device_t*))
 {
-    hba->ghc |= HBA_GHC_AE;
-    hba->is = ~0u;
+    bios_handoff(hba);
+    hba->ghc = HBA_GHC_AE; // enable achi mode
+    ahci_reset(hba);
+    hba->is = UINT32_MAX; // clear interrupt status
 
     for(uint8_t bit = 0; bit < 32; bit++)
         if(hba->pi & (1 << bit)) // bit is set device exists
@@ -195,23 +234,23 @@ size_t ahci_ndevices()
     return darray_length(ahci_devices);
 }
 
-#include <timers/time.h>
-
 bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, size_t transfer_len)
 {
     if(dev_id >= ahci_ndevices())
         return false;
     ahci_device_t* dev = &ahci_devices[dev_id];
 
-    size_t n_prdts = (transfer_len + 0x3FFFFF - 1) / 0x3FFFFF;
+    dev->port->is = UINT32_MAX;
+ 
+    size_t n_prdts = (transfer_len + 0x400000  - 1) / 0x400000;
     ahci_command_t slot = allocate_command(dev);
 
-    if(slot.index == 0xFF)
+    if(slot.index == UINT8_MAX)
         return false;
 
     dev->cmd_header[slot.index].prdtl = n_prdts;
     dev->cmd_header[slot.index].write = command->write;
-    dev->cmd_header[slot.index].cfl = 5; // h2d register is 5 dwords
+    dev->cmd_header[slot.index].cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
 
     volatile fis_reg_h2d_t* fis = (void*)slot.cmd_table->cfis;
     fis->fis_type = FIS_TYPE_REG_H2D;
@@ -237,10 +276,10 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
     {
         volatile hba_prdt_entry_t* prdt = &slot.cmd_table->prdt_entry[i];
 
-        size_t remaining = transfer_len - i * 0x3FFFFF;
-        size_t transfer = remaining >= 0x3FFFFF ? 0x3FFFFF : remaining;
+        size_t remaining = transfer_len - i * 0x400000 ;
+        size_t transfer = remaining >= 0x400000  ? 0x400000  : remaining;
 
-        uintptr_t pa = (uintptr_t)data + i * 0x3FFFFF;
+        uintptr_t pa = (uintptr_t)data + i * 0x400000 ;
 
         prdt->dbc = calc_bytecount(transfer);
         prdt->dba = pa & 0xFFFFFFFF;
@@ -249,22 +288,22 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
         prdt->i = 0;
     }
 
-    wait_ready(dev);
+    wait_ready(dev->port);
 
-    dev->port->ci |= (1 << slot.index);
-
-    /* --- Real hw sits here forever --- */
-
-    /* this has been suggested but doesnt work neither in real hw nor in vms
-    while(!(dev->port->is & HBA_PxSI_DHRS))
-        asm("pause");
-    */
-
-   // this only works on vms
+    dev->port->ci = 1 << slot.index;
+    
+    bool success = true;
+    // kernel_log("Gonna spin - ");
     while(dev->port->ci & (1 << slot.index))
-        asm("pause");
+        if((dev->port->is & HBA_PxSI_TFES))
+        {
+            success = false;
+            break;
+        }
+    success = !(dev->port->is & HBA_PxSI_TFES);
+    // kernel_log("Did the spin\n");
 
     free_command(dev, &slot);
 
-    return true;
+    return success;
 }

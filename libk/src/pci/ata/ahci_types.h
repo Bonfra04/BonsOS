@@ -17,18 +17,31 @@
 #define HBA_PxCMD_FR    (1 << 14)
 #define HBA_PxCMD_CR    (1 << 15)
 #define HBA_PxCMD_SUD   (1 << 1)
+#define HBA_PxCMD_POD   (1 << 2)
+#define HBA_PxCMD_ICC        (1 << 28)
+#define HBA_PxCMD_ICC_ACTIVE (HBA_PxCMD_ICC << 1)
 
 #define HBA_PxTFD_STS_DRQ   (1 << 3)
 #define HBA_PxTFD_STS_BSY   (1 << 7)
-#define HBA_PxSSTS_DET      (0b111)
+#define HBA_PxSSTS_DET      (0b1111)
+#define HBA_PxSSTS_IPM      (0b1111)
 #define HBA_PxSI_DHRS       (1 << 0)
+#define HBA_PxSI_DPS        (1 << 5)
+#define HBA_PxSI_TFES       (1 << 30)
+
+#define HBA_PxSCTL_DET_RESET 0x1
+
+#define HBA_PxSCTL_DET_NO_DEV_NO_PHY 0b000
+#define HBA_PxSCTL_DET_DEV_NO_PHY    0b001
+#define HBA_PxSCTL_DET_DEV_PHY       0b011
+#define HBA_PxSCTL_DET_OFFLINE       0b100
 
 #define ATA_CMD_READ_DMA_EX     0x25
 #define ATA_CMD_WRITE_DMA_EX    0x35
 #define ATA_CMD_IDENTIFY        0xEC
 
-#define SATA_SIG_ATA    0x00000101  // SATA drive
-#define SATA_SIG_ATAPI  0xEB140101  // SATAPI drive
+#define AHCI_SIG_ATA    0x00000101  // SATA drive
+#define AHCI_SIG_ATAPI  0xEB140101  // SATAPI drive
 
 typedef enum fis_type
 {
