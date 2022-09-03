@@ -129,9 +129,17 @@ typedef struct ata_ident
 
 static ata_device_t* ata_devices;
 
+#include <timers/time.h>
+
 static bool identify(ata_device_t* dev)
 {
     ata_ident_t ident;
+    memset(&ident, 0, sizeof(ata_ident_t));
+
+    // without this sleep it fails any other subsequent command
+    uint64_t t0 = time_sinceepoch();
+    while(time_sinceepoch() - t0 < 2)
+        asm("pause");
 
     ata_command_t cmd;
     cmd.command = ATA_CMD_IDENTIFY;

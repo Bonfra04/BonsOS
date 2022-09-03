@@ -158,10 +158,13 @@ static bool init_port(volatile hba_port_t* port)
     if(!reset_port(port))
         return false;
 
-    while(port->cmd & HBA_PxCMD_CR)
-		asm("pause");
-
     port->cmd |= HBA_PxCMD_FRE | HBA_PxCMD_ST;
+
+    port->ie = UINT32_MAX;
+    port->is = UINT32_MAX;
+
+    while(!(port->cmd & (HBA_PxCMD_CR | HBA_PxCMD_FR)))
+        asm("pause");
 
     if(port->sig != AHCI_SIG_ATA) // only support sata drivers for the moment
         return false;
@@ -293,16 +296,14 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
     dev->port->ci = 1 << slot.index;
     
     bool success = true;
-    // kernel_log("Gonna spin - ");
     while(dev->port->ci & (1 << slot.index))
         if((dev->port->is & HBA_PxSI_TFES))
         {
             success = false;
             break;
         }
-    success = !(dev->port->is & HBA_PxSI_TFES);
-    // kernel_log("Did the spin\n");
-
+    if(success == true)
+        success = !(dev->port->is & HBA_PxSI_TFES);
     free_command(dev, &slot);
 
     return success;
