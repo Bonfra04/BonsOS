@@ -5,6 +5,8 @@
 
 #include <containers/darray.h>
 
+#include <string.h>
+
 #define PCI_ATA_SUB_SCSI 0x00
 #define PCI_ATA_SUB_IDE 0x01
 #define PCI_ATA_SUB_FDC 0x02
@@ -129,20 +131,14 @@ typedef struct ata_ident
 
 static ata_device_t* ata_devices;
 
-#include <timers/time.h>
-
 static bool identify(ata_device_t* dev)
 {
     ata_ident_t ident;
-    memset(&ident, 0, sizeof(ata_ident_t));
-
-    // without this sleep it fails any other subsequent command
-    uint64_t t0 = time_sinceepoch();
-    while(time_sinceepoch() - t0 < 2)
-        asm("pause");
 
     ata_command_t cmd;
+    memset(&cmd, 0, sizeof(ata_command_t));
     cmd.command = ATA_CMD_IDENTIFY;
+
     if(!dev->send_ata_cmd(dev->internal_id, &cmd, (void*)&ident, sizeof(ata_ident_t)))
         return false;
 
@@ -213,6 +209,7 @@ bool ata_read(uint64_t dev_id, uint64_t lba, size_t nsectors, void* buffer)
         return true;
 
     ata_command_t cmd;
+    memset(&cmd, 0, sizeof(ata_command_t));
     cmd.command = dev->lba48 ? ATA_CMD_READEXTDMA : ATA_CMD_READDMA;
     cmd.lba = lba;
     cmd.n_sectors = nsectors;
@@ -232,6 +229,7 @@ bool ata_write(uint64_t dev_id, uint64_t lba, size_t nsectors, void* buffer)
         return true;
 
     ata_command_t cmd;
+    memset(&cmd, 0, sizeof(ata_command_t));
     cmd.command = dev->lba48 ? ATA_CMD_WRITEEXTDMA : ATA_CMD_WRITEDMA;
     cmd.lba = lba;
     cmd.n_sectors = nsectors;
