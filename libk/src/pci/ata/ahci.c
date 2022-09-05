@@ -86,8 +86,6 @@ static bool reset_port(volatile hba_port_t* port)
     pit_perform_one_shot();
     port->sctl &= ~HBA_PxSCTL_DET_RESET;
 
-    port->ie = 0;
-
     uint64_t spin = 0;
     while((port->ssts & HBA_PxSSTS_DET) != 3 && spin++ < 10000000)
         asm("pause");
@@ -99,8 +97,8 @@ static bool reset_port(volatile hba_port_t* port)
     while(port->tfd & HBA_PxTFD_STS_BSY)
         asm("pause");
 
+    port->ie = 0;
     port->is = UINT32_MAX;
-    port->ie = UINT32_MAX;
 
     return true;
 }
@@ -178,7 +176,7 @@ static void hba_reset(volatile hba_mem_t* hba)
     hba->ghc |= HBA_GHC_HR;
     while(hba->ghc & HBA_GHC_HR)
         asm("pause");
-    hba->ghc |= HBA_GHC_AE;
+    hba->ghc = HBA_GHC_AE;
 }
 
 static void init_device(volatile hba_mem_t* hba, void (*registrant)(ata_device_t*))
