@@ -57,7 +57,7 @@ static uint32_t calc_bytecount(size_t count)
     return (((count + 1) & ~1) - 1) & 0x3FFFFF;
 }
 
-static void wait_ready(volatile hba_port_t* port)
+static void wait_busy(volatile hba_port_t* port)
 {
     while(port->tfd & (HBA_PxTFD_STS_BSY | HBA_PxTFD_STS_DRQ))
         asm("pause");
@@ -67,7 +67,7 @@ static void idle_port(volatile hba_port_t* port)
 {
     port->cmd &= ~(HBA_PxCMD_ST | HBA_PxCMD_FRE);
 
-    while((port->cmd & HBA_PxCMD_CR) && (port->cmd & HBA_PxCMD_FR))
+    while(port->cmd & (HBA_PxCMD_CR | HBA_PxCMD_FR))
         asm("pause");
 }
 
@@ -87,7 +87,7 @@ static bool reset_port(volatile hba_port_t* port)
     while(spin++ < 10000000)
     {
         uint8_t det = port->ssts & HBA_PxSSTS_DET;
-        if(det == HBA_PxSCTL_DET_DEV_NO_PHY || det == HBA_PxSCTL_DET_DEV_PHY)
+        if(det == HBA_PxSSTS_DET_DEV_NO_PHY || det == HBA_PxSSTS_DET_DEV_PHY)
             break;
     }
     if(spin > 10000000)
@@ -99,10 +99,10 @@ static bool reset_port(volatile hba_port_t* port)
     while(spin++ < 10000000)
     {
         uint8_t det = port->ssts & HBA_PxSSTS_DET;
-        if(det == HBA_PxSCTL_DET_DEV_PHY)
-            break;
-        if(det == HBA_PxSCTL_DET_OFFLINE)
+        if(det == HBA_PxSSTS_DET_OFFLINE)
             return false;
+        if(det == HBA_PxSSTS_DET_DEV_PHY)
+            break;
     }
     if(spin > 10000000)
         return false;
@@ -155,13 +155,12 @@ static bool init_port(volatile hba_port_t* port)
     port->cmd = HBA_PxCMD_ICC_ACTIVE | HBA_PxCMD_POD | HBA_PxCMD_SUD;
     port->cmd |= HBA_PxCMD_FRE;
 
+    port->ie = UINT32_MAX;
+
     if(!reset_port(port))
         return false;
 
     port->cmd |= HBA_PxCMD_FRE | HBA_PxCMD_ST;
-
-    port->ie = UINT32_MAX;
-    port->is = UINT32_MAX;
 
     while(!(port->cmd & (HBA_PxCMD_CR | HBA_PxCMD_FR)))
         asm("pause");
@@ -184,6 +183,7 @@ static void bios_handoff(volatile hba_mem_t* hba)
 
 static void ahci_reset(volatile hba_mem_t* hba)
 {
+    hba->ghc = HBA_GHC_AE;
     hba->ghc |= HBA_GHC_HR;
     while(hba->ghc & HBA_GHC_HR)
         asm("pause");
@@ -193,7 +193,6 @@ static void ahci_reset(volatile hba_mem_t* hba)
 static void init_device(volatile hba_mem_t* hba, void (*registrant)(ata_device_t*))
 {
     bios_handoff(hba);
-    hba->ghc = HBA_GHC_AE; // enable achi mode
     ahci_reset(hba);
     hba->is = UINT32_MAX; // clear interrupt status
 
@@ -245,7 +244,7 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
 
     dev->port->is = UINT32_MAX;
  
-    size_t n_prdts = (transfer_len + 0x400000  - 1) / 0x400000;
+    size_t n_prdts = (transfer_len + 0x400000 - 1) / 0x400000;
     ahci_command_t slot = allocate_command(dev);
 
     if(slot.index == UINT8_MAX)
@@ -279,10 +278,10 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
     {
         volatile hba_prdt_entry_t* prdt = &slot.cmd_table->prdt_entry[i];
 
-        size_t remaining = transfer_len - i * 0x400000 ;
-        size_t transfer = remaining >= 0x400000  ? 0x400000  : remaining;
+        size_t remaining = transfer_len - i * 0x400000;
+        size_t transfer = remaining >= 0x400000 ? 0x400000 : remaining;
 
-        uintptr_t pa = (uintptr_t)data + i * 0x400000 ;
+        uintptr_t pa = (uintptr_t)data + i * 0x400000;
 
         prdt->dbc = calc_bytecount(transfer);
         prdt->dba = pa & 0xFFFFFFFF;
@@ -291,7 +290,7 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
         prdt->i = 0;
     }
 
-    wait_ready(dev->port);
+    wait_busy(dev->port);
 
     dev->port->ci = 1 << slot.index;
     
