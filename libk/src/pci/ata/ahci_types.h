@@ -31,11 +31,15 @@
 
 #define HBA_PxSCTL_DET_RESET 0x1
 
+#define HBA_PxTFD_STS_RESET 0x7F
+
 #define HBA_PxSSTS_DET_NO_DEV_NO_PHY 0b000
 #define HBA_PxSSTS_DET_DEV_NO_PHY    0b001
 #define HBA_PxSSTS_DET_DEV_PHY       0b011
 #define HBA_PxSSTS_DET_OFFLINE       0b100
 
+
+#define HBA_PxSERR_DIAG_X (1 << 26)
 #define ATA_CMD_READ_DMA_EX     0x25
 #define ATA_CMD_WRITE_DMA_EX    0x35
 #define ATA_CMD_IDENTIFY        0xEC

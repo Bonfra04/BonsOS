@@ -65,53 +65,42 @@ static void wait_busy(volatile hba_port_t* port)
 
 static void idle_port(volatile hba_port_t* port)
 {
-    port->cmd &= ~(HBA_PxCMD_ST | HBA_PxCMD_FRE);
-
-    while(port->cmd & (HBA_PxCMD_CR | HBA_PxCMD_FR))
+    port->cmd &= ~HBA_PxCMD_ST;
+    while(port->cmd & HBA_PxCMD_CR)
         asm("pause");
+
+    if(port->cmd & HBA_PxCMD_FRE)
+    {
+        port->cmd &= ~HBA_PxCMD_FRE;
+        while(port->cmd &HBA_PxCMD_FR)
+            asm("pause");
+    }
 }
 
 static bool reset_port(volatile hba_port_t* port)
 {
+    port->cmd |= HBA_PxCMD_FRE;
+
     port->sctl |= HBA_PxSCTL_DET_RESET;
     pit_prepare_one_shot(1);
     pit_perform_one_shot();
-
     port->sctl &= ~HBA_PxSCTL_DET_RESET;
-    pit_prepare_one_shot(1);
-    pit_perform_one_shot();
 
     port->ie = 0;
 
     uint64_t spin = 0;
-    while(spin++ < 10000000)
-    {
-        uint8_t det = port->ssts & HBA_PxSSTS_DET;
-        if(det == HBA_PxSSTS_DET_DEV_NO_PHY || det == HBA_PxSSTS_DET_DEV_PHY)
-            break;
-    }
+    while((port->ssts & HBA_PxSSTS_DET) != 3 && spin++ < 10000000)
+        asm("pause");
     if(spin > 10000000)
         return false;
 
     port->serr = UINT32_MAX;
-
-    spin = 0;
-    while(spin++ < 10000000)
-    {
-        uint8_t det = port->ssts & HBA_PxSSTS_DET;
-        if(det == HBA_PxSSTS_DET_OFFLINE)
-            return false;
-        if(det == HBA_PxSSTS_DET_DEV_PHY)
-            break;
-    }
-    if(spin > 10000000)
-        return false;
 
     while(port->tfd & HBA_PxTFD_STS_BSY)
         asm("pause");
 
-    port->serr = UINT32_MAX;
     port->is = UINT32_MAX;
+    port->ie = UINT32_MAX;
 
     return true;
 }
@@ -152,21 +141,23 @@ static bool init_port(volatile hba_port_t* port)
         cmd_header[i].ctbau = cmd_addr_high;
     }
 
-    port->cmd = HBA_PxCMD_ICC_ACTIVE | HBA_PxCMD_POD | HBA_PxCMD_SUD;
-    port->cmd |= HBA_PxCMD_FRE;
-
-    port->ie = UINT32_MAX;
-
     if(!reset_port(port))
         return false;
 
-    port->cmd |= HBA_PxCMD_FRE | HBA_PxCMD_ST;
-
-    while(!(port->cmd & (HBA_PxCMD_CR | HBA_PxCMD_FR)))
-        asm("pause");
+    if((port->ssts & HBA_PxSSTS_DET) != 3)
+        return false;
 
     if(port->sig != AHCI_SIG_ATA) // only support sata drivers for the moment
         return false;
+
+    port->serr &= ~HBA_PxSERR_DIAG_X;
+    wait_busy(port);
+
+    while(port->cmd & HBA_PxCMD_CR)
+        asm("pause");
+        
+    port->cmd |= HBA_PxCMD_FRE;
+    port->cmd |= HBA_PxCMD_ST;
 
     return true;
 }
@@ -181,7 +172,7 @@ static void bios_handoff(volatile hba_mem_t* hba)
         asm("pause");
 }
 
-static void ahci_reset(volatile hba_mem_t* hba)
+static void hba_reset(volatile hba_mem_t* hba)
 {
     hba->ghc = HBA_GHC_AE;
     hba->ghc |= HBA_GHC_HR;
@@ -193,7 +184,7 @@ static void ahci_reset(volatile hba_mem_t* hba)
 static void init_device(volatile hba_mem_t* hba, void (*registrant)(ata_device_t*))
 {
     bios_handoff(hba);
-    ahci_reset(hba);
+    hba_reset(hba);
     hba->is = UINT32_MAX; // clear interrupt status
 
     for(uint8_t bit = 0; bit < 32; bit++)
