@@ -183,9 +183,9 @@ static void hba_reset(volatile hba_mem_t* hba)
 
 static void init_device(volatile hba_mem_t* hba, void (*registrant)(ata_device_t*))
 {
-    bios_handoff(hba);
     hba_reset(hba);
     hba->is = UINT32_MAX; // clear interrupt status
+    bios_handoff(hba);
 
     for(uint8_t bit = 0; bit < 32; bit++)
         if(hba->pi & (1 << bit)) // bit is set device exists
