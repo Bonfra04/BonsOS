@@ -1,5 +1,5 @@
 # BonsOS
-BonsOS is an x86 only operating system. A minimal bootloader loads the kernel which sets up all the essential things and initialize the comunication between hardware and software. After the initialization process, the kernel loads the `init.elf` executable which is the root of all the processes.
+BonsOS is an x86 only operating system aiming to run on most vms and on some hardware. A minimal bootloader loads the kernel which sets up all the essential things and initialize the comunication between hardware and software. After the initialization process, the kernel loads the `init.elf` executable which is the root of all the processes.
 
 ## Building the OS
 The build process is meant to be runned under linux, if on windows please use [WSL](https://docs.microsoft.com/it-it/windows/wsl/install-win10) (I suggest using [Ubuntu](https://www.microsoft.com/it-it/p/ubuntu/9nblggh4msv6?activetab=pivot:overviewtab) with WSL2). WSL supports GUI programs only under Windows 11, [VcXsrv](https://sourceforge.net/projects/vcxsrv/) is a good option to emulate it under Winows 10.
