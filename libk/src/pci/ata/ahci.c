@@ -87,9 +87,9 @@ static bool reset_port(volatile hba_port_t* port)
     port->sctl &= ~HBA_PxSCTL_DET_RESET;
 
     uint64_t spin = 0;
-    while((port->ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_DEV_PHY && spin++ < 10000000)
+    while((port->ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_DEV_PHY && spin++ < 1000000)
         asm("pause");
-    if(spin > 10000000)
+    if(spin > 1000000)
         return false;
 
     port->serr = UINT32_MAX;
