@@ -90,7 +90,7 @@ static uint64_t stack_push_arr(stack_t* stack, const char* arr[], size_t count)
     return stack->sp;
 }
 
-static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_entry, bool is_kernel, const char* args[], const char* env[])
+static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_entry, bool is_kernel, const char* args[], const char* env)
 {
     stack_t stack;
     stack.vt_base = (uint64_t)vt_stack_base;
@@ -100,9 +100,8 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     uint64_t env_ptr = 0;
     if(env)
     {
-        size_t nenv = 0;
-        for(; env[nenv]; nenv++);
-        env_ptr = stack_push_arr(&stack, env, nenv);
+        stack_push_str(&stack, env, strlen(env));
+        env_ptr = stack.sp;
     }
 
     uint64_t argv_ptr = 0;
@@ -120,7 +119,7 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     context->rflags = 0x202;
     context->registers.rdi = argc;
     context->registers.rsi = (uint64_t)vt_stack_base + (argv_ptr - stack.ph_base);
-    context->registers.rdx = (uint64_t)vt_stack_base + (env_ptr - stack.ph_base);
+    context->registers.rdx = env_ptr ? (uint64_t)vt_stack_base + (env_ptr - stack.ph_base) : 0;
 
     context->ds = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->es = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
@@ -275,8 +274,27 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, const char* arg
     memcpy(argv + 1, args, sizeof(char*) * argc);
     argv[argc + 1] = NULL;
 
+    char* env_str = NULL;
+    if(env)
+    {
+        size_t env_len = 0;
+        for(uint64_t i = 0; env[i]; i++)
+            env_len += strlen(env[i]) + 1;
+
+        if(env_len != 0)
+        {
+            env_str = calloc(env_len, 1);
+            for(uint64_t i = 0; env[i]; i++)
+            {
+                strcat(env_str, env[i]);
+                env_str[strlen(env_str)] = ';';
+            }
+            env_str[env_len - 1] = '\0';
+        }
+    }
+
     void* stack_base = vmm_alloc(proc->paging, PAGE_PRIVILEGE_USER, THREAD_STACK_SIZE);
-    void* rsp = create_stack(proc, stack_base, entry_point, false, argv, env);
+    void* rsp = create_stack(proc, stack_base, entry_point, false, argv, env_str);
 
     thread_t* new = malloc(sizeof(thread_t));
     new->rsp = (uint64_t)rsp;

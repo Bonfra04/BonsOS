@@ -13,10 +13,11 @@ section .text
 _start:
     push rdi    ; save argc
     push rsi    ; save argv
-    push rdx    ; save env
+
+    mov rdi, rdx
     call __libc_init
     call call_ctors
-    pop rdx     ; restore env
+
     pop rsi     ; restore argv
     pop rdi     ; restore argc
     call main
