@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define ALPHABET_SIZE (26+26+10+1) // A-Za-z0-9_
 
