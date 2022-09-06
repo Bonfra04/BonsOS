@@ -71,8 +71,9 @@ process_t* scheduler_run_executable(const executable_t* executable, const char* 
  * @param[in] proc The process to attach the thread to
  * @param[in] entry_point Virtual address of the entry point inside the process
  * @param[in] args Null terminated string array of arguments
+ * @param[in] env Null terminated string array of environment
  */
-void scheduler_attach_thread(process_t* proc, void* entry_point, const char* args[]);
+void scheduler_attach_thread(process_t* proc, void* entry_point, const char* args[], const char* env[]);
 
 /**
  * @brief Creates a task that runs in kernel space

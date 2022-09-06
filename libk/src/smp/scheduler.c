@@ -33,66 +33,94 @@ static bool scheduling = false;
 extern void scheduler_tick(const interrupt_context_t* context);
 extern void scheduler_replace_switch(thread_t* thread);
 
-static uint64_t stack_push8(uint64_t rsp, uint8_t value)
+typedef struct stack
 {
-    rsp -= 1;
-    *(uint8_t*)rsp = value;
-    return rsp;
+    uint64_t ph_base;
+    uint64_t vt_base;
+    uint64_t sp;
+} stack_t;
+
+static void stack_push8(stack_t* stack, uint8_t value)
+{
+    stack->sp -= 1;
+    *(uint8_t*)stack->sp = value;
 }
 
-static uint64_t stack_push64(uint64_t rsp, uint64_t value)
+static void stack_push64(stack_t* stack, uint64_t value)
 {
-    rsp -= 8;
-    *(uint64_t*)rsp = value;
-    return rsp;
+    stack->sp -= 8;
+    *(uint64_t*)stack->sp = value;
 }
 
-static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_entry, bool is_kernel, char* args[])
+static void stack_pad(stack_t* stack, uint64_t offset, uint8_t align)
 {
-    uint64_t ph_stack_base = (uint64_t)paging_get_ph(proc->paging, vt_stack_base);
-    uint64_t sp = ph_stack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+    while((stack->sp - offset) % align != 0)
+        stack_push8(stack, 0);
+}
+
+static void stack_push_str(stack_t* stack, const char* str, size_t len)
+{
+    stack_push8(stack, 0); // null term
+    for(uint64_t i = 0; i < len; i++)
+        stack_push8(stack, str[len - i - 1]);
+}
+
+static uint64_t stack_push_arr(stack_t* stack, const char* arr[], size_t count)
+{
+    char* arg_ptrs[count];
+
+    // push arguments
+    for(size_t i = 0; i < count; i++)
+    {
+        size_t len = strlen(arr[i]);
+
+        stack_pad(stack, len + 1, 8);
+
+        stack_push_str(stack, arr[i], len);
+
+        arg_ptrs[i] = ptr(stack->vt_base + (stack->sp - stack->ph_base));
+    }
+
+    stack_pad(stack, 0, 8);
+
+    // push pointer to arguments
+    for(uint64_t i = 0; i < count; i++)
+        stack_push64(stack, (uint64_t)arg_ptrs[count - i - 1]);
+
+    return stack->sp;
+}
+
+static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_entry, bool is_kernel, const char* args[], const char* env[])
+{
+    stack_t stack;
+    stack.vt_base = (uint64_t)vt_stack_base;
+    stack.ph_base = (uint64_t)paging_get_ph(proc->paging, vt_stack_base);
+    stack.sp = stack.ph_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+
+    uint64_t env_ptr = 0;
+    if(env)
+    {
+        size_t nenv = 0;
+        for(; env[nenv]; nenv++);
+        env_ptr = stack_push_arr(&stack, env, nenv);
+    }
 
     uint64_t argv_ptr = 0;
     size_t argc = 0;
     if(args)
     {
         for(; args[argc]; argc++);
-        char* arg_ptrs[argc];
-
-        // push arguments
-        for(size_t i = 0; i < argc; i++)
-        {
-            size_t len = strlen(args[i]);
-
-            // pad to qwrod align
-            while((sp - (len + 1)) % 8 != 0)
-                sp = stack_push8(sp, 0);
-
-            sp = stack_push8(sp, 0); // null term
-            for(int j = len - 1; j >= 0; j--)
-                sp = stack_push8(sp, args[i][j]);
-
-            arg_ptrs[i] = vt_stack_base + (sp - ph_stack_base);
-        }
-
-        // pad to qwrod align
-        while(sp % 8 != 0)
-            sp = stack_push8(sp, 0);
-
-        // push pointer to arguments
-        for(int i = argc - 1; i >= 0; i--)
-            sp = stack_push64(sp, (uint64_t)arg_ptrs[i]);
-
-        argv_ptr = sp;
+        argv_ptr = stack_push_arr(&stack, args, argc);
     }
 
-    interrupt_context_t* context = (interrupt_context_t*)(sp -= sizeof(interrupt_context_t));
+    interrupt_context_t* context = (interrupt_context_t*)(stack.sp -= sizeof(interrupt_context_t));
     memset(context, 0, sizeof(interrupt_context_t));
 
     context->retaddr = (uint64_t)vt_entry;
     context->rflags = 0x202;
     context->registers.rdi = argc;
-    context->registers.rsi = (uint64_t)vt_stack_base + (argv_ptr - ph_stack_base);
+    context->registers.rsi = (uint64_t)vt_stack_base + (argv_ptr - stack.ph_base);
+    context->registers.rdx = (uint64_t)vt_stack_base + (env_ptr - stack.ph_base);
 
     context->ds = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->es = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
@@ -101,7 +129,7 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     context->ss = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->cs = is_kernel ? SELECTOR_KERNEL_CODE : (SELECTOR_USER_CODE | 3);
 
-    return ptr(context->rsp = (uint64_t)vt_stack_base + (sp - ph_stack_base));
+    return ptr(context->rsp = stack.vt_base + (stack.sp - stack.ph_base));
 }
 
 void scheduler_init()
@@ -222,8 +250,6 @@ static void inherit_resourcess(process_t* parent, process_t* child)
 
 process_t* scheduler_run_executable(const executable_t* executable, const char* workdir, const char* args[], const char* env[])
 {
-    (void)env; // TODO: use env
-
     void* address_low = executable->base_address;
     void* address_high = executable->num_pages * PFA_PAGE_SIZE + executable->base_address;
     void* vt_entry = ptr(USER_PROCESS_BASE_ADDRESS + (uint64_t)executable->entry_point - (uint64_t)executable->base_address);
@@ -234,23 +260,23 @@ process_t* scheduler_run_executable(const executable_t* executable, const char* 
     process_init(proc, address_low, address_high, workdir);
     inherit_resourcess(current_thread->proc, proc);
 
-    scheduler_attach_thread(proc, vt_entry, args);
+    scheduler_attach_thread(proc, vt_entry, args, env);
 
     return proc;
 }
 
-void scheduler_attach_thread(process_t* proc, void* entry_point, const char* args[])
+void scheduler_attach_thread(process_t* proc, void* entry_point, const char* args[], const char* env[])
 {
     size_t argc = 0;
     if(args)
         for(; args[argc]; argc++);
-    char* argv[argc + 2];
+    const char* argv[argc + 2];
     argv[0] = proc->executable->fullpath;
     memcpy(argv + 1, args, sizeof(char*) * argc);
     argv[argc + 1] = NULL;
 
     void* stack_base = vmm_alloc(proc->paging, PAGE_PRIVILEGE_USER, THREAD_STACK_SIZE);
-    void* rsp = create_stack(proc, stack_base, entry_point, false, argv);
+    void* rsp = create_stack(proc, stack_base, entry_point, false, argv, env);
 
     thread_t* new = malloc(sizeof(thread_t));
     new->rsp = (uint64_t)rsp;
@@ -268,7 +294,7 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, const char* arg
 void scheduler_create_kernel_task(void* entry_point)
 {
     void* stack_base = pfa_alloc(THREAD_STACK_SIZE);
-    void* rsp = create_stack(kernel_process, stack_base, entry_point, true, NULL);
+    void* rsp = create_stack(kernel_process, stack_base, entry_point, true, NULL, NULL);
 
     thread_t* new = malloc(sizeof(thread_t));
     new->krsp = new->rsp = (uint64_t)rsp;
