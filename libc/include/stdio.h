@@ -24,6 +24,12 @@ typedef struct __FILE
 #define FILE_ERROR  0b0100
 #define FILE_EOF    0b1000
 
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
+typedef size_t fpos_t;
+
 extern FILE* stdin;
 extern FILE* stdout;
 extern FILE* stderr;
@@ -32,6 +38,12 @@ int fclose(FILE* stream);
 FILE* fopen(const char* filename, const char* mode);
 FILE* freopen(const char* filename, const char* mode, FILE* stream);
 int remove(const char* filename);
+
+int fgetpos(FILE* stream, fpos_t* pos);
+int fsetpos(FILE* stream, const fpos_t* pos);
+int fseek(FILE* stream, long offset, int origin);
+long ftell(FILE* stream);
+void rewind(FILE* stream);
 
 size_t fread(void* ptr, size_t size, size_t count, FILE *stream);
 size_t fwrite(const void* ptr, size_t size, size_t count, FILE *stream);

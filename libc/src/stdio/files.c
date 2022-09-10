@@ -290,3 +290,49 @@ int remove(const char* filename)
 {
     return sys_delete_file(filename) ? 0 : -1;
 }
+
+int fgetpos(FILE* stream, fpos_t* pos)
+{
+    size_t off = sys_tell_file(stream->fd);
+    if(off == -1)
+        return -1;
+    
+    *pos = off;
+    return 0; 
+}
+
+int fsetpos(FILE* stream, const fpos_t* pos)
+{
+    return sys_seek_file(stream->fd, *pos) == true ? 0 : -1;
+}
+
+int fseek(FILE* stream, long offset, int origin)
+{
+    fpos_t base = -1;
+    switch(origin)
+    {
+    case SEEK_CUR:
+        if(fgetpos(stream, &base) != 0)
+            return -1;
+        break;
+    case SEEK_SET:
+        base = 0;
+        break;
+    case SEEK_END:
+        if(fsetpos(stream, &base) != 0 || fgetpos(stream, &base) != 0)
+            return -1;
+        break;
+    }
+    size_t off = sys_seek_file(stream->fd, base + offset);
+    return off == -1 ? -1 : 0;
+}
+
+long ftell(FILE* stream)
+{
+    return sys_tell_file(stream->fd);
+}
+
+void rewind(FILE* stream)
+{
+    fsetpos(stream, 0);
+}
