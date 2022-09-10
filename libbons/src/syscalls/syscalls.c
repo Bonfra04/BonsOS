@@ -64,3 +64,13 @@ uint64_t sys_time()
 {
     return sys(SYSCALL_TIME, 0, 0, 0);
 }
+
+bool sys_seek_file(int fd, uint64_t offset)
+{
+    return (bool)sys(SYSCALL_SEEK_FILE, (uint64_t)fd, (uint64_t)offset, 0);
+}
+
+uint64_t sys_tell_file(int fd)
+{
+    return sys(SYSCALL_TELL_FILE, (uint64_t)fd, 0, 0);
+}

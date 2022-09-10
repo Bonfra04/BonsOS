@@ -17,3 +17,5 @@ int syscall_setcwd(char* buff);
 bool syscall_delete_file(const char* path);
 void syscall_sched_yield();
 uint64_t syscall_time();
+bool syscall_seek_file(int fd, size_t pos);
+size_t syscall_tell_file(int fd);
