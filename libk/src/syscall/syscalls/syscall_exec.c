@@ -14,6 +14,8 @@ void syscall_exec(const char* path, const char** argv, const char** env)
     env = paging_get_ph(current_thread->proc->paging, env);
 
     executable_t* exec = executable_load(path);
+    if(exec == NULL)
+        return;
 
     size_t num_args = 0;
     if(argv)
@@ -32,6 +34,6 @@ void syscall_exec(const char* path, const char** argv, const char** env)
     envs[num_env] = NULL;
 
     char* copy = strdup(path);
-    scheduler_run_executable(exec, current_thread->proc->workdir, args, envs);
+    scheduler_run_executable(exec, current_thread->proc->workdir, argv ? args : NULL, env ? envs : NULL);
     free(copy);
 }
