@@ -130,7 +130,7 @@ void init(const bootinfo_t* bootinfo)
 void main(const bootinfo_t* bootinfo)
 {
     init(bootinfo);
-    tty_print("BonsOS successfully booted\n");
+    kernel_log("BonsOS successfully booted\n");
 
     executable_t* executable = executable_load("a:/bin/init.elf");
     if(!executable)
