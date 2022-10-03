@@ -2,21 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <line.h>
-
 #include <syscalls.h>
+
+#include "readline.h"
 
 int main()
 {
-    freopen("tty:/raw", "r", stdin);
-    
-    line_t* line = line_init();
-    if (!line)
-    {
-        fputs("Cannot instantiate line handler\n", stderr);
-        return -1;
-    }
-
     while(1)
     {
         char wd[256];
@@ -24,7 +15,7 @@ int main()
 
         fputs(wd, stdout);
         fputs(" $> ", stdout);
-        char* command = line_read(line);
+        char* command = readline();
         if (!command)
             continue;
 
@@ -35,12 +26,10 @@ int main()
         else if(strncmp(command, "exit", 4) == 0)
             break;
         else
-            puts("Unknown command");
+            printf("Unknown command `%s`\n", command);
 
         free(command);
     }
-
-    line_free(line);
 
     return 0;
 }
