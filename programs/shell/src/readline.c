@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "escape.h"
 
@@ -141,8 +142,12 @@ char* readline()
             break;
 
         default:
-            add_char(cursor, ch);
-            nchars++;
+            if(isprint(ch))
+            {
+                add_char(cursor, ch);
+                nchars++;
+            }
+            // TODO control characters
             break;
         }
 
