@@ -71,19 +71,16 @@ size_t vfs_tty_read_file(fs_data_t* fs, file_t* file, void* buffer, size_t lengt
 
     tty_mode_t mode = *(tty_mode_t*)file->fs_data;
     
-    if(mode == TTY_COOKED)
-        return tty_read(buffer, length);
-
-    uint8_t* buf = buffer;
-    for(size_t i = 0; i < length; i++)
-        *buf++ = tty_read_raw();
-    return length;
+    return tty_read(buffer, length, mode == TTY_RAW);
 }
 
 size_t vfs_tty_write_file(fs_data_t* fs, file_t* file, const void* buffer, size_t length)
 {
     (void)fs; (void)file;
-    tty_print((char*)buffer);
+
+    tty_mode_t mode = *(tty_mode_t*)file->fs_data;
+
+    tty_print((char*)buffer, mode == TTY_RAW);
     return length;
 }
 

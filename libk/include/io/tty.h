@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef struct screenpos
 {
@@ -63,21 +64,18 @@ void tty_setpos(tty_pos_t tty_pos);
 void tty_clear();
 
 /**
- * @brief prints a string to the screen
- * @param[in] str string to print
+ * @brief prints a stream of bytes to the tty
+ * @param[in] buff stream of bytes to print
+ * @param[in] raw flag signaling if the bytes should be cooked
  */
-void tty_print(const char* str);
+void tty_print(const char* buff, bool raw);
 
 /**
- * @brief reads uncooked characters from the keyboard
- * @return uncooked character
+ * @brief reads a stream of bytes from the tty
+ * @param[out] buff buffer to read into
+ * @param[in] count number of bytes to read 
+ * @param[in] raw flag signaling if the bytes should be cooked
+ * @return number of bytes read
  */
-uint8_t tty_read_raw();
-
-/**
- * @brief reads an entire line from the screen and returns the first size characters
- * @param[in] buf buffer to store the line
- * @param[in] size maximum number of characters to read
- */
-size_t tty_read(char* buf, size_t size);
+size_t tty_read(char* buff, size_t count, bool raw);
 

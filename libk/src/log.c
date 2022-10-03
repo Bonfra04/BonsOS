@@ -16,6 +16,6 @@ void __kernel_log(const char* format, ...)
 
     va_end(args);
 
-    tty_print(buff);
+    tty_print(buff, false);
     uart_puts(buff);
 }

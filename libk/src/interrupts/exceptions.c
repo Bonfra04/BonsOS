@@ -84,9 +84,9 @@ static void isr_fatal(const interrupt_context_t* context)
     tty_set_textcolor(0xFFFFFFFF, 0xFFFF0000); // white, red
     tty_clear();
 
-    tty_print(exstr);
-    tty_print("\n\n");
-    tty_print(context_str);
+    tty_print(exstr, false);
+    tty_print("\n\n", false);
+    tty_print(context_str, false);
 
     uart_puts(exstr);
     uart_puts("\n\n");
