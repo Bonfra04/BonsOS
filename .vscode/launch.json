@@ -73,7 +73,11 @@
                 "directory libc",
                 "directory libbons",
                 "directory programs/shell",
-                "set output-radix 16"
+                "set output-radix 16",
+
+                "add-symbol-file ${workspaceFolder}/bin/kernel/kernel.sys",
+                "directory kernel",
+                "directory kernel/src",
             ]
         },
     ]
