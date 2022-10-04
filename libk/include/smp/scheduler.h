@@ -20,8 +20,7 @@ typedef struct thread
 
     process_t* proc;
 
-    thread_t* next_thread;
-    thread_t* prev_thread;
+    uint64_t tid;
 } thread_t;
 
 typedef enum resource_type
@@ -133,3 +132,16 @@ void* scheduler_get_resource(int id, resource_type_t type);
  * @return True if the resource was removed, false otherwise
  */
 bool scheduler_free_resource(int id, resource_type_t type);
+
+/**
+ * @brief returns a pointer to the next thread that will be scheduled
+ * @return The next thread
+ */
+thread_t* get_next_thread();
+
+/**
+ * @brief returns a copy of the thread associated with the given id
+ * @param[in] id The id of the thread
+ * @return The thread
+ */
+thread_t scheduler_get_thread(uint64_t tid);

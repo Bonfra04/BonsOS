@@ -30,6 +30,8 @@ thread_t* current_thread;
 
 static bool scheduling = false;
 
+static thread_t** tasks; 
+
 extern void scheduler_tick(const interrupt_context_t* context);
 extern void scheduler_replace_switch(thread_t* thread);
 
@@ -142,9 +144,11 @@ void scheduler_init()
 
     current_thread = malloc(sizeof(thread_t));
     current_thread->proc = kernel_process;
-    current_thread->next_thread = current_thread;
-    current_thread->prev_thread = current_thread;
+    current_thread->tid = 0;
     darray_append(kernel_process->threads, current_thread);
+
+    tasks = darray(thread_t*, 0);
+    darray_append(tasks, current_thread);
 }
 
 void scheduler_start()
@@ -159,15 +163,15 @@ void scheduler_start()
 static void thread_insert(thread_t* thread)
 {
     scheduler_atomic({
-        thread->next_thread = current_thread->next_thread;
-        thread->prev_thread = current_thread;
-        current_thread->next_thread->prev_thread = thread;
-        current_thread->next_thread = thread;
+        thread->tid = darray_length(tasks);
+        darray_append(tasks, thread);
     });
 }
 
 static void thread_destroy(thread_t* thread)
 {
+    tasks[thread->tid] = NULL;
+
     process_t* proc = thread->proc;
 
     if(thread->stack_base)
@@ -326,17 +330,13 @@ void scheduler_create_kernel_task(void* entry_point)
 void scheduler_terminate_process()
 {
     scheduler_atomic({
-        if(current_thread == current_thread->next_thread)
+        if(current_thread == get_next_thread())
             kernel_panic("No more threads to schedule");
 
         process_t* proc = current_thread->proc;
 
         while(current_thread->proc == proc)
-        {
-            current_thread->prev_thread->next_thread = current_thread->next_thread;
-            current_thread->next_thread->prev_thread = current_thread->prev_thread;
-            current_thread = current_thread->next_thread;
-        }
+            current_thread = get_next_thread();
 
         process_cleanup(proc);
 
@@ -348,17 +348,12 @@ void scheduler_terminate_process()
 void scheduler_terminate_thread()
 {
     scheduler_atomic({
-        if(current_thread == current_thread->next_thread)
+        if(current_thread == get_next_thread())
             kernel_panic("No more threads to schedule");
 
         process_t* proc = current_thread->proc;
-        thread_t* old;
-
-        current_thread->prev_thread->next_thread = current_thread->next_thread;
-        current_thread->next_thread->prev_thread = current_thread->prev_thread;
-
-        old = current_thread;
-        current_thread = current_thread->next_thread;
+        thread_t* old = current_thread;
+        current_thread = get_next_thread();
 
         thread_destroy(old);
         if(darray_length(proc->threads) == 0)
@@ -422,5 +417,21 @@ void scheduler_yield()
 
 thread_t* get_next_thread()
 {
-    return current_thread->next_thread;
+    uint64_t len = darray_length(tasks);
+    for(uint64_t i = current_thread->tid + 1; i < len; i++)
+        if(tasks[i] != NULL)
+            return tasks[i];
+
+    for(uint64_t i = 0; i < len; i++)
+        if(tasks[i] != NULL)
+            return tasks[i];
+
+    kernel_panic("No more threads to schedule");
+}
+
+thread_t scheduler_get_thread(uint64_t tid)
+{
+    if(tid >= darray_length(tasks))
+        return (thread_t){0};
+    return *tasks[tid];
 }

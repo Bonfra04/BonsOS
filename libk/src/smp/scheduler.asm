@@ -26,8 +26,7 @@ struc thread_t
 
     .process:        resq 1
 
-    .next_thread:    resq 1
-    .prev_thread:    resq 1
+    .tid:            resq 1
 endstruc
 
 struc interrupt_context_t
