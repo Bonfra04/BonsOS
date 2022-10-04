@@ -78,6 +78,7 @@
                 "add-symbol-file ${workspaceFolder}/bin/kernel/kernel.sys",
                 "directory kernel",
                 "directory kernel/src",
+                "directory libk",
             ]
         },
     ]
