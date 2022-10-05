@@ -9,7 +9,6 @@
 
 typedef struct process process_t;
 
-typedef struct thread thread_t;
 typedef struct thread
 {
     uint64_t rsp;
