@@ -69,6 +69,7 @@ executable_t* elf_load(uint8_t* file_data, size_t num_pages)
 
     size_t size = higher_addr - lower_addr;
     size = size / PFA_PAGE_SIZE + (size % PFA_PAGE_SIZE != 0);
+    size = size < (num_pages - 1) ? (num_pages - 1) : size;
 
     void* new_addr = pfa_calloc(size);
     memcpy(new_addr, file_data + 0x1000, (num_pages - 1) * PFA_PAGE_SIZE);
