@@ -60,9 +60,9 @@ void free(void* ptr);
 void* realloc(void* ptr, size_t size);
 
 int atexit(void (*func)());
-void exit(int status);
+noreturn void exit(int status);
 int at_quick_exit(void (*func)());
-void quick_exit(int status);
+noreturn void quick_exit(int status);
 noreturn void _Exit(int status);
 
 char* getenv(const char* name);
