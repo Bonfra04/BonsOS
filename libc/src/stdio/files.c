@@ -16,7 +16,7 @@ void __files_init()
     stdout = calloc(sizeof(FILE), 1);
     stdout->fd = 1;
     stdout->flags = _IONBF;
-    stderr = calloc(sizeof(FILE),1 );
+    stderr = calloc(sizeof(FILE), 1);
     stderr->fd = 2;
     stderr->flags = _IONBF;
 }
