@@ -119,13 +119,33 @@ void heap_free(void* address)
     {
         region->previous_region->length += region->length;
         region->previous_region->next_region = region->next_region;
+        if(region->next_region != NULL)
+            region->next_region->previous_region = region->previous_region;
+        region = region->previous_region;
     }
 
     if(region->next_region != NULL && region->next_region->free && region->chunk_id == region->next_region->chunk_id)
     {
         region->length += region->next_region->length;
         region->next_region = region->next_region->next_region;
+        if(region->next_region != NULL)
+            region->next_region->previous_region = region;
     }
 
     mutex_release(&heap_mutex);
 }
+
+// #include <stdio.h>
+
+// void heap_dump()
+// {
+//     heap_region_t* current_region = first_region;
+
+//     while(true)
+//     {
+//         printf("Region %p: %d bytes, %s, chunk %d\n\r", (uint8_t*)current_region, current_region->length, current_region->free ? "free" : "used", current_region->chunk_id);
+//         current_region = current_region->next_region;
+//         if(current_region == NULL)
+//             break;
+//     }
+// }
