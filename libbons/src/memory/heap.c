@@ -134,18 +134,3 @@ void heap_free(void* address)
 
     mutex_release(&heap_mutex);
 }
-
-// #include <stdio.h>
-
-// void heap_dump()
-// {
-//     heap_region_t* current_region = first_region;
-
-//     while(true)
-//     {
-//         printf("Region %p: %d bytes, %s, chunk %d\n\r", (uint8_t*)current_region, current_region->length, current_region->free ? "free" : "used", current_region->chunk_id);
-//         current_region = current_region->next_region;
-//         if(current_region == NULL)
-//             break;
-//     }
-// }
