@@ -294,7 +294,7 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
     int64_t amt_4k = count;
 
     uint64_t* pml4 = (uint64_t*)data;
-    for(uint16_t pml4_off = pml4_offset; amt_4k > 0; pml4_off++)
+    for(uint16_t pml4_off = pml4_offset; amt_4k > 0 && pml4_off < 512; pml4_off++)
     {
         if((pml4[pml4_off] & PML_PRESENT) == 0)
         {
@@ -303,7 +303,7 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
         }
 
         uint64_t* pdp = PML_GET_ADDRESS(pml4[pml4_off]);
-        for(uint16_t pdp_off = pdp_offset; amt_4k > 0; pdp_off++)
+        for(uint16_t pdp_off = pdp_offset; amt_4k > 0 && pdp_off < 512; pdp_off++)
         {
             if((pdp[pdp_off] & PML_PRESENT) == 0)
             {
@@ -312,7 +312,7 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
             }
 
             uint64_t* pd = PML_GET_ADDRESS(pdp[pdp_off]);
-            for(uint16_t pd_off = pd_offset; amt_4k > 0; pd_off++)
+            for(uint16_t pd_off = pd_offset; amt_4k > 0 && pd_off < 512; pd_off++)
             {
                 if((pd[pd_off] & PML_PRESENT) == 0)
                 {
@@ -336,7 +336,7 @@ void paging_set_attr_range(paging_data_t data, void* vt_addr, size_t count, uint
                 }
 
                 uint64_t* pt = PML_GET_ADDRESS(pd[pd_off]);
-                for(uint16_t pt_off = pt_offset; amt_4k > 0; pt_off++)
+                for(uint16_t pt_off = pt_offset; amt_4k > 0 && pt_off < 512; pt_off++)
                 {
                     if((pt[pt_off] & PML_PRESENT) == 0)
                     {
