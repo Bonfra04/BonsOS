@@ -20,14 +20,14 @@ static char* compact_list(size_t nchars, node_t* head)
 {
     char* str = malloc(nchars + 1);
     node_t* cursor = head;
-    for(size_t i = 0; i < nchars; i++)
+    free(cursor->prev);
+    for(size_t i = 0; i <= nchars; i++)
     {
         str[i] = cursor->chr;
         node_t* next = cursor->next;
         free(cursor);
         cursor = next;
     }
-    str[nchars] = '\0';
     return str;
 }
 
@@ -102,6 +102,8 @@ char* readline()
     if(freopen("tty:/raw", "r", stdin) == NULL || freopen("tty:/raw", "w", stdout) == NULL)
         return NULL;
 
+    // heap_dump(); printf("\n\r");
+
     // TODO: zero-out bss in executables (i guess idk)
     last_render = 0;
     
@@ -156,6 +158,7 @@ char* readline()
     fputs("\n\r", stdout);
 
     char* str = compact_list(nchars, head->next);
+
     if(freopen("tty:/cooked", "r", stdin) == NULL || freopen("tty:/cooked", "w", stdout) == NULL)
     {
         free(str);

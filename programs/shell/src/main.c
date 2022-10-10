@@ -6,30 +6,70 @@
 
 #include "readline.h"
 
+static const char** parse_args(const char* line)
+{
+    int argc = 0;
+
+    {
+        char* line_copy = strdup(line);
+        for(char* token = strtok(line_copy, " \t"); token != NULL; token = strtok(NULL, " \t"))
+            argc++;
+        free(line_copy);
+    }
+
+    const char** argv = malloc((argc + 1) * sizeof(char*));
+    argv[argc] = NULL;
+
+    {
+        int i = 0;
+
+        char* line_copy = strdup(line);
+        for(char* token = strtok(line_copy, " \t"); token != NULL; token = strtok(NULL, " \t"))
+            argv[i++] = strdup(token);
+        free(line_copy);
+    }
+
+    return argv;
+}
+
+#include "builtins.h"
+
+static void execute_command(const char** args)
+{
+    if(args[0] == NULL)
+        return;
+
+    for(uint64_t i = 0; i < NUM_BUILTINS; i++)
+        if(strcmp(args[0], builtin_str[i]) == 0)
+        {
+            (*builtin_func[i])(args);
+            return;
+        }
+
+    // TODO: execute command
+}
+
 int main()
 {
     while(1)
     {
-        char wd[256];
-        sys_getcwd(wd, 256);
+        fputs("$> ", stdout);
 
-        fputs(wd, stdout);
-        fputs(" $> ", stdout);
         char* command = readline();
         if (!command)
             continue;
 
-        if(strncmp(command, "cd", 2) == 0)
-            sys_setcwd(command + 3);
-        else if(strncmp(command, "echo ", 5) == 0)
-            puts(command + 5);
-        else if(strncmp(command, "exit", 4) == 0)
-            break;
-        else
-            printf("Unknown command `%s`\n", command);
+        const char** args = parse_args(command);
+        if(!args)
+            continue;
+
+        execute_command(args);
 
         free(command);
+        for(const char** arg = &args[0]; *arg != NULL; arg++)
+            free((void*)*arg);
+        free(args);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
