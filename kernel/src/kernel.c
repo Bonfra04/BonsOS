@@ -23,6 +23,7 @@
 #include <interrupts/lapic.h>
 
 #include <pci/pci.h>
+#include <pci/ata/ata.h>
 
 #include <storage/storage.h>
 
@@ -102,6 +103,8 @@ void init(const bootinfo_t* bootinfo)
 
     // pci devices
     pci_init();
+    // pci drivers
+    ata_init();
 
     // storage abstraction
     storage_init();

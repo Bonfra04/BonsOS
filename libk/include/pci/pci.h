@@ -37,6 +37,17 @@ typedef struct pci_device
     uint8_t varies[192];
 } __attribute__ ((packed)) pci_device_t;
 
+#define PCI_SUBCLASS_ANY 0xFF
+#define PCI_PROGIF_ANY 0xFF
+
+typedef struct pci_driver
+{
+    void (*register_device)(pci_device_t* device);
+    uint8_t class;
+    uint8_t subclass;
+    uint8_t progif;
+} pci_driver_t;
+
 #define PCI_PRIV_PIO (1 << 0) 
 #define PCI_PRIV_MMIO (1 << 1)
 #define PCI_PRIV_DMA (1 << 2)
@@ -45,6 +56,12 @@ typedef struct pci_device
  * @brief enumerates the pci bus initializing all connected devices
  */
 void pci_init();
+
+/**
+ * @brief registers a driver for a specific pci class
+ * @param[in] driver the driver to register
+ */
+void pci_register_driver(const pci_driver_t* driver);
 
 /**
  * @brief sets privileges for the given device

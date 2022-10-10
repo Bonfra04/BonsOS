@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pci/pci.h>
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -39,11 +41,9 @@ void ata_init();
 
 /**
  * @brief registers a ata device given pci address
- * @param[in] bus the bus number
- * @param[in] device the device number
- * @param[in] function the function number
+ * @param[in] device pointer to the pci device to register
  */
-void ata_register_device(uint8_t bus, uint8_t dev, uint8_t fun);
+void ata_register_device(pci_device_t* device);
 
 /**
  * @brief return number of registered devices

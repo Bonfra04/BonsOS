@@ -163,24 +163,32 @@ static void registrant(ata_device_t* ata_device)
     darray_append(ata_devices, *ata_device);
 }
 
+#define PCI_CLASS_ATA 0x01
+
+static pci_driver_t ata_driver = {
+    .class = PCI_CLASS_ATA,
+    .subclass = PCI_SUBCLASS_ANY,
+    .progif = PCI_PROGIF_ANY,
+    .register_device = ata_register_device
+};
+
 void ata_init()
 {
     ata_devices = darray(ata_device_t, 0);
     ahci_init();
+    pci_register_driver(&ata_driver);
 }
 
-void ata_register_device(uint8_t bus, uint8_t dev, uint8_t fun)
+void ata_register_device(pci_device_t* device)
 {
-    pci_device_t device = pci_get_device(bus, dev, fun);
-
-    switch (device.subclass)
+    switch (device->subclass)
     {
     case PCI_ATA_SUB_SATA:
-        ahci_register_device(&device, registrant);
+        ahci_register_device(device, registrant);
         break;
 
     default:
-        kernel_warn("Ignoring ATA device [subclass: %02X]", device.subclass);
+        kernel_warn("Ignoring ATA device [subclass: %02X]", device->subclass);
         break;
     }
 }

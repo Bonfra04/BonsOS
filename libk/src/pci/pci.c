@@ -1,7 +1,8 @@
 #include <pci/pci.h>
 #include <io/ports.h>
-#include <pci/ata/ata.h>
 #include <log.h>
+
+#include <containers/darray.h>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -22,7 +23,8 @@
 
 #define PCI_BUS_MASTER (1 << 2)
 
-#define PCI_CLASS_ATA 0x01
+static pci_device_t* devices;
+static pci_driver_t** drivers;
 
 static uint8_t pci_read_8(uint8_t bus, uint8_t device, uint8_t function, uint8_t port)
 {
@@ -92,31 +94,10 @@ static inline uint8_t pci_get_header_type(uint8_t bus, uint8_t device, uint8_t f
     return pci_read_8(bus, device, function, offsetof(pci_device_t, header_type));
 }
 
-static inline uint8_t pci_get_class(uint8_t bus, uint8_t device, uint8_t function)
-{
-    return pci_read_8(bus, device, function, offsetof(pci_device_t, class));
-}
-
-static void register_device(uint8_t bus, uint8_t dev, uint8_t func)
-{
-    uint8_t class = pci_get_class(bus, dev, func);
-
-    switch (class)
-    {
-    case PCI_CLASS_ATA:
-        ata_register_device(bus, dev, func);
-        break;
-
-    default:
-        kernel_warn("Ignoring PCI device [class: %02X]", class);
-    }
-
-    pci_get_device(bus, dev, func);
-}
-
 void pci_init()
 {
-    ata_init();
+    devices = darray(pci_device_t, 0);
+    drivers = darray(pci_driver_t*, 0);
 
     for(int bus = 0; bus < PCI_MAX_BUS; bus++)
         for(int dev = 0; dev < PCI_MAX_DEVICE; dev++)
@@ -136,9 +117,25 @@ void pci_init()
                 if(header_type != PCI_HEADER_DEVICE)
                     continue;
 
-                register_device(bus, dev, func);
+                pci_device_t device = pci_get_device(bus, dev, func);
+                darray_append(devices, device);
             }
         }
+}
+
+void pci_register_driver(const pci_driver_t* driver)
+{
+    darray_append(drivers, driver);
+
+    for(int i = 0; i < darray_length(devices); i++)
+    {
+        pci_device_t* device = &devices[i];
+        if(driver->class == device->class
+            && (driver->subclass == PCI_SUBCLASS_ANY || driver->subclass == device->subclass)
+            && (driver->progif == PCI_PROGIF_ANY || driver->progif == device->programming_interface)
+        )
+            driver->register_device(device);
+    }
 }
 
 void pci_set_privileges(pci_device_t* device, uint8_t privileges)
