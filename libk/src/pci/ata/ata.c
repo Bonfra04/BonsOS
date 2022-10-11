@@ -179,16 +179,16 @@ void ata_init()
     pci_register_driver(&ata_driver);
 }
 
-void ata_register_device(pci_device_t* device)
+void ata_register_device(const pci_dev_info_t* device)
 {
-    switch (device->subclass)
+    switch (device->dev.subclass)
     {
     case PCI_ATA_SUB_SATA:
         ahci_register_device(device, registrant);
         break;
 
     default:
-        kernel_warn("Ignoring ATA device [subclass: %02X]", device->subclass);
+        kernel_warn("Ignoring ATA device [subclass: %02X]", device->dev.subclass);
         break;
     }
 }

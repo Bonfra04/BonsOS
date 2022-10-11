@@ -37,12 +37,20 @@ typedef struct pci_device
     uint8_t varies[192];
 } __attribute__ ((packed)) pci_device_t;
 
+typedef struct pci_dev_info
+{
+    const pci_device_t dev;
+    const uint8_t bus;
+    const uint8_t device;
+    const uint8_t function;
+} pci_dev_info_t;
+
 #define PCI_SUBCLASS_ANY 0xFF
 #define PCI_PROGIF_ANY 0xFF
 
 typedef struct pci_driver
 {
-    void (*register_device)(pci_device_t* device);
+    void (*register_device)(const pci_dev_info_t* device);
     uint8_t class;
     uint8_t subclass;
     uint8_t progif;
@@ -68,7 +76,7 @@ void pci_register_driver(const pci_driver_t* driver);
  * @param device pointer to device
  * @param privileges privileges bitmask
  */
-void pci_set_privileges(pci_device_t* device, uint8_t privileges);
+void pci_set_privileges(const pci_dev_info_t* device, uint8_t privileges);
 
 /**
  * @brief fetch the pci returning the 256 bytes data structure describing the device
@@ -77,4 +85,4 @@ void pci_set_privileges(pci_device_t* device, uint8_t privileges);
  * @param function the function number
  * @return device descriptor
  */
-pci_device_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function);
+pci_dev_info_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function);

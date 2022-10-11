@@ -21,9 +21,7 @@
 #define PCI_HEADER_BRIDGE  0x1
 #define PCI_HEADER_CARDBUS 0x2
 
-#define PCI_BUS_MASTER (1 << 2)
-
-static pci_device_t* devices;
+static pci_dev_info_t* devices;
 static pci_driver_t** drivers;
 
 static uint8_t pci_read_8(uint8_t bus, uint8_t device, uint8_t function, uint8_t port)
@@ -84,40 +82,54 @@ static void pci_write_32(uint8_t bus, uint8_t device, uint8_t function, uint8_t 
     outportd(PCI_DATA, value);
 }
 
-static inline uint16_t pci_get_vendor(uint8_t bus, uint8_t device, uint8_t function)
+static inline uint16_t get_vendor(uint8_t bus, uint8_t device, uint8_t function)
 {
     return pci_read_16(bus, device, function, offsetof(pci_device_t, vendor_id));
 }
 
-static inline uint8_t pci_get_header_type(uint8_t bus, uint8_t device, uint8_t function)
+static inline uint8_t get_header_type(uint8_t bus, uint8_t device, uint8_t function)
 {
     return pci_read_8(bus, device, function, offsetof(pci_device_t, header_type));
 }
 
+static inline uint8_t get_privileges(uint8_t bus, uint8_t device, uint8_t function)
+{
+    uint16_t command = pci_read_16(bus, device, function, offsetof(pci_device_t, command_register));
+    return command & 0b111;
+}
+
+static inline void set_privileges(uint8_t bus, uint8_t device, uint8_t function, uint8_t privileges)
+{
+    uint16_t command = pci_read_8(bus, device, function, offsetof(pci_device_t, command_register));
+    command &= ~0b111;
+    command |= privileges;
+    pci_write_16(bus, device, function, offsetof(pci_device_t, command_register), command);
+}
+
 void pci_init()
 {
-    devices = darray(pci_device_t, 0);
+    devices = darray(pci_dev_info_t, 0);
     drivers = darray(pci_driver_t*, 0);
 
     for(int bus = 0; bus < PCI_MAX_BUS; bus++)
         for(int dev = 0; dev < PCI_MAX_DEVICE; dev++)
         {
-            uint16_t vendor_id = pci_get_vendor(bus, dev, 0);
+            uint16_t vendor_id = get_vendor(bus, dev, 0);
             if(vendor_id == UINT16_MAX)
                 continue;
 
-            uint8_t header_type = pci_get_header_type(bus, dev, 0);
+            uint8_t header_type = get_header_type(bus, dev, 0);
             int functions = (header_type & MULTI_FUNCTION) ? PCI_MAX_FUNCTION : 1;
 
             for(int func = 0; func < functions; func++)
             {
-                header_type = pci_get_header_type(bus, dev, func);
+                header_type = get_header_type(bus, dev, func);
                 header_type &= ~MULTI_FUNCTION;
 
                 if(header_type != PCI_HEADER_DEVICE)
                     continue;
 
-                pci_device_t device = pci_get_device(bus, dev, func);
+                pci_dev_info_t device = pci_get_device(bus, dev, func);
                 darray_append(devices, device);
             }
         }
@@ -129,24 +141,27 @@ void pci_register_driver(const pci_driver_t* driver)
 
     for(int i = 0; i < darray_length(devices); i++)
     {
-        pci_device_t* device = &devices[i];
-        if(driver->class == device->class
-            && (driver->subclass == PCI_SUBCLASS_ANY || driver->subclass == device->subclass)
-            && (driver->progif == PCI_PROGIF_ANY || driver->progif == device->programming_interface)
+        const pci_dev_info_t* device = &devices[i];
+        if(driver->class == device->dev.class
+            && (driver->subclass == PCI_SUBCLASS_ANY || driver->subclass == device->dev.subclass)
+            && (driver->progif == PCI_PROGIF_ANY || driver->progif == device->dev.programming_interface)
         )
             driver->register_device(device);
     }
 }
 
-void pci_set_privileges(pci_device_t* device, uint8_t privileges)
+void pci_set_privileges(const pci_dev_info_t* device, uint8_t privileges)
 {
-    uint16_t command = device->command_register;
-    command &= ~0b111;
-    command |= privileges;
-    device->command_register = command;
+    uint16_t privs = get_privileges(device->bus, device->device, device->function);
+    privs |= privileges;
+    set_privileges(device->bus, device->device, device->function, privs);
+
+    pci_device_t* dev = (pci_device_t*)&device->dev;
+    dev->command_register &= 0b111;
+    dev->command_register |= privileges;
 }
 
-pci_device_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function)
+pci_dev_info_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function)
 {
     pci_device_t dev;
     uint32_t* dev_ptr = (uint32_t*)&dev;
@@ -154,5 +169,5 @@ pci_device_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function)
     for(int i = 0; i < sizeof(pci_device_t) / sizeof(uint32_t); i++)
         dev_ptr[i] = pci_read_32(bus, device, function, i << 2);
 
-    return dev;
+    return (pci_dev_info_t){ .dev = dev, .bus = bus, .device = device, .function = function };
 }

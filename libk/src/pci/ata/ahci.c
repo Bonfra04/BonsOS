@@ -210,14 +210,14 @@ static void init_device(volatile hba_mem_t* hba, void (*registrant)(ata_device_t
         }
 }
 
-void ahci_register_device(pci_device_t* pci_device, void (*registrant)(ata_device_t*))
+void ahci_register_device(const pci_dev_info_t* pci_device, void (*registrant)(ata_device_t*))
 {
     pci_set_privileges(pci_device, PCI_PRIV_DMA | PCI_PRIV_MMIO);
 
-    paging_map(NULL, ptr(pci_device->base5), ptr(pci_device->base5), sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL);
-    pfa_deinit_region(ptr(pci_device->base5), sizeof(hba_mem_t));
+    paging_map(NULL, ptr(pci_device->dev.base5), ptr(pci_device->dev.base5), sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL);
+    pfa_deinit_region(ptr(pci_device->dev.base5), sizeof(hba_mem_t));
 
-    init_device((volatile void*)ptr(pci_device->base5), registrant);
+    init_device((volatile void*)ptr(pci_device->dev.base5), registrant);
 }
 
 size_t ahci_ndevices()

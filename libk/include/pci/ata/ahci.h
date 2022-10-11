@@ -14,7 +14,7 @@ void ahci_init();
  * @param[in] pci_device the pci device descriptor
  * @param[in] registrant function to call to register an ata device
  */
-void ahci_register_device(pci_device_t* pci_device, void (*registrant)(ata_device_t*));
+void ahci_register_device(const pci_dev_info_t* pci_device, void (*registrant)(ata_device_t*));
 
 /**
  * @brief return number of registered devices

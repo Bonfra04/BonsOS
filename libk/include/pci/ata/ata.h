@@ -43,7 +43,7 @@ void ata_init();
  * @brief registers a ata device given pci address
  * @param[in] device pointer to the pci device to register
  */
-void ata_register_device(pci_device_t* device);
+void ata_register_device(const pci_dev_info_t* device);
 
 /**
  * @brief return number of registered devices
