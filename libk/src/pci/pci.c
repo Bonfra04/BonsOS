@@ -4,6 +4,7 @@
 
 #include <containers/darray.h>
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -170,4 +171,29 @@ pci_dev_info_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function)
         dev_ptr[i] = pci_read_32(bus, device, function, i << 2);
 
     return (pci_dev_info_t){ .dev = dev, .bus = bus, .device = device, .function = function };
+}
+
+void pci_write_byte(const pci_dev_info_t* device, uint8_t offset, uint8_t value)
+{
+    pci_write_8(device->bus, device->device, device->function, offset, value);
+    pci_device_t* dev = (pci_device_t*)&device->dev;
+    ((uint8_t*)dev)[offset] = value;
+}
+
+void pci_write_word(const pci_dev_info_t* device, uint8_t offset, uint16_t value)
+{
+    assert(offset % 2 == 0);
+    assert(offset >= 0x40 && offset < sizeof(pci_device_t) - 1);
+    pci_write_16(device->bus, device->device, device->function, offset, value);
+    pci_device_t* dev = (pci_device_t*)&device->dev;
+    ((uint16_t*)dev)[offset / 2] = value;
+}
+
+void pci_write_dword(const pci_dev_info_t* device, uint8_t offset, uint32_t value)
+{
+    assert(offset % 4 == 0);
+    assert(offset >= 0x40 && offset < sizeof(pci_device_t) - 3);
+    pci_write_32(device->bus, device->device, device->function, offset, value);
+    pci_device_t* dev = (pci_device_t*)&device->dev;
+    ((uint32_t*)dev)[offset / 4] = value;
 }

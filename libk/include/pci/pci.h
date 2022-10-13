@@ -86,3 +86,27 @@ void pci_set_privileges(const pci_dev_info_t* device, uint8_t privileges);
  * @return device descriptor
  */
 pci_dev_info_t pci_get_device(uint8_t bus, uint8_t device, uint8_t function);
+
+/**
+ * @brief writes a byte from the given pci device inside the varies field and updates the varies field
+ * @param[in] device pointer to the device
+ * @param[in] offset offset from the start of the device descriptor (>= 0x40)
+ * @param[in] value value to write
+ */
+void pci_write_byte(const pci_dev_info_t* device, uint8_t offset, uint8_t value);
+
+/**
+ * @brief writes a word from the given pci device inside the varies field and updates the varies field
+ * @param[in] device pointer to the device
+ * @param[in] offset offset from the start of the device descriptor (>= 0x40)
+ * @param[in] value value to write
+ */
+void pci_write_word(const pci_dev_info_t* device, uint8_t offset, uint16_t value);
+
+/**
+ * @brief writes a dword from the given pci device inside the varies field and updates the varies field
+ * @param[in] device pointer to the device
+ * @param[in] offset offset from the start of the device descriptor (>= 0x40)
+ * @param[in] value value to write
+ */
+void pci_write_dword(const pci_dev_info_t* device, uint8_t offset, uint32_t value);
