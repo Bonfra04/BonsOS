@@ -35,9 +35,9 @@ void sys_process_exit()
     sys(SYSCALL_PROCESS_EXIT, 0, 0, 0);
 }
 
-void sys_exec(const char* path, const char** argv, const char** env)
+uint64_t sys_exec(const char* path, const char** argv, const char** env)
 {
-    sys(SYSCALL_EXEC, (uint64_t)path, (uint64_t)argv, (uint64_t)env);
+    return sys(SYSCALL_EXEC, (uint64_t)path, (uint64_t)argv, (uint64_t)env);
 }
 
 char* sys_getcwd(char* buff, size_t size)

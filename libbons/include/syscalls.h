@@ -34,7 +34,7 @@ size_t sys_write_file(int fd, const char* buff, size_t count);
 void* sys_map_mem(void* ph_addr, size_t size);
 void sys_thread_exit();
 void sys_process_exit();
-void sys_exec(const char* path, const char** argv, const char** env);
+uint64_t sys_exec(const char* path, const char** argv, const char** env);
 char* sys_getcwd(char* buff, size_t size);
 int sys_setcwd(char* buff);
 bool sys_delete_file(const char* path);
