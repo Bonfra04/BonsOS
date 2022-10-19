@@ -12,7 +12,9 @@ bits 64
 section .text
     global isr_dispatcher
     global isr_set
+    global interrupt_return
     extern kernel_paging
+    extern scheduler_handle_signal
 
 isr_handlers: times 256 dq 0
 
@@ -103,7 +105,15 @@ isr_dispatcher:
 
 .pop_context:
 
-    mov cr3, r15                ; restore cr3
+; expects r15 to be paging structure
+interrupt_return:
+.handle_signals:
+    call scheduler_handle_signal        ; check if signals need to be handled
+    cmp rax, 0                          ; if no signals, continue
+    jne .handle_signals                 ; else check for others again
+
+.restore_context:
+    mov cr3, r15
 
     pop rax
     mov ds, rax
@@ -130,6 +140,5 @@ isr_dispatcher:
     pop r14
     pop r15
 
-.return:
     add rsp, 16      ; chop error code and interrupt #
     iretq

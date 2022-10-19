@@ -51,6 +51,9 @@ static void execute_command(const char** args)
 
 int main()
 {
+    // TEST thing
+    sys_raise_signal(2, 0xbad);
+
     while(1)
     {
         fputs("$> ", stdout);

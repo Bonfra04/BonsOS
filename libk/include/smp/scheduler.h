@@ -20,6 +20,8 @@ typedef struct thread
     process_t* proc;
 
     uint64_t tid;
+
+    uint64_t* signals;
 } thread_t;
 
 typedef enum resource_type
@@ -144,3 +146,16 @@ thread_t* get_next_thread();
  * @return The thread
  */
 thread_t scheduler_get_thread(uint64_t tid);
+
+/**
+ * @brief raises a signal to the given thread
+ * @param[in] tid The id of the thread
+ * @param[in] signal The signal to raise
+ */
+void scheduler_raise_signal(uint64_t tid, uint64_t signal);
+
+/**
+ * @brief handles a signal (if any) for the calling processù
+ * @return true if a signal was handled, false otherwise
+ */
+bool scheduler_handle_signal();

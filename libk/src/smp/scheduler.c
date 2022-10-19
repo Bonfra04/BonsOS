@@ -10,6 +10,7 @@
 #include <linker.h>
 #include <alignment.h>
 #include <containers/darray.h>
+#include <atomic/mutex.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -37,8 +38,7 @@ extern void scheduler_replace_switch(thread_t* thread);
 
 typedef struct stack
 {
-    uint64_t ph_base;
-    uint64_t vt_base;
+    uint64_t base;
     uint64_t sp;
 } stack_t;
 
@@ -80,7 +80,7 @@ static uint64_t stack_push_arr(stack_t* stack, const char* arr[], size_t count)
 
         stack_push_str(stack, arr[i], len);
 
-        arg_ptrs[i] = ptr(stack->vt_base + (stack->sp - stack->ph_base));
+        arg_ptrs[i] = (char*)stack->sp;
     }
 
     stack_pad(stack, 0, 8);
@@ -92,12 +92,11 @@ static uint64_t stack_push_arr(stack_t* stack, const char* arr[], size_t count)
     return stack->sp;
 }
 
-static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_entry, bool is_kernel, const char* args[], const char* env)
+static void* create_stack(void* kstack_base, void* rsp, void* vt_entry, bool is_kernel, const char* args[], const char* env)
 {
     stack_t stack;
-    stack.vt_base = (uint64_t)vt_stack_base;
-    stack.ph_base = (uint64_t)paging_get_ph(proc->paging, vt_stack_base);
-    stack.sp = stack.ph_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+    stack.base = (uint64_t)kstack_base;
+    stack.sp = stack.base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
 
     uint64_t env_ptr = 0;
     if(env)
@@ -120,8 +119,8 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     context->retaddr = (uint64_t)vt_entry;
     context->rflags = 0x202;
     context->registers.rdi = argc;
-    context->registers.rsi = (uint64_t)vt_stack_base + (argv_ptr - stack.ph_base);
-    context->registers.rdx = env_ptr ? (uint64_t)vt_stack_base + (env_ptr - stack.ph_base) : 0;
+    context->registers.rsi = argv_ptr;
+    context->registers.rdx = env_ptr;
 
     context->ds = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->es = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
@@ -130,7 +129,8 @@ static void* create_stack(const process_t* proc, void* vt_stack_base, void* vt_e
     context->ss = is_kernel ? SELECTOR_KERNEL_DATA : (SELECTOR_USER_DATA | 3);
     context->cs = is_kernel ? SELECTOR_KERNEL_CODE : (SELECTOR_USER_CODE | 3);
 
-    return ptr(context->rsp = stack.vt_base + (stack.sp - stack.ph_base));
+    context->rsp = (uint64_t)rsp ?: stack.sp;
+    return (void*)stack.sp;
 }
 
 void scheduler_init()
@@ -145,6 +145,7 @@ void scheduler_init()
     current_thread = malloc(sizeof(thread_t));
     current_thread->proc = kernel_process;
     current_thread->tid = 0;
+    current_thread->signals = darray(uint64_t, 0);
     darray_append(kernel_process->threads, current_thread);
 
     tasks = darray(thread_t*, 0);
@@ -171,6 +172,8 @@ static void thread_insert(thread_t* thread)
 static void thread_destroy(thread_t* thread)
 {
     tasks[thread->tid] = NULL;
+
+    darray_destroy(thread->signals);
 
     process_t* proc = thread->proc;
 
@@ -297,16 +300,16 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, const char* arg
         }
     }
 
-    void* stack_base = vmm_alloc(proc->paging, PAGE_PRIVILEGE_USER, THREAD_STACK_SIZE);
-    void* rsp = create_stack(proc, stack_base, entry_point, false, argv, env_str);
-
     thread_t* new = malloc(sizeof(thread_t));
-    new->rsp = (uint64_t)rsp;
+    new->signals = darray(uint64_t, 0);
     new->proc = proc;
-    new->stack_base = stack_base;
 
+    new->stack_base = vmm_alloc(proc->paging, PAGE_PRIVILEGE_USER, THREAD_STACK_SIZE);
     new->kstack_base = pfa_alloc(THREAD_STACK_SIZE);
+    uint64_t rsp = (uint64_t)new->stack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+    new->rsp = (uint64_t)create_stack(new->kstack_base, (void*)rsp, entry_point, false, argv, env_str);
     new->krsp = (uint64_t)new->kstack_base + THREAD_STACK_SIZE * PFA_PAGE_SIZE;
+
     paging_map(proc->paging, new->kstack_base, new->kstack_base, THREAD_STACK_SIZE * PFA_PAGE_SIZE, PAGE_PRIVILEGE_KERNEL);
 
     darray_append(proc->threads, new);
@@ -316,9 +319,10 @@ void scheduler_attach_thread(process_t* proc, void* entry_point, const char* arg
 void scheduler_create_kernel_task(void* entry_point)
 {
     void* stack_base = pfa_alloc(THREAD_STACK_SIZE);
-    void* rsp = create_stack(kernel_process, stack_base, entry_point, true, NULL, NULL);
+    void* rsp = create_stack(stack_base, NULL, entry_point, true, NULL, NULL);
 
     thread_t* new = malloc(sizeof(thread_t));
+    new->signals = darray(uint64_t, 0);
     new->krsp = new->rsp = (uint64_t)rsp;
     new->proc = kernel_process;
     new->kstack_base = new->stack_base = stack_base;
@@ -434,4 +438,42 @@ thread_t scheduler_get_thread(uint64_t tid)
     if(tid >= darray_length(tasks))
         return (thread_t){0};
     return *tasks[tid];
+}
+
+static mutex_t signal_mutex = 0;
+
+void scheduler_raise_signal(uint64_t tid, uint64_t signal)
+{
+    if(tid >= darray_length(tasks))
+        return;
+
+    thread_t* thread = tasks[tid];
+    if(thread == NULL)
+        return;
+
+    mutex_acquire(&signal_mutex);
+
+    darray_append(thread->signals, signal);
+
+    mutex_release(&signal_mutex);
+}
+
+bool scheduler_handle_signal()
+{
+    if(!scheduling)
+        return false;
+
+    if(darray_length(current_thread->signals) == 0)
+        return false;
+
+    mutex_acquire(&signal_mutex);
+
+    uint64_t signal = current_thread->signals[0];
+    darray_remove(current_thread->signals, 0);
+
+    // TODO: Handle signal
+
+    mutex_release(&signal_mutex);
+
+    return true;
 }

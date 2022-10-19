@@ -8,6 +8,7 @@ section .text
     extern tss_set_kstack
     extern lapic_eoi
     extern kernel_paging
+    extern interrupt_return
 
 struc process_t
     .paging:         resq 1
@@ -93,42 +94,13 @@ scheduler_replace_switch:
     cmp r15, [ rbx + thread_t.stack_pointer ]   ; check if going to kernel
     jne .not_kernel
 .kernel:                                        ; if so just restore krsp
-    mov rsp, r15
+    mov rsp, r15                                ; restore kernel stack pointer
+    mov r15, cr3                                ; set paging addr
     jmp .continue
 .not_kernel:                                    ; else restore user rsp and paging
     mov rsp, [ rbx + thread_t.stack_pointer ]
     mov rbx, [ rbx + thread_t.process ]         ; get thread's process
-    mov rbx, [ rbx + process_t.paging ]         ; get process's paging
-    mov cr3, rbx                                ; set paging addr
+    mov r15, [ rbx + process_t.paging ]         ; get process's paging
 
 .continue:
-
-.restore_context:
-    pop rax
-    mov ds, rax
-    pop rax
-    mov es, rax
-    pop rax
-    mov fs, rax
-    pop rax
-    mov gs, rax
-
-    pop rax
-    pop rbx
-    pop rcx
-    pop rdx
-    pop rsi
-    pop rdi
-    pop rbp
-    pop r8
-    pop r9
-    pop r10
-    pop r11
-    pop r12
-    pop r13
-    pop r14
-    pop r15
-
-    add rsp, 2*8    ; remove error code and interrupt #
-
-    iretq
+    jmp interrupt_return

@@ -19,3 +19,4 @@ void syscall_sched_yield();
 uint64_t syscall_time();
 bool syscall_seek_file(int fd, size_t pos);
 size_t syscall_tell_file(int fd);
+void syscall_raise_signal(uint64_t tid, uint64_t signal);

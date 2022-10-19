@@ -23,6 +23,7 @@
 #define SYSCALL_TIME 12
 #define SYSCALL_SEEK_FILE 13
 #define SYSCALL_TELL_FILE 14
+#define SYSCALL_RAISE_SIGNAL 15
 
 uint64_t sys(uint64_t id, uint64_t arg1, uint64_t arg2, uint64_t arg3);
 
@@ -41,3 +42,4 @@ void sys_sched_yield();
 uint64_t sys_time();
 bool sys_seek_file(int fd, uint64_t offset);
 size_t sys_tell_file(int fd);
+void sys_raise_signal(uint64_t tid, uint64_t signal);

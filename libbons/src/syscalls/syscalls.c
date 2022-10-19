@@ -74,3 +74,8 @@ uint64_t sys_tell_file(int fd)
 {
     return sys(SYSCALL_TELL_FILE, (uint64_t)fd, 0, 0);
 }
+
+void sys_raise_signal(uint64_t tid, uint64_t signal)
+{
+    sys(SYSCALL_RAISE_SIGNAL, (uint64_t)tid, (uint64_t)signal, 0);
+}

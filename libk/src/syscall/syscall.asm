@@ -4,6 +4,7 @@ section .text
     global syscall_handle
     extern syscall_handlers
     extern kernel_paging
+    extern scheduler_handle_signal
 
 struc gdtr_t
     .size:      resw 1
@@ -29,7 +30,7 @@ endstruc
 SELECTOR_KERNEL_DATA equ 0x10
 SELECTOR_USER_DATA equ 0x18
 
-MAX_SYSCALLS equ 15
+MAX_SYSCALLS equ 16
 
 syscall_handle:
     push r11        ; save flags
@@ -82,13 +83,22 @@ syscall_handle:
 
     ; check if syscall number is valid
     cmp rax, MAX_SYSCALLS
-    jge .restore_context
+    jge .continue
     ; save syscall
     mov rax, [ syscall_handlers + rax * 8 ]
 
     ; call syscall
     cld     ; System V ABI requires direction flag to be cleared on function entry
     call rax
+
+.continue:
+
+push rax
+.handle_signals:
+    call scheduler_handle_signal        ; check if signals need to be handled
+    cmp rax, 0                          ; if no signals, continue
+    jne .handle_signals                 ; else check for others again
+    pop rax
 
 .restore_context:
     ; disable interrupts
