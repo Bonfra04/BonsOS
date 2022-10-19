@@ -15,7 +15,7 @@ uint64_t syscall_exec(const char* path, const char** argv, const char** env)
 
     executable_t* exec = executable_load(path);
     if(exec == NULL)
-        return;
+        return -1;
 
     size_t num_args = 0;
     if(argv)
