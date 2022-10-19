@@ -46,6 +46,8 @@ typedef struct process
 
 extern thread_t* current_thread;
 
+#define SIG_INT 0x1
+
 /**
  * @brief Initializes the scheduler
  */

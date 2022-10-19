@@ -99,8 +99,21 @@ static void isr_fatal(const interrupt_context_t* context)
     }
 }
 
+#include <smp/scheduler.h>
+
+static void exception_handler(const interrupt_context_t* context)
+{
+    if(current_thread->proc->paging == kernel_paging)
+    {
+        isr_fatal(context);
+        return;  
+    }
+
+    scheduler_raise_signal(current_thread->tid, SIG_INT);
+}
+
 void exceptions_init()
 {
     for (uint8_t i = 0; i < 32; i++)
-        isr_set(i, isr_fatal);
+        isr_set(i, exception_handler);
 }
