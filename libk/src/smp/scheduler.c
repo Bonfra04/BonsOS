@@ -470,10 +470,13 @@ bool scheduler_handle_signal()
 
     uint64_t signal = current_thread->signals[0];
     darray_remove(current_thread->signals, 0);
+    mutex_release(&signal_mutex);
+    
+    if(signal == SIG_INT);
+        scheduler_terminate_thread();
 
     // TODO: Handle signal
 
-    mutex_release(&signal_mutex);
 
     return true;
 }
