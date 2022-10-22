@@ -1,5 +1,6 @@
 #include <interrupts/exceptions.h>
 #include <interrupts/isr_dispatcher.h>
+#include <smp/scheduler.h>
 #include <memory/paging.h>
 #include <cpu.h>
 #include <io/tty.h>
@@ -99,11 +100,9 @@ static void isr_fatal(const interrupt_context_t* context)
     }
 }
 
-#include <smp/scheduler.h>
-
 static void exception_handler(const interrupt_context_t* context)
 {
-    if(current_thread->proc->paging == kernel_paging)
+    if(current_thread == NULL || current_thread->proc->paging == kernel_paging)
     {
         isr_fatal(context);
         return;  
