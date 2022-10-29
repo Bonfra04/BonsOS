@@ -472,11 +472,10 @@ bool scheduler_handle_signal()
     darray_remove(current_thread->signals, 0);
     mutex_release(&signal_mutex);
     
-    if(signal == SIG_INT);
+    if(signal == SIG_INT)
         scheduler_terminate_thread();
 
     // TODO: Handle signal
-
 
     return true;
 }
