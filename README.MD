@@ -23,3 +23,6 @@ If when pressing F5 in VSCode qemu idle with "Guest has not initialized the disp
 
 ## Credits
 A big portion of the code present in the bootloader is inspired (copied) by [Limine](https://github.com/limine-bootloader/limine), do not assume i know anything about that code :P
+
+# Known Bugs
+Sometimes the keyboard driver may freeze the os if you type too fast, it's an easy fix but it requires a lot of rewrite so I'll do it later
