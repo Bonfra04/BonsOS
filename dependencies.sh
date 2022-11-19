@@ -24,6 +24,7 @@ sudo apt-get install --assume-yes mtools
 sudo apt-get install --assume-yes qemu
 sudo apt-get install --assume-yes qemu-kvm
 sudo apt-get install --assume-yes gdb
+sudo apt-get install --assume-yes fdisk
 
 mkdir $ROOT_DIR/tmp/
 mkdir $ROOT_DIR/tools/
