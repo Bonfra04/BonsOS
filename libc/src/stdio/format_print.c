@@ -69,64 +69,55 @@ typedef struct format_data
     specifier_t specifier;
 } format_data_t;
 
-static int format_numeric(format_data_t format, printer_t* printer, const char* prefix, const char* buf)
+static int print_format(const char* prefix, char padchr, const char* buff, format_data_t format, printer_t* printer)
 {
     int printed_chars = 0;
-    size_t len = strlen(buf);
-    size_t offset = len;
 
-    bool pad_left = format.flags & FLAG_LEFT;
-    bool pad_zero = format.flags & FLAG_ZERO;
-    bool use_sign = format.flags & FLAG_SIGN;
-    bool use_space = format.flags & FLAG_SPACE;
+    size_t prefix_len = strlen(prefix);
+    size_t len = strlen(buff);
+    size_t pad = (len + prefix_len) < format.width ? format.width - (len + prefix_len) : 0;
 
-    if(pad_zero && buf[0] != '-')
-        if(use_sign)
-        {
-            if(printer->print(printer->where, '+'))
-                printed_chars++, offset++;
-        }
-        else if(use_space)
-        {
-            if(printer->print(printer->where, ' '))
-                printed_chars++, offset++;
-        }
-
-    size_t pref_len = prefix ? strlen(prefix) : 0;
-    for(size_t i = 0; i < pref_len; i++)
-        if(printer->print(printer->where, prefix[i]))
-            printed_chars++, offset++;
-
-    size_t prec = format.precision < 0 ? 0 : offset < format.precision ? format.precision - offset : 0;
-    size_t pad = prec + offset < format.width ? format.width - (prec + offset) : 0;
-
-    if(!pad_left)
+    if (padchr != ' ')
+        for(size_t i = 0; i < prefix_len; i++)
+            printed_chars += printer->print(printer->where, prefix[i]);
+    if(!(format.flags & FLAG_LEFT))
         for(size_t i = 0; i < pad; i++)
-            printed_chars += printer->print(printer->where, pad_zero ? '0' : ' ');
-
-    if(!pad_zero && buf[0] != '-')
-        if(use_sign)
-        {
-            if(printer->print(printer->where, '+'))
-                printed_chars++;
-        }
-        else if(use_space)
-        {
-            if(printer->print(printer->where, ' '))
-                printed_chars++;
-        }
-
-    for(size_t i = 0; i < prec; i++)
-        printed_chars += printer->print(printer->where, '0');
-
+            printed_chars += printer->print(printer->where, padchr);
+    if (padchr == ' ')
+        for(size_t i = 0; i < prefix_len; i++)
+            printed_chars += printer->print(printer->where, prefix[i]);
     for(size_t i = 0; i < len; i++)
-        printed_chars += printer->print(printer->where, buf[i]);
-    
-    if(pad_left)
+        printed_chars += printer->print(printer->where, buff[i]);
+    if(format.flags & FLAG_LEFT)
         for(size_t i = 0; i < pad; i++)
-            printed_chars += printer->print(printer->where, ' ');
+            printed_chars += printer->print(printer->where, padchr);
 
     return printed_chars;
+}
+
+static int format_numeric(format_data_t format, printer_t* printer, const char* prefix, const char* buf)
+{
+    if(format.specifier == SPEC_p)
+        format.precision = -1;
+
+    const char* numstr = buf + (buf[0] == '-');
+    const char* sign = buf[0] == '-' ? "-" : format.specifier == SPEC_d ? format.flags & FLAG_SIGN ? "+" : format.flags & FLAG_SPACE ? " " : "" : "";
+    size_t len_num = strlen(numstr);
+    size_t len_prefix = format.flags & FLAG_ALT ? strlen(prefix) : 0;
+    size_t len_sign = strlen(sign);
+    size_t prec_len = format.precision == -1 ? 0 : format.precision > len_num ? format.precision - len_num : 0;
+
+    char prefixstr[len_sign + len_prefix + 1];
+    char str[prec_len + len_num + 1];
+    str[0] = prefixstr[0] = '\0';
+    strcat(prefixstr, sign);
+    strncat(prefixstr, prefix, len_prefix);
+    for(size_t i = 0; i < prec_len; i++)
+        strcat(str, "0");
+    strcat(str, numstr);
+
+    char pad = format.flags & FLAG_ZERO && format.precision == -1 ? '0': ' ';
+    return print_format(prefixstr, pad, str, format, printer);
 }
 
 static void eval_format(format_data_t format, va_list args, printer_t* printer, int* printed_chars)
@@ -142,7 +133,8 @@ static void eval_format(format_data_t format, va_list args, printer_t* printer, 
             else
             {
                 unsigned char arg = (unsigned char)va_arg(args, int);
-                *printed_chars += printer->print(printer->where, arg);
+                char buff[2] = { arg, '\0' };
+                *printed_chars += print_format("", ' ', buff, format, printer);
             }
         }
         break;
@@ -157,17 +149,21 @@ static void eval_format(format_data_t format, va_list args, printer_t* printer, 
             {
                 char* arg = va_arg(args, char*);
                 size_t len = ullmin(strlen(arg), format.precision);
-                size_t pad = len < format.width ? format.width - len : 0;
 
-                if(format.flags & FLAG_LEFT)
-                    for(size_t i = 0; i < pad; i++)
-                        *printed_chars += printer->print(printer->where, ' ');
-                for(size_t i = 0; i < len; i++)
-                    *printed_chars += printer->print(printer->where, arg[i]);
-                if(!(format.flags & FLAG_LEFT))
-                    for(size_t i = 0; i < pad; i++)
-                        *printed_chars += printer->print(printer->where, ' ');
+                char buff[len + 1];
+                strncpy(buff, arg, len);
+                *printed_chars += print_format("", ' ', buff, format, printer);
             }
+        }
+        break;
+
+        case SPEC_p:
+        {
+            void* arg = va_arg(args, void*);
+            char buf[32];
+            ulltoa((unsigned long long)arg, buf, 16);
+            strtoupper(buf);
+            *printed_chars += format_numeric(format, printer, "0x", buf);
         }
         break;
 
@@ -193,7 +189,7 @@ static void eval_format(format_data_t format, va_list args, printer_t* printer, 
 
             char buf[32];
             lltoa(num, buf, 10);
-            *printed_chars += format_numeric(format, printer, NULL, buf);
+            *printed_chars += format_numeric(format, printer, "", buf);
         }
         break;
 
@@ -223,18 +219,20 @@ static void eval_format(format_data_t format, va_list args, printer_t* printer, 
             {
                 case SPEC_o: 
                     base = 8;
-                    prefix = format.flags & FLAG_ALT ? "0" : NULL;
+                    prefix = "0";
                     break;
                 case SPEC_x:
                     base = 16;
-                    prefix = format.flags & FLAG_ALT ? "0x" : NULL;
+                    prefix = "0x";
                     break;
                 case SPEC_X:
                     base = 16;
-                    prefix = format.flags & FLAG_ALT ? "0X" : NULL;
+                    prefix = "0X";
                     break;
-                default:
-                case SPEC_u: base = 10, prefix = NULL; break;
+                case SPEC_u:
+                    base = 10;
+                    prefix = "";
+                    break;
             } 
 
             char buf[32];
@@ -243,13 +241,10 @@ static void eval_format(format_data_t format, va_list args, printer_t* printer, 
         }
         break;
 
-        case SPEC_p:
+        case SPEC_n:
         {
-            void* arg = va_arg(args, void*);
-            char buf[32];
-            ulltoa((unsigned long long)arg, buf, 16);
-            strtoupper(buf);
-            *printed_chars += format_numeric(format, printer, "0x", buf);
+            int* num = va_arg(args, int*);
+            *num = *printed_chars;
         }
         break;
     }
