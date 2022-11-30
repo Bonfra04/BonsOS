@@ -38,7 +38,10 @@ char* strncpy(char* destination, const char* source, size_t num)
     do
     {
         if(!num--)
+        {
+            *destination = '\0';
             return ptr;
+        }
     } while(*destination++ = *source++);
     while(num--)
         *destination++ = 0;
