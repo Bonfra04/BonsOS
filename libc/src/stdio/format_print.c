@@ -252,10 +252,9 @@ static void eval_format(format_data_t format, va_list args, printer_t* printer, 
 
 static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, va_list args)
 {
-    n--;
     int result = 0;
 
-    while(*format != '\0')
+    while(*format != '\0' && result < --n)
     {
         char ch = *format++;
         if(ch != '%')
