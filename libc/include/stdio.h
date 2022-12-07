@@ -64,13 +64,13 @@ int feof(FILE* stream);
 int ferror(FILE* stream);
 void clearerr(FILE* stream);
 
-int sprintf(char* buf, const char* format, ...);
 int vsprintf(char* buf, const char* format, va_list args);
-int snprintf(char* buf, size_t n, const char* format, ...);
+int sprintf(char* buf, const char* format, ...);
 int vsnprintf(char* buf, size_t n, const char* format, va_list args);
+int snprintf(char* buf, size_t n, const char* format, ...);
 
-int fprintf(FILE* stream, const char* format, ...);
 int vfprintf(FILE* stream, const char* format, va_list arg);
+int fprintf(FILE* stream, const char* format, ...);
 int vprintf(const char * format, va_list arg);
 int printf(const char* format, ...);
 

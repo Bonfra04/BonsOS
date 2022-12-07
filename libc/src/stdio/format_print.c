@@ -352,25 +352,16 @@ static int vsnprintf_internal(printer_t* printer, size_t n, const char* format, 
     return result;
 }
 
-int sprintf(char* buf, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = vsprintf(buf, format, args);
-    va_end(args);
-    return result;
-}
-
 int vsprintf(char* buf, const char* format, va_list args)
 {
     return vsnprintf(buf, 0, format, args);
 }
 
-int snprintf(char* buf, size_t n, const char* format, ...)
+int sprintf(char* buf, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    int result = vsnprintf(buf, n, format, args);
+    int result = vsprintf(buf, format, args);
     va_end(args);
     return result;
 }
@@ -383,6 +374,23 @@ int vsnprintf(char* buf, size_t n, const char* format, va_list args)
     return vsnprintf_internal(&printer, n, format, args);
 }
 
+int snprintf(char* buf, size_t n, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = vsnprintf(buf, n, format, args);
+    va_end(args);
+    return result;
+}
+
+int vfprintf(FILE* stream, const char* format, va_list arg)
+{
+    printer_t printer;
+    printer.print = printer_stream;
+    printer.where = stream;
+    return vsnprintf_internal(&printer, 0, format, arg);
+}
+
 int fprintf(FILE* stream, const char* format, ...)
 {
     va_list args;
@@ -392,24 +400,16 @@ int fprintf(FILE* stream, const char* format, ...)
     return result;
 }
 
-int printf(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int result = vfprintf(stdout, format, args);
-    va_end(args);
-    return result;
-}
-
 int vprintf(const char * format, va_list arg)
 {
     return vfprintf(stdout, format, arg);
 }
 
-int vfprintf(FILE* stream, const char* format, va_list arg)
+int printf(const char* format, ...)
 {
-    printer_t printer;
-    printer.print = printer_stream;
-    printer.where = stream;
-    return vsnprintf_internal(&printer, 0, format, arg);
+    va_list args;
+    va_start(args, format);
+    int result = vprintf(format, args);
+    va_end(args);
+    return result;
 }
