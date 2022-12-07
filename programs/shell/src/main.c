@@ -46,6 +46,8 @@ static void execute_command(const char** args)
             return;
         }
 
+    printf("Unknown command: %s\n", args[0]);
+
     // TODO: execute command
 }
 
