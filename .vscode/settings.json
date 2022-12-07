@@ -31,17 +31,5 @@
         ".gitignore": true,
         ".gitattributes": true,
     },
-    "git.ignoreLimitWarning": true,
     "debug.allowBreakpointsEverywhere": true,
-    "cSpell.words": [
-        "ahci",
-        "APIC",
-        "ioapic",
-        "ioapics",
-        "lapic",
-        "madt",
-        "sata",
-        "sysret"
-    ],
-    "discord.enabled": true
 }
