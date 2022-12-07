@@ -49,8 +49,6 @@ static void find_rsdt()
             }
     }
 
-    // TODO: check extended bios area
-
     if(rsdp == NULL)
         kernel_panic("find_rsdp: ACPI RSDP not found");
 
