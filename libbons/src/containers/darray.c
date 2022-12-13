@@ -62,3 +62,12 @@ size_t darray_length(void* darray)
     darray_t* desc = (darray_t*)darray - 1;
     return desc->length;
 }
+
+void* __darray_pack(void* darray)
+{
+    darray_t* desc = (darray_t*)darray - 1;
+    void* array = malloc(desc->stride * desc->length);
+    memcpy(array, darray, desc->stride * desc->length);
+    darray_destroy(darray);
+    return array;
+}

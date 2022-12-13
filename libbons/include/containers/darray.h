@@ -17,3 +17,6 @@ size_t __darray_find(void* darray, void* element);
 void darray_destroy(void* darray);
 
 size_t darray_length(void* darray);
+
+void* __darray_pack(void* darray);
+#define darray_pack(darray) ({ darray = __darray_pack(darray); })
