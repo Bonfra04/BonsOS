@@ -1,4 +1,4 @@
-#include <pci/pci.h>
+#include <drivers/pci.h>
 #include <io/ports.h>
 #include <log.h>
 
@@ -143,11 +143,15 @@ void pci_register_driver(const pci_driver_t* driver)
     for(int i = 0; i < darray_length(devices); i++)
     {
         const pci_dev_info_t* device = &devices[i];
-        if(driver->class == device->dev.class
-            && (driver->subclass == PCI_SUBCLASS_ANY || driver->subclass == device->dev.subclass)
-            && (driver->progif == PCI_PROGIF_ANY || driver->progif == device->dev.programming_interface)
-        )
-            driver->register_device(device);
+
+        if(driver->match & PCI_DRIVER_MATCH_CLASS && device->dev.class != driver->class)
+            continue;
+        if(driver->match & PCI_DRIVER_MATCH_SUBCLASS && device->dev.subclass != driver->subclass)
+            continue;
+        if(driver->match & PCI_DRIVER_MATCH_PROGIF && device->dev.programming_interface != driver->progif)
+            continue;
+
+        driver->register_device(device);
     }
 }
 

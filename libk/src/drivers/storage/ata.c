@@ -1,7 +1,7 @@
-#include <pci/ata/ata.h>
-#include <pci/pci.h>
+#include <drivers/storage/ata.h>
+#include <drivers/pci.h>
 #include <log.h>
-#include <pci/ata/ahci.h>
+#include <drivers/storage/ahci.h>
 
 #include <containers/darray.h>
 
@@ -156,41 +156,17 @@ static bool identify(ata_device_t* dev)
     return true;
 }
 
-static void registrant(ata_device_t* ata_device)
-{
-    if(!identify(ata_device))
-        return;
-    darray_append(ata_devices, *ata_device);
-}
-
-#define PCI_CLASS_ATA 0x01
-
-static pci_driver_t ata_driver = {
-    .class = PCI_CLASS_ATA,
-    .subclass = PCI_SUBCLASS_ANY,
-    .progif = PCI_PROGIF_ANY,
-    .register_device = ata_register_device
-};
-
 void ata_init()
 {
     ata_devices = darray(ata_device_t, 0);
     ahci_init();
-    pci_register_driver(&ata_driver);
 }
 
-void ata_register_device(const pci_dev_info_t* device)
+void ata_register_device(ata_device_t ata_device)
 {
-    switch (device->dev.subclass)
-    {
-    case PCI_ATA_SUB_SATA:
-        ahci_register_device(device, registrant);
-        break;
-
-    default:
-        kernel_warn("Ignoring ATA device [subclass: %02X]", device->dev.subclass);
-        break;
-    }
+    if(!identify(&ata_device))
+        return;
+    darray_append(ata_devices, ata_device);
 }
 
 size_t ata_ndevices()

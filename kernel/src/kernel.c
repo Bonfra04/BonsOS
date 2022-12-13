@@ -22,8 +22,10 @@
 #include <interrupts/ioapic.h>
 #include <interrupts/lapic.h>
 
-#include <pci/pci.h>
-#include <pci/ata/ata.h>
+#include <drivers/pci.h>
+#include <drivers/storage/ata.h>
+#include <drivers/usb/usb.h>
+#include <drivers/storage/mass_storage.h>
 
 #include <storage/storage.h>
 

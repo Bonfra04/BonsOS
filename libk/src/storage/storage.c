@@ -1,5 +1,5 @@
 #include <storage/storage.h>
-#include <pci/ata/ata.h>
+#include <drivers/storage/ata.h>
 
 #include <string.h>
 #include <assert.h>
