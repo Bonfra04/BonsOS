@@ -7,13 +7,13 @@
 #define PART_TYPE_FREE  0x00
 #define PART_TYPE_FAT16 0x06
 
-typedef bool (*storage_function_t)(size_t internal_id, uint64_t lba, uint64_t num_sectors, void* address);
+typedef bool (*storage_function_t)(void* device, uint64_t lba, uint64_t num_sectors, void* address);
 
 typedef struct storage_data
 {
     size_t capacity;
-    uint64_t internal_id;
     size_t sector_size;
+    void* data;
     storage_function_t reader;
     storage_function_t writer;
 } storage_data_t;

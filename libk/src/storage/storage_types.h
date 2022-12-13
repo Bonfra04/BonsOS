@@ -40,8 +40,8 @@ typedef struct partition
 
 typedef struct storage_device
 {
+    void* data;
     size_t capacity;
-    uint64_t internal_id;
     size_t lba_pos;
 
     uint8_t buffer[MAX_BUFFER_LENGTH];

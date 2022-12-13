@@ -8,13 +8,11 @@
 #include <alignment.h>
 
 #include <linker.h>
-#include <containers/darray.h>
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "ahci_types.h"
-
-static ahci_device_t* ahci_devices;
 
 static uint8_t get_free_cmd_slot(ahci_device_t* dev)
 {
@@ -174,58 +172,9 @@ static void hba_reset(volatile hba_mem_t* hba)
     hba->ghc = HBA_GHC_AE;
 }
 
-static void init_device(volatile hba_mem_t* hba)
+static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, size_t transfer_len)
 {
-    hba_reset(hba);
-    hba->is = UINT32_MAX; // clear interrupt status
-    bios_handoff(hba);
-
-    for(uint8_t bit = 0; bit < 32; bit++)
-        if(hba->pi & (1 << bit)) // bit is set device exists
-        {
-            volatile hba_port_t* port = &hba->ports[bit];
-            paging_map(NULL, (void*)port, (void*)port, sizeof(hba_port_t), PAGE_PRIVILEGE_KERNEL);
-            pfa_deinit_region((void*)port, sizeof(hba_port_t));
-
-            if(!init_port(port))
-                continue;
-
-            ahci_device_t ahci_device;
-            ahci_device.port = port;
-            ahci_device.allocated_cmd = 0;
-            ahci_device.ncmd = ((hba->cap >> 8) & HBA_CAP_NCS) + 1;
-            ahci_device.cmd_header = (void*)(port->clb | ((uint64_t)port->clbu << 32));
-
-            darray_append(ahci_devices, ahci_device);
-
-            ata_device_t ata_device;
-            ata_device.internal_id = darray_length(ahci_devices) - 1;
-            ata_device.send_ata_cmd = ahci_send_ata_cmd;
-            
-            ata_register_device(ata_device);
-        }
-}
-
-static void ahci_register_device(const pci_dev_info_t* pci_device)
-{
-    pci_set_privileges(pci_device, PCI_PRIV_DMA | PCI_PRIV_MMIO);
-
-    paging_map(NULL, ptr(pci_device->dev.base5), ptr(pci_device->dev.base5), sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL);
-    pfa_deinit_region(ptr(pci_device->dev.base5), sizeof(hba_mem_t));
-
-    init_device((volatile void*)ptr(pci_device->dev.base5));
-}
-
-size_t ahci_ndevices()
-{
-    return darray_length(ahci_devices);
-}
-
-bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, size_t transfer_len)
-{
-    if(dev_id >= ahci_ndevices())
-        return false;
-    ahci_device_t* dev = &ahci_devices[dev_id];
+    ahci_device_t* dev = (ahci_device_t*)device;
 
     dev->port->is = UINT32_MAX;
  
@@ -293,6 +242,46 @@ bool ahci_send_ata_cmd(uint64_t dev_id, ata_command_t* command, uint8_t* data, s
     return success;
 }
 
+static void init_device(volatile hba_mem_t* hba)
+{
+    hba_reset(hba);
+    hba->is = UINT32_MAX; // clear interrupt status
+    bios_handoff(hba);
+
+    for(uint8_t bit = 0; bit < 32; bit++)
+        if(hba->pi & (1 << bit)) // bit is set device exists
+        {
+            volatile hba_port_t* port = &hba->ports[bit];
+            paging_map(NULL, (void*)port, (void*)port, sizeof(hba_port_t), PAGE_PRIVILEGE_KERNEL);
+            pfa_deinit_region((void*)port, sizeof(hba_port_t));
+
+            if(!init_port(port))
+                continue;
+
+            ahci_device_t* ahci_device = malloc(sizeof(ahci_device_t));
+            ahci_device->port = port;
+            ahci_device->allocated_cmd = 0;
+            ahci_device->ncmd = ((hba->cap >> 8) & HBA_CAP_NCS) + 1;
+            ahci_device->cmd_header = (void*)(port->clb | ((uint64_t)port->clbu << 32));
+
+            ata_device_t ata_device;
+            ata_device.data = ahci_device;
+            ata_device.send_ata_cmd = send_ata_cmd;
+            
+            ata_register_device(ata_device);
+        }
+}
+
+static void register_controller(const pci_dev_info_t* pci_device)
+{
+    pci_set_privileges(pci_device, PCI_PRIV_DMA | PCI_PRIV_MMIO);
+
+    paging_map(NULL, ptr(pci_device->dev.base5), ptr(pci_device->dev.base5), sizeof(hba_mem_t), PAGE_PRIVILEGE_KERNEL);
+    pfa_deinit_region(ptr(pci_device->dev.base5), sizeof(hba_mem_t));
+
+    init_device((volatile void*)ptr(pci_device->dev.base5));
+}
+
 #define PCI_CLASS_ATA 0x01
 #define PCI_ATA_SUB_SATA 0x06
 
@@ -300,11 +289,10 @@ static pci_driver_t driver = {
     .match = PCI_DRIVER_MATCH_CLASS | PCI_DRIVER_MATCH_SUBCLASS,
     .class = PCI_CLASS_ATA,
     .subclass = PCI_ATA_SUB_SATA,
-    .register_device = ahci_register_device
+    .register_device = register_controller
 };
 
 void ahci_init()
 {
-    ahci_devices = darray(ahci_device_t, 0);
     pci_register_driver(&driver);
 }

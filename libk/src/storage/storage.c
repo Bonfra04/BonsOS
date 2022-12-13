@@ -13,19 +13,6 @@ static storage_device_t* storage_devices;
 void storage_init()
 {
     storage_devices = darray(storage_device_t, 0);
-
-    for(size_t i = 0; i < ata_ndevices(); i++)
-    {
-        storage_data_t data;
-        memset(&data, 0, sizeof(storage_data_t));
-        data.capacity = ata_capacity(i);
-        data.internal_id = i;
-        data.sector_size = ata_sector_size(i);
-        data.reader = ata_read;
-        data.writer = ata_write;
-
-        storage_register_device(data);
-    }
 }
 
 uint64_t storage_register_device(storage_data_t data)
@@ -35,7 +22,7 @@ uint64_t storage_register_device(storage_data_t data)
     storage_device_t device;
     memset(&device, 0, sizeof(storage_device_t));
     device.capacity = data.capacity;
-    device.internal_id = data.internal_id;
+    device.data = data.data;
     device.buff_len = data.sector_size;
     device.reader = data.reader;
     device.writer = data.writer;
@@ -43,7 +30,7 @@ uint64_t storage_register_device(storage_data_t data)
     device.lba_pos = 0;
     device.partitions = darray(partition_t, 0);
 
-    device.reader(device.internal_id, device.lba_pos, 1, device.buffer);
+    device.reader(device.data, device.lba_pos, 1, device.buffer);
     const master_bootrecord_t* mbr = (master_bootrecord_t*)device.buffer;
 
     for(uint8_t i = 0; i < 4; i++)
@@ -143,7 +130,7 @@ bool storage_flush(size_t id)
     if(!device)
         return false;
 
-    return device->writer(device->internal_id, device->lba_pos, 1, device->buffer);
+    return device->writer(device->data, device->lba_pos, 1, device->buffer);
 }
 
 bool storage_seek(size_t id, size_t position)
@@ -158,18 +145,18 @@ bool storage_seek(size_t id, size_t position)
     device->lba_pos = position / device->buff_len;
     device->buff_off = position % device->buff_len;
 
-    return device->reader(device->internal_id, device->lba_pos, 1, device->buffer);
+    return device->reader(device->data, device->lba_pos, 1, device->buffer);
 }
 
 static bool flush_and_advance(storage_device_t* device)
 {
-    if(!device->writer(device->internal_id, device->lba_pos, 1, device->buffer))
+    if(!device->writer(device->data, device->lba_pos, 1, device->buffer))
         return false;
 
     device->buff_off = 0;
     device->lba_pos++;
 
-    if(!device->reader(device->internal_id, device->lba_pos, 1, device->buffer))
+    if(!device->reader(device->data, device->lba_pos, 1, device->buffer))
         return false;
 
     return true;
