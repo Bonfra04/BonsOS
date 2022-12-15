@@ -56,8 +56,10 @@ static bool inquiry(scsi_device_t* device)
     return true;
 }
 
-static bool scsi_read12(scsi_device_t* device, uint32_t lba, uint32_t nsectors, void* buffer)
+static bool scsi_read12(void* device, uint64_t lba, uint64_t nsectors, void* buffer)
 {
+    scsi_device_t* dev = (scsi_device_t*)device;
+
     scsi_command_t command;
     command.write = false;
     command.packet_len = sizeof(scsi_command_read12_t);
@@ -67,11 +69,13 @@ static bool scsi_read12(scsi_device_t* device, uint32_t lba, uint32_t nsectors, 
     packet->lba = __builtin_bswap32(lba);
     packet->length = __builtin_bswap32(nsectors);
 
-    return device->driver.send_scsi_cmd(device->driver.data, &command, buffer, nsectors * device->sector_size);
+    return dev->driver.send_scsi_cmd(dev->driver.data, &command, buffer, nsectors * dev->sector_size);
 }
 
-static bool scsi_read10(scsi_device_t* device, uint32_t lba, uint32_t nsectors, void* buffer)
+static bool scsi_read10(void* device, uint64_t lba, uint64_t nsectors, void* buffer)
 {
+    scsi_device_t* dev = (scsi_device_t*)device;
+
     scsi_command_t command;
     command.write = false;
     command.packet_len = sizeof(scsi_command_read10_t);
@@ -81,11 +85,13 @@ static bool scsi_read10(scsi_device_t* device, uint32_t lba, uint32_t nsectors, 
     packet->lba = __builtin_bswap32(lba);
     packet->length = __builtin_bswap16(nsectors);
 
-    return device->driver.send_scsi_cmd(device->driver.data, &command, buffer, nsectors * device->sector_size);
+    return dev->driver.send_scsi_cmd(dev->driver.data, &command, buffer, nsectors * dev->sector_size);
 }
 
-static bool scsi_write12(scsi_device_t* device, uint32_t lba, uint32_t nsectors, void* buffer)
+static bool scsi_write12(void* device, uint64_t lba, uint64_t nsectors, void* buffer)
 {
+    scsi_device_t* dev = (scsi_device_t*)device;
+
     scsi_command_t command;
     command.write = true;
     command.packet_len = sizeof(scsi_command_write12_t);
@@ -95,11 +101,13 @@ static bool scsi_write12(scsi_device_t* device, uint32_t lba, uint32_t nsectors,
     packet->lba = __builtin_bswap32(lba);
     packet->length = __builtin_bswap32(nsectors);
 
-    return device->driver.send_scsi_cmd(device->driver.data, &command, buffer, nsectors * device->sector_size);
+    return dev->driver.send_scsi_cmd(dev->driver.data, &command, buffer, nsectors * dev->sector_size);
 }
 
-static bool scsi_write10(scsi_device_t* device, uint32_t lba, uint32_t nsectors, void* buffer)
+static bool scsi_write10(void* device, uint64_t lba, uint64_t nsectors, void* buffer)
 {
+    scsi_device_t* dev = (scsi_device_t*)device;
+
     scsi_command_t command;
     command.write = true;
     command.packet_len = sizeof(scsi_command_write10_t);
@@ -109,7 +117,7 @@ static bool scsi_write10(scsi_device_t* device, uint32_t lba, uint32_t nsectors,
     packet->lba = __builtin_bswap32(lba);
     packet->length = __builtin_bswap16(nsectors);
 
-    return device->driver.send_scsi_cmd(device->driver.data, &command, buffer, nsectors * device->sector_size);
+    return dev->driver.send_scsi_cmd(dev->driver.data, &command, buffer, nsectors * dev->sector_size);
 }
 
 void scsi_register_device(scsi_driver_t driver)
