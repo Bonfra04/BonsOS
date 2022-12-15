@@ -33,6 +33,7 @@
 #define ATA_CMD_READ_DMA_EX     0x25
 #define ATA_CMD_WRITE_DMA_EX    0x35
 #define ATA_CMD_IDENTIFY        0xEC
+#define ATA_CMD_SEND_PACKET     0xA0
 
 #define AHCI_SIG_ATA    0x00000101  // SATA drive
 #define AHCI_SIG_ATAPI  0xEB140101  // SATAPI drive

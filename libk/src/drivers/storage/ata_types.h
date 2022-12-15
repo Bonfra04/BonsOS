@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define PCI_ATA_SUB_SCSI 0x00
 #define PCI_ATA_SUB_IDE 0x01
@@ -20,6 +21,7 @@
 #define ATA_CMD_WRITEEXTDMA 0x35
 
 #define ATA_CMD_IDENTIFY    0xEC
+#define ATA_CMD_IDENTIFYPI  0xA1
 
 #define ATA_IDENT_CMD2_48BIT (1 << 10)
 #define ATA_IDENT_CMD3_48BIT (1 << 10)
@@ -131,3 +133,17 @@ typedef struct ata_ident
     uint16_t words236_254[19];      /* Reserved */
     uint16_t integrity;             /* Checksum, Signature */
 } __attribute__ ((packed)) ata_ident_t;
+
+#define ATAPI_PACKET_SIZE 0b11
+#define ATAPI_PACKET_SIZE_12 0b00
+#define ATAPI_PACKET_SIZE_16 0b01
+
+typedef struct ata_device
+{
+    ata_driver_t driver;
+    
+    bool lba48;
+    size_t sector_size;
+    size_t capacity;
+    size_t max_packet_size;
+} ata_device_t;

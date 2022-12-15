@@ -14,6 +14,7 @@ typedef struct storage_data
     size_t capacity;
     size_t sector_size;
     void* data;
+    bool readonly;
     storage_function_t reader;
     storage_function_t writer;
 } storage_data_t;

@@ -6,8 +6,6 @@
 
 #include <containers/darray.h>
 
-#define MAX_BUFFER_LENGTH 512
-
 typedef struct partition_entry
 {
     uint8_t attributes;
@@ -44,10 +42,11 @@ typedef struct storage_device
     size_t capacity;
     size_t lba_pos;
 
-    uint8_t buffer[MAX_BUFFER_LENGTH];
+    uint8_t* buffer;
     size_t buff_len;
     size_t buff_off;
 
+    bool readonly;
     storage_function_t reader;
     storage_function_t writer;
 

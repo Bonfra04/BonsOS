@@ -2,7 +2,7 @@
 #include <drivers/storage/ata.h>
 
 #include <string.h>
-#include <assert.h>
+#include <stdlib.h>
 
 #include <containers/darray.h>
 
@@ -17,8 +17,6 @@ void storage_init()
 
 uint64_t storage_register_device(storage_data_t data)
 {
-    assert(data.sector_size <= MAX_BUFFER_LENGTH);
-
     storage_device_t device;
     memset(&device, 0, sizeof(storage_device_t));
     device.capacity = data.capacity;
@@ -29,6 +27,8 @@ uint64_t storage_register_device(storage_data_t data)
     device.registered = true;
     device.lba_pos = 0;
     device.partitions = darray(partition_t, 0);
+    device.buffer = malloc(data.sector_size);
+    device.readonly = data.readonly;
 
     device.reader(device.data, device.lba_pos, 1, device.buffer);
     const master_bootrecord_t* mbr = (master_bootrecord_t*)device.buffer;
@@ -63,6 +63,7 @@ void storage_unregister_device(uint64_t id)
     if(id >= darray_length(storage_devices))
         return;
 
+    free(storage_devices[id].buffer);
     memset(&storage_devices[id], -1, sizeof(storage_device_t));
     storage_devices[id].registered = false;
 }
@@ -129,6 +130,8 @@ bool storage_flush(size_t id)
     storage_device_t* device = get_device(id);
     if(!device)
         return false;
+    if(device->readonly)
+        return true;
 
     return device->writer(device->data, device->lba_pos, 1, device->buffer);
 }
@@ -150,7 +153,7 @@ bool storage_seek(size_t id, size_t position)
 
 static bool flush_and_advance(storage_device_t* device)
 {
-    if(!device->writer(device->data, device->lba_pos, 1, device->buffer))
+    if(!device->readonly && !device->writer(device->data, device->lba_pos, 1, device->buffer))
         return false;
 
     device->buff_off = 0;
@@ -192,7 +195,9 @@ uint64_t storage_write(size_t id, size_t amount, const void* address)
 {
     storage_device_t* device = get_device(id);
     if(!device)
-        return false;
+        return 0;
+    if(device->readonly)
+        return 0;
 
     uint64_t byte_written = 0;
     while(amount > 0)

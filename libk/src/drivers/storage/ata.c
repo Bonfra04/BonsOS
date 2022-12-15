@@ -3,6 +3,7 @@
 #include <log.h>
 #include <drivers/storage/ahci.h>
 #include <storage/storage.h>
+#include <drivers/storage/scsi.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,21 +16,34 @@ static bool identify(ata_device_t* dev)
 
     ata_command_t cmd;
     memset(&cmd, 0, sizeof(ata_command_t));
-    cmd.command = ATA_CMD_IDENTIFY;
+    cmd.command = dev->driver.atapi ? ATA_CMD_IDENTIFYPI : ATA_CMD_IDENTIFY;
 
-    if(!dev->send_ata_cmd(dev->data, &cmd, (void*)&ident, sizeof(ata_ident_t)))
+    if(!dev->driver.send_ata_cmd(dev->driver.data, &cmd, (void*)&ident, sizeof(ata_ident_t)))
         return false;
 
     dev->lba48 = (ident.command_set_2 & ATA_IDENT_CMD2_48BIT) && (ident.command_set_3 & ATA_IDENT_CMD3_48BIT);
 
-    uint64_t sector_size = ident.sector_sz;
-    if(sector_size & (1 << 14) && !(sector_size & (1 << 15)) // field contains valid info
-    && sector_size & (1 << 12)) // logical sectors are larger than 512
-        dev->sector_size = ident.words_per_sector;
+    if(dev->driver.atapi)
+    {
+        uint8_t packet_size = ident.config & ATAPI_PACKET_SIZE;
+        if(packet_size == ATAPI_PACKET_SIZE_12)
+            dev->max_packet_size = 12;
+        else if(packet_size == ATAPI_PACKET_SIZE_16)
+            dev->max_packet_size = 16;
+        else
+            return false;
+    }
     else
-        dev->sector_size = 512;
-
-    dev->capacity = ident.lba_capacity * dev->sector_size;
+    {
+        uint64_t sector_size = ident.sector_sz;
+        if(sector_size & (1 << 14) && !(sector_size & (1 << 15)) // field contains valid info
+        && sector_size & (1 << 12)) // logical sectors are larger than 512
+            dev->sector_size = ident.words_per_sector;
+        else
+            dev->sector_size = 512;
+        
+        dev->capacity = ident.lba_capacity * dev->sector_size;
+    }
 
     return true;
 }
@@ -49,7 +63,7 @@ static bool ata_rw(void* device, bool write, uint64_t lba, size_t nsectors, void
     cmd.write = write;
     cmd.lba28 = !dev->lba48;
 
-    return dev->send_ata_cmd(dev->data, &cmd, buffer, dev->sector_size * nsectors);
+    return dev->driver.send_ata_cmd(dev->driver.data, &cmd, buffer, dev->sector_size * nsectors);
 }
 
 static bool ata_read(void* device, uint64_t lba, size_t nsectors, void* buffer)
@@ -62,26 +76,51 @@ static bool ata_write(void* device, uint64_t lba, size_t nsectors, void* buffer)
     return ata_rw(device, true, lba, nsectors, buffer);
 }
 
+static bool ata_send_scsi_cmd(void* device, scsi_command_t* command, void* data, size_t transfer_length)
+{
+    ata_device_t* dev = (ata_device_t*)device;
+
+    atapi_command_t cmd;
+    memset(&cmd, 0, sizeof(atapi_command_t));
+    memcpy(cmd.packet, command->packet, 16);
+    cmd.write = command->write;
+
+    return dev->driver.send_atapi_cmd(dev->driver.data, &cmd, data, transfer_length);
+}
+
 void ata_init()
 {
     ahci_init();
 }
 
-void ata_register_device(ata_device_t ata_device)
+void ata_register_device(ata_driver_t driver)
 {
     ata_device_t* dev = malloc(sizeof(ata_device_t));
-    *dev = ata_device;
+    dev->driver = driver;
 
     if(!identify(dev))
         return;
 
-    storage_data_t data;
-    memset(&data, 0, sizeof(storage_data_t));
-    data.capacity = dev->capacity;
-    data.sector_size = dev->sector_size;
-    data.data = dev;
-    data.reader = ata_read;
-    data.writer = ata_write;
+    if(dev->driver.atapi)
+    {
+        scsi_driver_t scsi_driver;
+        scsi_driver.data = dev;
+        scsi_driver.max_packet_size = dev->max_packet_size;
+        scsi_driver.send_scsi_cmd = ata_send_scsi_cmd;
 
-    storage_register_device(data);
+        scsi_register_device(scsi_driver);
+    }
+    else
+    {
+        storage_data_t data;
+        memset(&data, 0, sizeof(storage_data_t));
+        data.capacity = dev->capacity;
+        data.sector_size = dev->sector_size;
+        data.data = dev;
+        data.reader = ata_read;
+        data.writer = ata_write;
+        data.readonly = false;
+
+        storage_register_device(data);
+    }
 }

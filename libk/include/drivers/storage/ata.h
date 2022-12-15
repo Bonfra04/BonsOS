@@ -16,15 +16,20 @@ typedef struct ata_command
     bool write, lba28;
 } ata_command_t;
 
-typedef struct ata_device
+typedef struct atapi_command
+{
+    uint16_t packet[16];
+    
+    bool write;
+} atapi_command_t;
+
+typedef struct ata_driver
 {
     void* data;
     bool (*send_ata_cmd)(void* device, ata_command_t* command, uint8_t* data, size_t transfer_len);
-    
-    bool lba48;
-    size_t sector_size;
-    size_t capacity;
-} ata_device_t;
+    bool (*send_atapi_cmd)(void* device, atapi_command_t* command, uint8_t* data, size_t transfer_len);
+    bool atapi;
+} ata_driver_t;
 
 /**
  * @brief initializes ata
@@ -33,6 +38,6 @@ void ata_init();
 
 /**
  * @brief registers a ata devic
- * @param[in] ata_device ata device to register
+ * @param[in] driver driver for the ata device
  */
-void ata_register_device(ata_device_t ata_device);
+void ata_register_device(ata_driver_t driver);

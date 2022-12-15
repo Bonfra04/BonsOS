@@ -138,9 +138,6 @@ static bool init_port(volatile hba_port_t* port)
     if((port->ssts & HBA_PxSSTS_DET) != 3)
         return false;
 
-    if(port->sig != AHCI_SIG_ATA) // only support sata drivers for the moment
-        return false;
-
     port->serr &= ~HBA_PxSERR_DIAG_X;
     wait_busy(port);
 
@@ -178,7 +175,7 @@ static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, si
 
     dev->port->is = UINT32_MAX;
  
-    size_t n_prdts = (transfer_len + 0x400000 - 1) / 0x400000;
+    size_t n_prdts = (transfer_len + 0x3FFFFF - 1) / 0x3FFFFF;
     ahci_command_t slot = allocate_command(dev);
 
     if(slot.index == UINT8_MAX)
@@ -187,8 +184,10 @@ static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, si
     dev->cmd_header[slot.index].prdtl = n_prdts;
     dev->cmd_header[slot.index].write = command->write;
     dev->cmd_header[slot.index].cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    dev->cmd_header[slot.index].a = 0;
 
     volatile fis_reg_h2d_t* fis = (void*)slot.cmd_table->cfis;
+    memset((void*)fis, 0, sizeof(fis_reg_h2d_t));
     fis->fis_type = FIS_TYPE_REG_H2D;
     fis->c = 1;
 
@@ -212,10 +211,77 @@ static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, si
     {
         volatile hba_prdt_entry_t* prdt = &slot.cmd_table->prdt_entry[i];
 
-        size_t remaining = transfer_len - i * 0x400000;
-        size_t transfer = remaining >= 0x400000 ? 0x400000 : remaining;
+        size_t remaining = transfer_len - i * 0x3FFFFF;
+        size_t transfer = remaining >= 0x3FFFFF ? 0x3FFFFF : remaining;
 
-        uintptr_t pa = (uintptr_t)data + i * 0x400000;
+        uintptr_t pa = (uintptr_t)data + i * 0x3FFFFF;
+
+        prdt->dbc = calc_bytecount(transfer);
+        prdt->dba = pa & 0xFFFFFFFF;
+        prdt->dbau = (pa >> 32) & 0xFFFFFFFF;
+
+        prdt->i = 0;
+    }
+
+    wait_busy(dev->port);
+
+    dev->port->ci = 1 << slot.index;
+    
+    bool success = true;
+    while(dev->port->ci & (1 << slot.index))
+        if((dev->port->is & HBA_PxSI_TFES))
+        {
+            success = false;
+            break;
+        }
+    if(success == true)
+        success = !(dev->port->is & HBA_PxSI_TFES);
+    free_command(dev, &slot);
+
+    return success;
+}
+
+static bool send_atapi_cmd(void* device, atapi_command_t* command, uint8_t* data, size_t transfer_len)
+{
+    ahci_device_t* dev = (ahci_device_t*)device;
+
+    dev->port->is = UINT32_MAX;
+ 
+    size_t n_prdts = (transfer_len + 0x3FFFFF - 1) / 0x3FFFFF;
+    ahci_command_t slot = allocate_command(dev);
+
+    if(slot.index == UINT8_MAX)
+        return false;
+
+    dev->cmd_header[slot.index].prdtl = n_prdts;
+    dev->cmd_header[slot.index].write = command->write;
+    dev->cmd_header[slot.index].cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    dev->cmd_header[slot.index].a = 1;
+
+    volatile fis_reg_h2d_t* fis = (void*)slot.cmd_table->cfis;
+    memset((void*)fis, 0, sizeof(fis_reg_h2d_t));
+    fis->fis_type = FIS_TYPE_REG_H2D;
+    fis->c = 1;
+
+    fis->command = ATA_CMD_SEND_PACKET;
+    fis->control = 0x8;
+    fis->device = 0xA0;
+
+    fis->lba0 = transfer_len & 0xFF;
+    fis->lba1 = (transfer_len >> 8) & 0xFF;
+
+    fis->featurel = 1;
+
+    memcpy((void*)slot.cmd_table->acmd, command->packet, 16);
+
+    for(size_t i = 0; i < n_prdts; i++)
+    {
+        volatile hba_prdt_entry_t* prdt = &slot.cmd_table->prdt_entry[i];
+
+        size_t remaining = transfer_len - i * 0x3FFFFF;
+        size_t transfer = remaining >= 0x3FFFFF ? 0x3FFFFF : remaining;
+
+        uintptr_t pa = (uintptr_t)data + i * 0x3FFFFF;
 
         prdt->dbc = calc_bytecount(transfer);
         prdt->dba = pa & 0xFFFFFFFF;
@@ -264,11 +330,13 @@ static void init_device(volatile hba_mem_t* hba)
             ahci_device->ncmd = ((hba->cap >> 8) & HBA_CAP_NCS) + 1;
             ahci_device->cmd_header = (void*)(port->clb | ((uint64_t)port->clbu << 32));
 
-            ata_device_t ata_device;
-            ata_device.data = ahci_device;
-            ata_device.send_ata_cmd = send_ata_cmd;
-            
-            ata_register_device(ata_device);
+            ata_driver_t ata_driver;
+            ata_driver.data = ahci_device;
+            ata_driver.send_ata_cmd = send_ata_cmd;
+            ata_driver.send_atapi_cmd = send_atapi_cmd;
+            ata_driver.atapi = port->sig == AHCI_SIG_ATAPI;
+
+            ata_register_device(ata_driver);
         }
 }
 
