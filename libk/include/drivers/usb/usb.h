@@ -303,6 +303,14 @@ bool usb_get_string(const usb_device_t* dev, uint8_t index, char* str);
 */
 usb_transfer_status_t usb_set_configuration(const usb_device_t* dev, uint8_t config);
 
+/**
+ * @brief sets the interface of a device
+ * @param[in] dev pointer to the device
+ * @param[in] interface interface to set
+ * @return status of the transfer
+*/
+usb_transfer_status_t usb_set_interface(const usb_device_t* dev, uint8_t interface);
+
 typedef enum usb_endpoint_type
 {
     USB_ENDPOINT_CONTROL = 0b00,

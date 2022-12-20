@@ -137,6 +137,7 @@ void usb_register_driver(const usb_driver_t* driver)
                         continue;
 
                     usb_set_configuration(device, k);
+                    usb_set_interface(device, l);
                     device->curr_configuration = k;
                     device->curr_interface = l;
 

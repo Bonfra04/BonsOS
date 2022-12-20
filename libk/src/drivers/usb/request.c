@@ -68,3 +68,15 @@ usb_transfer_status_t usb_set_configuration(const usb_device_t* dev, uint8_t con
 
     return usb_transfer_out(dev->bus, dev->addr, 0, &setup);
 }
+
+usb_transfer_status_t usb_set_interface(const usb_device_t* dev, uint8_t interface)
+{
+    usb_request_packet_t setup;
+    setup.type = USB_REQUEST_DIR_HOST_TO_DEVICE | USB_REQUEST_TYPE_STANDARD;
+    setup.request = USB_REQUEST_SET_INTERFACE;
+    setup.value = interface;
+    setup.index = 0;
+    setup.size = 0;
+
+    return usb_transfer_out(dev->bus, dev->addr, 0, &setup);
+}
