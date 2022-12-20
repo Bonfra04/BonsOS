@@ -25,7 +25,7 @@
 #include <drivers/pci.h>
 #include <drivers/storage/ata.h>
 #include <drivers/usb/usb.h>
-#include <drivers/storage/mass_storage.h>
+#include <drivers/storage/usb_msd.h>
 
 #include <storage/storage.h>
 
@@ -103,13 +103,17 @@ void init(const bootinfo_t* bootinfo)
     // keyboard and mouse
     keyboard_init();
 
+    // storage abstraction
+    storage_init();
+
     // pci devices
     pci_init();
     // pci drivers
     ata_init();
+    usb_init();
 
-    // storage abstraction
-    storage_init();
+    // usb drivers
+    usb_msd_init();
 
     // file system
     fsys_init();
