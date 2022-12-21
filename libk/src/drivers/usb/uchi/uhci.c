@@ -29,6 +29,12 @@ typedef struct transfer_descriptor
     uint32_t bufptr;
 } __attribute__((packed)) transfer_descriptor_t;
 
+typedef struct queue_head
+{
+    uint32_t head_link;
+    uint32_t element_link;
+} __attribute__((packed)) queue_head_t;
+
 static bool controller_reset(uhci_controller_t* controller)
 {
     // issue global reset
@@ -194,14 +200,11 @@ static void sched_stop(uhci_controller_t* controller)
 static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_t endpoint, const usb_packet_t* packets, size_t num_packets)
 {
     uhci_controller_t* controller = data;
-    for(uint32_t i = 0; i < 1024; ++i)
-        controller->frame_list[i] = FRAMELIST_TERMINATE;
 
     volatile alignas(0x20) transfer_descriptor_t tds[num_packets];
-
     for(size_t i = 0; i < num_packets; i++)
     {
-        tds[i].link = TD_TERMINATE;
+        tds[i].link = i == num_packets - 1 ? TD_TERMINATE : (uint32_t)(uint64_t)&tds[i + 1];
         tds[i].flags = TD_STATUS_ACTIVE;
 
         if(i == num_packets - 1)
@@ -223,8 +226,15 @@ static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_
             tds[i].maxlen |= TD_DATA_TOGGLE;
 
         tds[i].bufptr = (uint32_t)(uint64_t)packets[i].buffer;
-        controller->frame_list[i] = (uint32_t)(uint64_t)&tds[i];
     }
+
+    volatile alignas(0x20) queue_head_t qh;
+    qh.head_link = QH_TERMINATE;
+    qh.element_link = (uint32_t)(uint64_t)&tds[0];
+
+    for(uint32_t i = 0; i < 1024; ++i)
+        controller->frame_list[i] = FRAMELIST_TERMINATE;
+    controller->frame_list[0] = (uint32_t)(uint64_t)&qh | FRAMELIST_QH;
 
     sched_run(controller);
 

@@ -36,6 +36,7 @@
 #define USBINTR_SP      (1 << 3)
 
 #define FRAMELIST_TERMINATE (1 << 0)
+#define FRAMELIST_QH        (1 << 1)
 
 #define SOFMOD_64 0x40
 
@@ -47,3 +48,6 @@
 #define TD_PID_IN           0x69
 #define TD_PID_OUT          0xe1
 #define TD_DATA_TOGGLE      (1 << 19)
+
+#define QH_TERMINATE        (1 << 0)
+
