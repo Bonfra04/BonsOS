@@ -41,6 +41,7 @@
 #define SOFMOD_64 0x40
 
 #define TD_TERMINATE        (1 << 0)
+#define TD_DEPTH_FIRST      (1 << 2)
 #define TD_STATUS_ACTIVE    (1 << 23)
 #define TD_IOC              (1 << 24)
 #define TD_LOW_SPEED        (1 << 26)

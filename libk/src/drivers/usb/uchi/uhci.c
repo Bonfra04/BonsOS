@@ -204,7 +204,7 @@ static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_
     volatile alignas(0x20) transfer_descriptor_t tds[num_packets];
     for(size_t i = 0; i < num_packets; i++)
     {
-        tds[i].link = i == num_packets - 1 ? TD_TERMINATE : (uint32_t)(uint64_t)&tds[i + 1];
+        tds[i].link = i == num_packets - 1 ? TD_TERMINATE : ((uint32_t)(uint64_t)&tds[i + 1] | TD_DEPTH_FIRST);
         tds[i].flags = TD_STATUS_ACTIVE;
 
         if(i == num_packets - 1)
