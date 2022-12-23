@@ -136,8 +136,8 @@ void usb_register_driver(const usb_driver_t* driver)
                     if(driver->match & USB_DRIVER_MATCH_PROTOCOL && interface->protocol != driver->protocol)
                         continue;
 
-                    usb_set_configuration(device, k);
-                    usb_set_interface(device, l);
+                    usb_set_configuration(device, device->configurations[k].descriptor.configuration_value);
+                    usb_set_interface(device, device->configurations[k].interfaces[l].descriptor.interface_number);
                     device->curr_configuration = k;
                     device->curr_interface = l;
 
