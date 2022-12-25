@@ -7,6 +7,7 @@
 #include "scsi_types.h"
 
 #define SCSI_TYPE_CD_DVD 0x05
+#define SCSI_TYPE_DIRECT_ACCESS 0x00
 
 static bool read_capacity(scsi_device_t* device)
 {
@@ -47,7 +48,7 @@ static bool inquiry(scsi_device_t* device)
     if(!device->driver.send_scsi_cmd(device->driver.data, &command, &inquiry, sizeof(scsi_inquiry_t)))
         return false;
 
-    if(inquiry.peripheral_device_type != SCSI_TYPE_CD_DVD)
+    if(inquiry.peripheral_device_type != SCSI_TYPE_CD_DVD && inquiry.peripheral_device_type != SCSI_TYPE_DIRECT_ACCESS)
         return false; // TODO: what changes if it's not a cd?
 
     if(!read_capacity(device))
