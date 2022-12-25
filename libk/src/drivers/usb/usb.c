@@ -22,12 +22,15 @@ static uint64_t alloc_address(usb_bus_t* bus)
     return 0;
 }
 
+#include <log.h>
 static void usb_register_device(usb_bus_t* bus)
 {
+    kernel_trace("Registering usb device");
     uint64_t addr = alloc_address(bus);
     if(addr == 0)
         kernel_panic("Too many usb devices on the same bus");
 
+    // TODO: real hw hangs inside this function
     if(usb_set_address(bus, addr) != USB_TRANSFER_STATUS_OK)
         return;
 
@@ -42,7 +45,6 @@ static void usb_register_device(usb_bus_t* bus)
 
     for(size_t i = 0; i < device->descriptor.num_configurations; i++)
     {
-
         usb_configuration_descriptor_t* config_desc = &device->configurations[i].descriptor;
         usb_get_standard_descriptor(device, USB_DESCRIPTOR_CONFIGURATION, 0, config_desc, sizeof(usb_configuration_descriptor_t));
     
@@ -106,7 +108,7 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
         usb_port_status_t status = bus->hci.driver->port_status(bus->hci.data, i);
         if(status == USB_PORT_STATUS_NOT_CONNECT)
             continue;
-        
+
         usb_register_device(bus);
     }
 }
