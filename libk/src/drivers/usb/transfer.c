@@ -49,23 +49,6 @@ usb_transfer_status_t usb_transfer_out(const usb_bus_t* bus, uint64_t addr, uint
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, 2);
 }
 
-#include <log.h>
-
-static void dump_packet(uint8_t* packet, size_t size)
-{
-    int k = 0;
-    for(int i = 0; i < 2; i++)
-    {
-        for(int j = 0; j < 2; j++)
-        {
-            for(int l = 0; l < 8; l++, k++)
-                kernel_log("%02x ", packet[k]);
-            kernel_log("\b-");
-        }
-        kernel_log("\b\n");
-    }
-}
-
 usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
 {
     size_t num_packets = size / 64 + (size % 64 != 0);
@@ -74,15 +57,15 @@ usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr,
 
     int toggle = 0;
     int pid = 0;
-    for(int i = 0; i < size; i += 64)
+    while(size > 0)
     {
         packets[pid].type = USB_PACKET_TYPE_OUT;
-        packets[pid].maxlen = 64;
-        packets[pid].buffer = payload + i;
+        packets[pid].maxlen = size > 64 ? 64 : size;
+        packets[pid].buffer = payload + pid * 64;
         packets[pid].toggle = toggle;
         toggle = !toggle;
-        dump_packet(packets[pid].buffer, packets[pid].maxlen);
         pid++;
+        size = size > 64 ? size - 64 : 0;
     }
 
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
