@@ -32,7 +32,7 @@ static bool send_scsi_command(void* device, scsi_command_t* command, void* data,
     memcpy(cbw.scsi_command, command->packet, command->packet_len);
 
     usb_transfer_bulk_out(dev->device->bus, dev->device->addr, dev->endpoint_out->descriptor.endpoint_number, &cbw, sizeof(usb_msd_cbw_t));
-   
+
     usb_endpoint_descriptor_t* ep = command->write ? &dev->endpoint_out->descriptor : &dev->endpoint_in->descriptor; 
     if(command->write)
         usb_transfer_bulk_out(dev->device->bus, dev->device->addr, ep->endpoint_number, data, transfer_length);
@@ -42,7 +42,7 @@ static bool send_scsi_command(void* device, scsi_command_t* command, void* data,
     usb_msd_csw_t csw;
     usb_transfer_bulk_in(dev->device->bus, dev->device->addr, dev->endpoint_in->descriptor.endpoint_number, &csw, sizeof(usb_msd_csw_t));
 
-    return csw.signature != 0x53425355 || csw.status != 0;
+    return csw.signature == 0x53425355 && csw.status == 0;
 }
 
 static uint8_t get_lun_count(usb_msd_device_t* msd_device)
