@@ -22,10 +22,8 @@ static uint64_t alloc_address(usb_bus_t* bus)
     return 0;
 }
 
-#include <log.h>
 static void usb_register_device(usb_bus_t* bus)
 {
-    kernel_trace("Registering usb device");
     uint64_t addr = alloc_address(bus);
     if(addr == 0)
         kernel_panic("Too many usb devices on the same bus");
