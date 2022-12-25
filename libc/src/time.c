@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include <syscalls.h>
 
@@ -83,4 +84,29 @@ struct tm* localtime(const time_t* timer)
     time.tm_isdst = -1; // TODO: tm_isdst
 
     return &time;
+}
+
+char* asctime(const struct tm* time_ptr)
+{
+    static char* months[] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+    static char* days[] = {
+        "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+    };
+
+    static char buffer[26];
+
+    sprintf(buffer, "%s %s %02d %02d:%02d:%02d %d",
+        days[time_ptr->tm_wday],
+        months[time_ptr->tm_mon],
+        time_ptr->tm_mday,
+        time_ptr->tm_hour,
+        time_ptr->tm_min,
+        time_ptr->tm_sec,
+        time_ptr->tm_year + 1900
+    );
+
+    return buffer;
 }
