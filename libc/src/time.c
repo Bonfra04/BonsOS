@@ -110,3 +110,8 @@ char* asctime(const struct tm* time_ptr)
 
     return buffer;
 }
+
+char* ctime(const time_t* timer)
+{
+    return asctime(localtime(timer));
+}

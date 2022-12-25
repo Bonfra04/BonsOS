@@ -24,6 +24,7 @@ extern "C" {
 time_t time(time_t* timer);
 struct tm* localtime(const time_t* timer);
 char* asctime(const struct tm* time_ptr);
+char* ctime(const time_t* timer);
 
 #ifdef __cplusplus
 }
