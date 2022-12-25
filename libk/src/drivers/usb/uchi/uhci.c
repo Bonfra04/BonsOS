@@ -48,7 +48,7 @@ static bool controller_reset(uhci_controller_t* controller)
         return false;
     if(inportw(controller->io + IO_USBSTS) != USBSTS_HALTED)
         return false;
-    if(inportw(controller->io + IO_SOFMOD) != SOFMOD_64)
+    if(inportb(controller->io + IO_SOFMOD) != SOFMOD_64)
         return false;
     
     // clear status register (write/clear)
