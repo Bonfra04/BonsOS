@@ -9,7 +9,7 @@ usb_transfer_status_t usb_set_address(const usb_bus_t* bus, uint64_t addr)
     setup.index = 0;
     setup.size = 0;
 
-    return usb_transfer_out(bus, 0, 0, &setup);
+    return usb_transfer_control_out(bus, 0, 0, &setup);
 }
 
 usb_transfer_status_t usb_get_standard_descriptor(const usb_device_t* dev, usb_descriptor_type_t desc_type, uint32_t desc_index, void* buffer, size_t size)
@@ -21,7 +21,7 @@ usb_transfer_status_t usb_get_standard_descriptor(const usb_device_t* dev, usb_d
     setup.index = 0;
     setup.size = size;
 
-    return usb_transfer_in(dev->bus, dev->addr, 0, &setup, buffer, setup.size);
+    return usb_transfer_control_in(dev->bus, dev->addr, 0, &setup, buffer, setup.size);
 }
 
 size_t usb_get_string_length(const usb_device_t* dev, uint8_t index)
@@ -34,7 +34,7 @@ size_t usb_get_string_length(const usb_device_t* dev, uint8_t index)
     setup.size = 2;
 
     uint8_t data[2];
-    usb_transfer_status_t status = usb_transfer_in(dev->bus, dev->addr, 0, &setup, data, setup.size);
+    usb_transfer_status_t status = usb_transfer_control_in(dev->bus, dev->addr, 0, &setup, data, setup.size);
     if(status != USB_TRANSFER_STATUS_OK)
         return 0;
     return data[0];
@@ -53,7 +53,7 @@ bool usb_get_string(const usb_device_t* dev, uint8_t index, char* str)
     setup.index = 0;
     setup.size = length;
 
-    usb_transfer_status_t status = usb_transfer_in(dev->bus, dev->addr, 0, &setup, str, setup.size);
+    usb_transfer_status_t status = usb_transfer_control_in(dev->bus, dev->addr, 0, &setup, str, setup.size);
     return status == USB_TRANSFER_STATUS_OK;    
 }
 
@@ -66,7 +66,7 @@ usb_transfer_status_t usb_set_configuration(const usb_device_t* dev, uint8_t con
     setup.index = 0;
     setup.size = 0;
 
-    return usb_transfer_out(dev->bus, dev->addr, 0, &setup);
+    return usb_transfer_control_out(dev->bus, dev->addr, 0, &setup);
 }
 
 usb_transfer_status_t usb_set_interface(const usb_device_t* dev, uint8_t interface)
@@ -78,5 +78,5 @@ usb_transfer_status_t usb_set_interface(const usb_device_t* dev, uint8_t interfa
     setup.index = 0;
     setup.size = 0;
 
-    return usb_transfer_out(dev->bus, dev->addr, 0, &setup);
+    return usb_transfer_control_out(dev->bus, dev->addr, 0, &setup);
 }

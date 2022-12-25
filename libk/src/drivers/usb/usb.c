@@ -150,7 +150,7 @@ void usb_register_driver(const usb_driver_t* driver)
     }
 }
 
-usb_endpoint_t* usb_get_endpoint(const usb_device_t* device, bool in, usb_endpoint_type_t type)
+usb_endpoint_t* usb_find_endpoint(const usb_device_t* device, bool in, usb_endpoint_type_t type)
 {
     usb_interface_t* interface = &device->configurations[device->curr_configuration].interfaces[device->curr_interface];
     for(size_t i = 0; i < interface->num_endpoints; i++)
@@ -158,6 +158,36 @@ usb_endpoint_t* usb_get_endpoint(const usb_device_t* device, bool in, usb_endpoi
         usb_endpoint_t* endpoint = &interface->endpoints[i];
         if(endpoint->descriptor.endpoint_type == type && endpoint->descriptor.direction == in)
             return endpoint;
+    }
+    return NULL;
+}
+
+usb_endpoint_t* usb_get_endpoint(const usb_device_t* device, uint8_t ep_number)
+{
+    for(size_t i = 0; i < device->descriptor.num_configurations; i++)
+    {
+        usb_configuration_t* config = &device->configurations[i];
+        for(size_t j = 0; j < config->num_inferfaces; j++)
+        {
+            usb_interface_t* interface = &config->interfaces[j];
+            for(size_t k = 0; k < interface->num_endpoints; k++)
+            {
+                usb_endpoint_t* endpoint = &interface->endpoints[k];
+                if(endpoint->descriptor.endpoint_number == ep_number)
+                    return endpoint;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+usb_device_t* usb_get_device(const usb_bus_t* bus, uint64_t addr)
+{
+    for (size_t i = 0; i < USB_BUS_MAX_DEVICES; i++)
+    {
+        if(bus->devices[i] != NULL && bus->devices[i]->addr == addr)
+            return bus->devices[i];
     }
     return NULL;
 }

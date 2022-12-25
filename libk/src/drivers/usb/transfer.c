@@ -2,8 +2,8 @@
 
 #include <string.h>
 
-usb_transfer_status_t usb_transfer_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup, void* payload, size_t size)
-{
+usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup, void* payload, size_t size)
+{    
     size_t num_packets = 2 + size / 8 + (size % 8 != 0);
     usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
@@ -32,7 +32,7 @@ usb_transfer_status_t usb_transfer_in(const usb_bus_t* bus, uint64_t addr, uint6
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
 }
 
-usb_transfer_status_t usb_transfer_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup)
+usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup)
 {
     usb_packet_t packets[2];
     memset(packets, 0, sizeof(usb_packet_t) * 2);
@@ -51,7 +51,10 @@ usb_transfer_status_t usb_transfer_out(const usb_bus_t* bus, uint64_t addr, uint
 
 usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
 {
-    size_t num_packets = size / 64 + (size % 64 != 0);
+    usb_endpoint_descriptor_t* ep = &usb_get_endpoint(usb_get_device(bus, addr), endpoint)->descriptor;
+    size_t pksiz = ep->max_packet_size;
+
+    size_t num_packets = size / pksiz + (size % pksiz != 0);
     usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
@@ -60,12 +63,12 @@ usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr,
     while(size > 0)
     {
         packets[pid].type = USB_PACKET_TYPE_OUT;
-        packets[pid].maxlen = size > 64 ? 64 : size;
-        packets[pid].buffer = payload + pid * 64;
+        packets[pid].maxlen = size > pksiz ? pksiz : size;
+        packets[pid].buffer = payload + pid * pksiz;
         packets[pid].toggle = toggle;
         toggle = !toggle;
         pid++;
-        size = size > 64 ? size - 64 : 0;
+        size = size > pksiz ? size - pksiz : 0;
     }
 
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);

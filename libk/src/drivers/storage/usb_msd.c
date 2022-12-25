@@ -56,7 +56,7 @@ static uint8_t get_lun_count(usb_msd_device_t* msd_device)
     setup.size = 1;
 
     uint8_t data[1];
-    usb_transfer_status_t status = usb_transfer_in(usb_dev->bus, usb_dev->addr, 0, &setup, data, setup.size);
+    usb_transfer_status_t status = usb_transfer_control_in(usb_dev->bus, usb_dev->addr, 0, &setup, data, setup.size);
     if(status != USB_TRANSFER_STATUS_OK)
         return 0;
     return data[0];
@@ -67,8 +67,8 @@ static void init_device(usb_device_t* device)
     usb_msd_device_t* msd_device = malloc(sizeof(usb_msd_device_t));
     msd_device->device = device;
 
-    msd_device->endpoint_in = usb_get_endpoint(device, true, USB_ENDPOINT_BULK);
-    msd_device->endpoint_out = usb_get_endpoint(device, false, USB_ENDPOINT_BULK);
+    msd_device->endpoint_in = usb_find_endpoint(device, true, USB_ENDPOINT_BULK);
+    msd_device->endpoint_out = usb_find_endpoint(device, false, USB_ENDPOINT_BULK);
 
     // TODO: support multiple luns
     //uint8_t lun_count = get_lun_count(msd_device); 

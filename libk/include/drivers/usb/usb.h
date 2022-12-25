@@ -241,26 +241,6 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
 void usb_register_driver(const usb_driver_t* driver);
 
 /**
- * @brief transfers data from a device to the host
- * @param[in] bus pointer to the bus
- * @param[in] addr address of the device
- * @param[in] endpoint endpoint of the device
- * @param[in] setup pointer to the setup packet
- * @param[in] payload pointer to the payload
- * @param[in] size size of the payload
-*/
-usb_transfer_status_t usb_transfer_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup, void* payload, size_t size);
-
-/**
- * @brief transfers data from the host to a device
- * @param[in] bus pointer to the bus
- * @param[in] addr address of the device
- * @param[in] endpoint endpoint of the device
- * @param[in] setup pointer to the setup packet
-*/
-usb_transfer_status_t usb_transfer_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup);
-
-/**
  * @brief sets the address of a device
  * @param[in] bus pointer to the bus
  * @param[in] addr address of the device
@@ -320,14 +300,67 @@ typedef enum usb_endpoint_type
 } usb_endpoint_type_t;
 
 /**
- * @brief gets an endpoint from the current interface of a device
+ * @brief finds an endpoint from the current interface of a device
  * @param[in] device pointer to the device
  * @param[in] in true if the endpoint is an input endpoint
  * @param[in] type type of the endpoint
  * @return pointer to the endpoint
 */
-usb_endpoint_t* usb_get_endpoint(const usb_device_t* device, bool in, usb_endpoint_type_t type);
+usb_endpoint_t* usb_find_endpoint(const usb_device_t* device, bool in, usb_endpoint_type_t type);
 
+/**
+ * @brief finds an endpoint from the current interface of a device
+ * @param[in] device pointer to the device
+ * @param[in] in true if the endpoint is an input endpoint
+ * @param[in] type type of the endpoint
+ * @return pointer to the endpoint
+*/
+usb_endpoint_t* usb_get_endpoint(const usb_device_t* device, uint8_t ep_number);
 
-usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size);
+/**
+ * @brief finds an device from a bus
+ * @param[in] bus pointer to the bus
+ * @param[in] addr address of the device
+ * @return pointer to the device
+*/
+usb_device_t* usb_get_device(const usb_bus_t* bus, uint64_t addr);
+
+/**
+ * @brief initiates a control transfer from a device to the host
+ * @param[in] bus pointer to the bus
+ * @param[in] addr address of the device
+ * @param[in] endpoint endpoint of the device
+ * @param[in] setup pointer to the setup packet
+ * @param[in] payload pointer to the payload
+ * @param[in] size size of the payload
+*/
+usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup, void* payload, size_t size);
+
+/**
+ * @brief initiates a control transfer from the host to a device
+ * @param[in] bus pointer to the bus
+ * @param[in] addr address of the device
+ * @param[in] endpoint endpoint of the device
+ * @param[in] setup pointer to the setup packet
+*/
+usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup);
+
+/**
+ * @brief initiates a bulk transfer from a device to the host
+ * @param[in] bus pointer to the bus
+ * @param[in] addr address of the device
+ * @param[in] endpoint endpoint of the device
+ * @param[in] payload pointer to the payload
+ * @param[in] size size of the payload
+*/
 usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size);
+
+/**
+ * @brief initiates a bulk transfer from the host to a device
+ * @param[in] bus pointer to the bus
+ * @param[in] addr address of the device
+ * @param[in] endpoint endpoint of the device
+ * @param[in] payload pointer to the payload
+ * @param[in] size size of the payload
+*/
+usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size);
