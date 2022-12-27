@@ -186,6 +186,13 @@ static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, si
     dev->cmd_header[slot.index].cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
     dev->cmd_header[slot.index].a = 0;
 
+    dev->cmd_header[slot.index].p = 0;
+    dev->cmd_header[slot.index].r = 0;
+    dev->cmd_header[slot.index].b = 0;
+    dev->cmd_header[slot.index].c = 0;
+    dev->cmd_header[slot.index].pmp = 0;
+    dev->cmd_header[slot.index].prdbc = 0;
+
     volatile fis_reg_h2d_t* fis = (void*)slot.cmd_table->cfis;
     memset((void*)fis, 0, sizeof(fis_reg_h2d_t));
     fis->fis_type = FIS_TYPE_REG_H2D;
@@ -210,6 +217,7 @@ static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, si
     for(size_t i = 0; i < n_prdts; i++)
     {
         volatile hba_prdt_entry_t* prdt = &slot.cmd_table->prdt_entry[i];
+        memset((void*)prdt, 0, sizeof(hba_prdt_entry_t));
 
         size_t remaining = transfer_len - i * 0x3FFFFF;
         size_t transfer = remaining >= 0x3FFFFF ? 0x3FFFFF : remaining;
@@ -258,6 +266,13 @@ static bool send_atapi_cmd(void* device, atapi_command_t* command, uint8_t* data
     dev->cmd_header[slot.index].cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
     dev->cmd_header[slot.index].a = 1;
 
+    dev->cmd_header[slot.index].p = 0;
+    dev->cmd_header[slot.index].r = 0;
+    dev->cmd_header[slot.index].b = 0;
+    dev->cmd_header[slot.index].c = 0;
+    dev->cmd_header[slot.index].pmp = 0;
+    dev->cmd_header[slot.index].prdbc = 0;
+
     volatile fis_reg_h2d_t* fis = (void*)slot.cmd_table->cfis;
     memset((void*)fis, 0, sizeof(fis_reg_h2d_t));
     fis->fis_type = FIS_TYPE_REG_H2D;
@@ -277,6 +292,7 @@ static bool send_atapi_cmd(void* device, atapi_command_t* command, uint8_t* data
     for(size_t i = 0; i < n_prdts; i++)
     {
         volatile hba_prdt_entry_t* prdt = &slot.cmd_table->prdt_entry[i];
+        memset((void*)prdt, 0, sizeof(hba_prdt_entry_t));
 
         size_t remaining = transfer_len - i * 0x3FFFFF;
         size_t transfer = remaining >= 0x3FFFFF ? 0x3FFFFF : remaining;
