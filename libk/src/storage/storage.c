@@ -1,5 +1,6 @@
 #include <storage/storage.h>
 #include <drivers/storage/ata.h>
+#include <memory/pfa.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -27,7 +28,7 @@ uint64_t storage_register_device(storage_data_t data)
     device.registered = true;
     device.lba_pos = 0;
     device.partitions = darray(partition_t, 0);
-    device.buffer = malloc(data.sector_size);
+    device.buffer = pfa_alloc(1);
     device.readonly = data.readonly;
 
     device.reader(device.data, device.lba_pos, 1, device.buffer);

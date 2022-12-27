@@ -1,18 +1,18 @@
 #include <drivers/storage/ata.h>
 #include <drivers/pci.h>
-#include <log.h>
 #include <drivers/storage/ahci.h>
 #include <storage/storage.h>
 #include <drivers/storage/scsi.h>
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdalign.h>
 
 #include "ata_types.h"
 
 static bool identify(ata_device_t* dev)
 {
-    ata_ident_t ident;
+    alignas(0x10) ata_ident_t ident;
 
     ata_command_t cmd;
     memset(&cmd, 0, sizeof(ata_command_t));

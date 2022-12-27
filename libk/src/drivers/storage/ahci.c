@@ -3,7 +3,6 @@
 #include <memory/paging.h>
 #include <memory/pfa.h>
 #include <timers/pit.h>
-#include <log.h>
 #include <panic.h>
 #include <alignment.h>
 
@@ -11,6 +10,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "ahci_types.h"
 
@@ -171,6 +171,7 @@ static void hba_reset(volatile hba_mem_t* hba)
 
 static bool send_ata_cmd(void* device, ata_command_t* command, uint8_t* data, size_t transfer_len)
 {
+    assert((uint64_t)data % 0x10 == 0);
     ahci_device_t* dev = (ahci_device_t*)device;
 
     dev->port->is = UINT32_MAX;
