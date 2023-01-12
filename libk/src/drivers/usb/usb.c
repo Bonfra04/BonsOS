@@ -102,7 +102,9 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
 
     for(uint64_t i = 0; i < bus->hci.num_ports; i++)
     {
-        bus->hci.driver->reset_port(bus->hci.data, i);
+        if(!bus->hci.driver->reset_port(bus->hci.data, i))
+            continue;
+
         usb_port_status_t status = bus->hci.driver->port_status(bus->hci.data, i);
         if(status == USB_PORT_STATUS_NOT_CONNECT)
             continue;

@@ -159,7 +159,7 @@ typedef struct usb_packet
 
 typedef struct usb_hci_driver
 {
-    void (*reset_port)(void* data, uint64_t port);
+    bool (*reset_port)(void* data, uint64_t port);
     usb_port_status_t (*port_status)(void* data, uint64_t port);
     usb_transfer_status_t (*transfer_packets)(void* data, uint64_t addr, uint64_t endpoint, const usb_packet_t* packets, size_t num_packets);
 } usb_hci_driver_t;

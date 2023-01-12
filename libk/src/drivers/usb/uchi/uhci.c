@@ -129,11 +129,11 @@ static bool init_controller(uhci_controller_t* controller)
     return true;
 }
 
-static void reset_port(void* data, uint64_t port)
+static bool reset_port(void* data, uint64_t port)
 {
     uhci_controller_t* controller = data;
     if(port >= controller->num_ports)
-        return;
+        return false;
     uint16_t addr = controller->io + IO_PORTSC + port * 2;
 
     // issue port reset
@@ -161,10 +161,12 @@ static void reset_port(void* data, uint64_t port)
         }
 
         if(status & PORTSC_ENABLE)
-            break;
+            return true;
 
         outportw(addr, status | PORTSC_ENABLE);
     }
+
+    return false;
 }
 
 static usb_port_status_t port_status(void* data, uint64_t port)
