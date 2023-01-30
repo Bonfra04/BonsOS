@@ -1,6 +1,9 @@
 #include <drivers/usb/usb.h>
 
 #include <string.h>
+#include <stdalign.h>
+
+#include <log.h>
 
 usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup, void* payload, size_t size)
 {    
@@ -34,7 +37,7 @@ usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t add
 
 usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup)
 {
-    usb_packet_t packets[2];
+    alignas(0x20) usb_packet_t packets[2];
     memset(packets, 0, sizeof(usb_packet_t) * 2);
 
     packets[0].type = USB_PACKET_TYPE_SETUP;
@@ -45,6 +48,10 @@ usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t ad
     packets[1].maxlen = 0x800;
     packets[1].buffer = NULL;
     packets[1].toggle = 1;
+
+    kernel_log("Control in packets:\n");
+    kernel_log("Packet 0(0x%p): type: %#x, maxlen: %#x, buffer: %#x, toggle: %#x\n", &packets[0], packets[0].type, packets[0].maxlen, packets[0].buffer, packets[0].toggle);
+    kernel_log("Packet 1(0x%p): type: %#x, maxlen: %#x, buffer: %#x, toggle: %#x\n", &packets[1], packets[1].type, packets[1].maxlen, packets[1].buffer, packets[1].toggle);
 
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, 2);
 }

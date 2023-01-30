@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <log.h>
+
 static usb_bus_t* usb_busses;
 
 void usb_init()
@@ -27,6 +29,8 @@ static void usb_register_device(usb_bus_t* bus)
     uint64_t addr = alloc_address(bus);
     if(addr == 0)
         kernel_panic("Too many usb devices on the same bus");
+
+    kernel_trace("Registering USB device at address %d", addr);
 
     // TODO: real hw hangs inside this function
     if(usb_set_address(bus, addr) != USB_TRANSFER_STATUS_OK)
@@ -91,6 +95,8 @@ static void usb_register_device(usb_bus_t* bus)
 
 void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* driver)
 {
+    kernel_trace("Registering USB host controller");
+
     darray_append(usb_busses, (usb_bus_t){});
     usb_bus_t* bus = &usb_busses[darray_length(usb_busses) - 1];
     memset(bus->devices, 0, sizeof(usb_device_t*) * USB_BUS_MAX_DEVICES);
@@ -100,6 +106,7 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
         .driver = driver
     };
 
+    kernel_trace("Probing USB ports");
     for(uint64_t i = 0; i < bus->hci.num_ports; i++)
     {
         if(!bus->hci.driver->reset_port(bus->hci.data, i))
@@ -109,6 +116,7 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
         if(status == USB_PORT_STATUS_NOT_CONNECT)
             continue;
 
+        kernel_trace("Found connected USB device");
         usb_register_device(bus);
     }
 }

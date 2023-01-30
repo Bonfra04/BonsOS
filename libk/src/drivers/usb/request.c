@@ -1,13 +1,18 @@
 #include <drivers/usb/usb.h>
+#include <stdalign.h>
+
+#include <log.h>
 
 usb_transfer_status_t usb_set_address(const usb_bus_t* bus, uint64_t addr)
 {
-    usb_request_packet_t setup;
+    alignas(0x20) usb_request_packet_t setup;
     setup.type = USB_REQUEST_DIR_HOST_TO_DEVICE | USB_REQUEST_TYPE_STANDARD;
     setup.request = USB_REQUEST_SET_ADDRESS;
     setup.value = addr;
     setup.index = 0;
     setup.size = 0;
+
+    kernel_log("\nSetup packet(0x%p): type: %#x, request: %#x, value: %#x, index: %#x, size: %#x\n", &setup, setup.type, setup.request, setup.value, setup.index, setup.size);
 
     return usb_transfer_control_out(bus, 0, 0, &setup);
 }
