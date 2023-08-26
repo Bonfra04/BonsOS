@@ -10,7 +10,7 @@
 #define IO_PORTSC1   (IO_PORTSC + 0)
 #define IO_PORTSC2   (IO_PORTSC + 2)
 
-#define USBCMD_MAXPACK (1 <<7)
+#define USBCMD_MAXPACK (1 << 7)
 #define USBCMD_CF      (1 << 6)
 #define USBCMD_GRESET  (1 << 2)
 #define USBCMD_HCRESET (1 << 1)
@@ -44,6 +44,7 @@
 #define TD_DEPTH_FIRST      (1 << 2)
 #define TD_STATUS_ACTIVE    (1 << 23)
 #define TD_IOC              (1 << 24)
+#define TD_C_ERR            (0b11 << 27)
 #define TD_LOW_SPEED        (1 << 26)
 #define TD_PID_SETUP        0x2d
 #define TD_PID_IN           0x69
@@ -52,3 +53,4 @@
 
 #define QH_TERMINATE        (1 << 0)
 
+#define UHCI_PCI_LEGSUP 0xC0

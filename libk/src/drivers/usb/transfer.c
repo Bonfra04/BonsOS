@@ -5,22 +5,48 @@
 
 #include <log.h>
 
+size_t packet_size(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint)
+{
+    usb_device_t* dev = usb_get_device(bus, addr);
+    if(dev == NULL)
+    {
+        usb_port_status_t status = bus->hci.driver->port_status(bus->hci.data, addr);
+        return status == USB_PORT_STATUS_CONNECT_FULL_SPEED ? 64 : status == USB_PORT_STATUS_CONNECT_LOW_SPEED ? 8 : 0;
+    }
+    else
+    {
+        usb_endpoint_t* ep = usb_get_endpoint(dev, endpoint);
+        if(ep == NULL)
+        {
+            return dev->descriptor.max_packet_size;
+        }
+        else
+        {
+            usb_endpoint_descriptor_t* epd = &usb_get_endpoint(dev, endpoint)->descriptor;
+            size_t pksiz = epd->max_packet_size;
+            return pksiz;
+        }
+    }
+}
+
 usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup, void* payload, size_t size)
-{    
-    size_t num_packets = 2 + size / 8 + (size % 8 != 0);
-    usb_packet_t packets[num_packets];
+{
+    size_t pksiz = packet_size(bus, addr, endpoint);
+    size_t num_packets = 2 + size / pksiz + (size % pksiz != 0);
+    usb_packet_t* packets = pfa_alloc(1);
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
     packets[0].type = USB_PACKET_TYPE_SETUP;
     packets[0].maxlen = 8;
     packets[0].buffer = setup;
+    packets[0].toggle = 0;
 
     int toggle = 1;
     int pid = 1;
-    for(int i = 0; i < size; i += 8)
+    for(int i = 0; i < size; i += pksiz)
     {
         packets[pid].type = USB_PACKET_TYPE_IN;
-        packets[pid].maxlen = 8;
+        packets[pid].maxlen = pksiz;
         packets[pid].buffer = payload + i;
         packets[pid].toggle = toggle;
         toggle = !toggle;
@@ -31,38 +57,33 @@ usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t add
     packets[pid].maxlen = 0x800;
     packets[pid].buffer = NULL;
     packets[pid].toggle = 1;
-
+    
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
 }
 
 usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup)
 {
-    alignas(0x20) usb_packet_t packets[2];
+    usb_packet_t* packets = pfa_alloc(1);
     memset(packets, 0, sizeof(usb_packet_t) * 2);
 
     packets[0].type = USB_PACKET_TYPE_SETUP;
     packets[0].maxlen = 8;
     packets[0].buffer = setup;
+    packets[0].toggle = 0;
     
     packets[1].type = USB_PACKET_TYPE_IN;
     packets[1].maxlen = 0x800;
     packets[1].buffer = NULL;
     packets[1].toggle = 1;
 
-    kernel_log("Control in packets:\n");
-    kernel_log("Packet 0(0x%p): type: %#x, maxlen: %#x, buffer: %#x, toggle: %#x\n", &packets[0], packets[0].type, packets[0].maxlen, packets[0].buffer, packets[0].toggle);
-    kernel_log("Packet 1(0x%p): type: %#x, maxlen: %#x, buffer: %#x, toggle: %#x\n", &packets[1], packets[1].type, packets[1].maxlen, packets[1].buffer, packets[1].toggle);
-
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, 2);
 }
 
 usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
 {
-    usb_endpoint_descriptor_t* ep = &usb_get_endpoint(usb_get_device(bus, addr), endpoint)->descriptor;
-    size_t pksiz = ep->max_packet_size;
-
+    size_t pksiz = packet_size(bus, addr, endpoint);
     size_t num_packets = size / pksiz + (size % pksiz != 0);
-    usb_packet_t packets[num_packets];
+    usb_packet_t* packets = pfa_alloc(num_packets);
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
     int toggle = 0;
@@ -83,16 +104,17 @@ usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr,
 
 usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
 {
-    size_t num_packets = size / 64 + (size % 64 != 0);
-    usb_packet_t packets[num_packets];
+    size_t pksiz = packet_size(bus, addr, endpoint);
+    size_t num_packets = size / pksiz + (size % pksiz != 0);
+    usb_packet_t* packets = pfa_alloc(num_packets);
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
     int toggle = 1;
     int pid = 0;
-    for(int i = 0; i < size; i += 64)
+    for(int i = 0; i < size; i += pksiz)
     {
         packets[pid].type = USB_PACKET_TYPE_IN;
-        packets[pid].maxlen = 64;
+        packets[pid].maxlen = pksiz;
         packets[pid].buffer = payload + i;
         packets[pid].toggle = toggle;
         toggle = !toggle;

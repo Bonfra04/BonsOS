@@ -12,3 +12,9 @@ void pit_prepare_one_shot(uint64_t millis);
  * @brief performs the one shot prepared with pit_prepare_one_shot
  */
 void pit_perform_one_shot();
+
+/**
+ * @brief shorthand for not so precise sleeping
+ * @param[in] millis the number of milliseconds to sleep
+*/
+void pit_sleep(uint64_t millis);

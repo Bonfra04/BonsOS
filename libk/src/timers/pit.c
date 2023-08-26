@@ -53,3 +53,9 @@ void pit_perform_one_shot()
         status = inportb(PIT_CHANNEL0_DATA);
     } while(!(status & PIT_STATUS_OUTPUT_HIGH));
 }
+
+void pit_sleep(uint64_t millis)
+{
+    pit_prepare_one_shot(millis);
+    pit_perform_one_shot();
+}

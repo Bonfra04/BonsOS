@@ -135,7 +135,7 @@ typedef enum usb_transfer_status
 
 typedef enum usb_packet_type
 {
-    USB_PACKET_TYPE_SETUP,
+    USB_PACKET_TYPE_SETUP = 0,
     USB_PACKET_TYPE_IN,
     USB_PACKET_TYPE_OUT,
 } usb_packet_type_t;

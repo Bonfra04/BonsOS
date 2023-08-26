@@ -72,7 +72,6 @@ typedef struct scsi_command_read_capacity
     uint16_t reserved1;
     uint8_t reserved2;
     uint8_t control;
-    uint16_t zero;
 } __attribute__((packed)) scsi_command_read_capacity_t;
 
 typedef struct scsi_read_capacity
