@@ -7,9 +7,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <memory/pfa.h>
-#include <log.h>
-
 static usb_bus_t** usb_busses;
 
 void usb_init()
@@ -33,8 +30,7 @@ static void usb_register_device(usb_bus_t* bus)
     if(addr == 0)
         kernel_panic("Too many usb devices on the same bus");
 
-    // usb_device_t* device = calloc(sizeof(usb_device_t), 1);
-    usb_device_t* device = pfa_calloc(1);
+    usb_device_t* device = calloc(sizeof(usb_device_t), 1);
     device->bus = bus;
     device->addr = addr;
     bus->devices[addr - 1] = device;
@@ -45,8 +41,7 @@ static void usb_register_device(usb_bus_t* bus)
     if(usb_set_address(bus, addr) != USB_TRANSFER_STATUS_OK)
         return;
 
-    // device->configurations = calloc(sizeof(usb_configuration_t), device->descriptor.num_configurations);
-    device->configurations = pfa_calloc(1);
+    device->configurations = calloc(sizeof(usb_configuration_t), device->descriptor.num_configurations);
 
     for(size_t i = 0; i < device->descriptor.num_configurations; i++)
     {
@@ -94,11 +89,9 @@ static void usb_register_device(usb_bus_t* bus)
     }
 }
 
-extern size_t packet_size(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint);
-
 void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* driver)
 {
-    usb_bus_t* bus = pfa_calloc(1);
+    usb_bus_t* bus = calloc(sizeof(usb_bus_t), 1);
     darray_append(usb_busses, bus);
     memset(bus->devices, 0, sizeof(usb_device_t*) * USB_BUS_MAX_DEVICES);
     bus->hci = (usb_hci_t) {
@@ -114,8 +107,8 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
         if(bus->hci.driver->port_status(bus->hci.data, i) == USB_PORT_STATUS_NOT_CONNECT)
             continue;
 
-        uint8_t* eight = pfa_alloc(1);
-        if(usb_get_standard_descriptor(&(usb_device_t){.bus = bus, .addr = 0}, USB_DESCRIPTOR_DEVICE, 0, eight, packet_size(bus, 0, 0)) != USB_TRANSFER_STATUS_OK)
+        uint8_t first_desc[packet_size(bus, 0, 0)];
+        if(usb_get_standard_descriptor(&(usb_device_t){.bus = bus, .addr = 0}, USB_DESCRIPTOR_DEVICE, 0, first_desc, sizeof(first_desc)) != USB_TRANSFER_STATUS_OK)
             return;
 
         if(!bus->hci.driver->reset_port(bus->hci.data, i))
@@ -129,7 +122,6 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
 
 void usb_register_driver(const usb_driver_t* driver)
 {
-    kernel_trace("Registering new usb driver");
     for(uint64_t i = 0; i < darray_length(usb_busses); i++)
     {
         usb_bus_t* bus = usb_busses[i];
@@ -142,9 +134,9 @@ void usb_register_driver(const usb_driver_t* driver)
             for(uint64_t k = 0; k < device->descriptor.num_configurations; k++)
             {
                 usb_configuration_t* config = &device->configurations[k];
+
                 for(uint64_t l = 0; l < config->num_inferfaces; l++)
                 {
-                    kernel_trace("Checking interface %d", l);
                     usb_interface_descriptor_t* interface = &config->interfaces[l].descriptor;
                     
                     if(driver->match & USB_DRIVER_MATCH_CLASS && interface->class != driver->class)
@@ -154,13 +146,11 @@ void usb_register_driver(const usb_driver_t* driver)
                     if(driver->match & USB_DRIVER_MATCH_PROTOCOL && interface->protocol != driver->protocol)
                         continue;
 
-                    kernel_trace("Found matching interface");
                     usb_set_configuration(device, config->descriptor.configuration_value);
                     usb_set_interface(device, interface->interface_number);
                     device->curr_configuration = k;
                     device->curr_interface = l;
 
-                    kernel_trace("Initializing driver");
                     driver->init(device);
                     goto next;
                 }
@@ -168,7 +158,6 @@ void usb_register_driver(const usb_driver_t* driver)
             next:{}
         }
     }
-    kernel_trace("Done");
 }
 
 usb_endpoint_t* usb_find_endpoint(const usb_device_t* device, bool in, usb_endpoint_type_t type)

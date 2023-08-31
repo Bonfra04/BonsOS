@@ -2,9 +2,6 @@
 
 #include <string.h>
 #include <stdalign.h>
-#include <memory/pfa.h>
-
-#include <log.h>
 
 size_t packet_size(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint)
 {
@@ -34,7 +31,7 @@ usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t add
 {
     size_t pksiz = packet_size(bus, addr, endpoint);
     size_t num_packets = 2 + size / pksiz + (size % pksiz != 0);
-    usb_packet_t* packets = pfa_alloc(1);
+    usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
     packets[0].type = USB_PACKET_TYPE_SETUP;
@@ -64,7 +61,7 @@ usb_transfer_status_t usb_transfer_control_in(const usb_bus_t* bus, uint64_t add
 
 usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* setup)
 {
-    usb_packet_t* packets = pfa_alloc(1);
+    usb_packet_t packets[2];
     memset(packets, 0, sizeof(usb_packet_t) * 2);
 
     packets[0].type = USB_PACKET_TYPE_SETUP;
@@ -84,7 +81,7 @@ usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr,
 {
     size_t pksiz = packet_size(bus, addr, endpoint);
     size_t num_packets = size / pksiz + (size % pksiz != 0);
-    usb_packet_t* packets = pfa_alloc(num_packets);
+    usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
     int toggle = 0;
@@ -107,7 +104,7 @@ usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, 
 {
     size_t pksiz = packet_size(bus, addr, endpoint);
     size_t num_packets = size / pksiz + (size % pksiz != 0);
-    usb_packet_t* packets = pfa_alloc(num_packets);
+    usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
     int toggle = 1;

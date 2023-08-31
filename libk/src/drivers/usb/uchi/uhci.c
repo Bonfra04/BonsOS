@@ -14,8 +14,6 @@
 
 #include "uchi_regs.h"
 
-#include <log.h>
-
 #define port_set(addr, data) outportw(addr, inportw(addr) | (data))
 #define port_clear(addr, data) outportw(addr, inportw(addr) & ~(data))
 #define port_mask(addr, mask) outportw(addr, inportw(addr) & (mask))
@@ -76,7 +74,7 @@ static bool controller_reset(uhci_controller_t* controller)
     return true;
 }
 
-static void clear_frame_list(uint32_t* frame_list)
+static void clear_frame_list(volatile uint32_t* frame_list)
 {
     for(uint32_t i = 0; i < 1024; ++i)
         frame_list[i] = FRAMELIST_TERMINATE;
@@ -205,8 +203,6 @@ static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_
     outportw(controller->io + IO_USBSTS, USBSTS_INT);
 
     volatile alignas(0x10) transfer_descriptor_t tds[num_packets];
-    // kernel_trace("Setting up TDs");
-    // volatile transfer_descriptor_t* tds = pfa_alloc(1);
     memset((void*)tds, 0, sizeof(transfer_descriptor_t) * num_packets);
     for(size_t i = 0; i < num_packets; i++)
     {
@@ -234,19 +230,20 @@ static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_
         tds[i].bufptr = (uint32_t)(uint64_t)packets[i].buffer;
     }
 
-    // volatile queue_head_t* qh = pfa_alloc(1);
-    volatile queue_head_t* qh = pfa_calloc(1);
-    qh[0].head_link = QH_TERMINATE;
-    qh[0].element_link = (uint32_t)(uint64_t)&tds[0];
+    volatile alignas(0x10) queue_head_t qh;
+    qh.head_link = QH_TERMINATE;
+    qh.element_link = (uint32_t)(uint64_t)&tds[0];
 
     clear_frame_list(controller->frame_list);
     outportw(controller->io + IO_USBSTS, USBSTS_INT);
 
     for(uint32_t i = 0; i < 1024; ++i)
-        controller->frame_list[i] = (uint32_t)(uint64_t)qh | FRAMELIST_QH;
+        controller->frame_list[i] = (uint32_t)(uint64_t)&qh | FRAMELIST_QH;
 
     while(!(inportw(controller->io + IO_USBSTS) & USBSTS_INT))
         asm("pause");
+
+    clear_frame_list(controller->frame_list);
 
     return USB_TRANSFER_STATUS_OK;
 } 

@@ -364,3 +364,11 @@ usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, 
  * @param[in] size size of the payload
 */
 usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size);
+
+/**
+ * @brief gets the size of a standard packet for a device
+ * @param[in] bus pointer to the bus
+ * @param[in] addr address of the device
+ * @param[in] endpoint endpoint of the device
+*/
+size_t packet_size(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint);
