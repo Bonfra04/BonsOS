@@ -16,8 +16,9 @@
 
 #include <log.h>
 
-#define port_set(addr, data) outportw(addr, inportw(addr) | (data));
-#define port_clear(addr, data) outportw(addr, inportw(addr) & ~(data));
+#define port_set(addr, data) outportw(addr, inportw(addr) | (data))
+#define port_clear(addr, data) outportw(addr, inportw(addr) & ~(data))
+#define port_mask(addr, mask) outportw(addr, inportw(addr) & (mask))
 
 typedef struct uhci_controller
 {
@@ -45,8 +46,6 @@ typedef struct queue_head
 
 static bool controller_reset(uhci_controller_t* controller)
 {
-    kernel_trace("Resetting UHCI controller");
-
     // issue global reset
     for(int i = 0; i < 5; i++)
     {
@@ -74,9 +73,13 @@ static bool controller_reset(uhci_controller_t* controller)
     if(inportw(controller->io + IO_USBCMD) & USBCMD_HCRESET)
         return false;
 
-    kernel_trace("Reset successful");
-
     return true;
+}
+
+static void clear_frame_list(uint32_t* frame_list)
+{
+    for(uint32_t i = 0; i < 1024; ++i)
+        frame_list[i] = FRAMELIST_TERMINATE;
 }
 
 static void* alloc_frame_list()
@@ -84,8 +87,7 @@ static void* alloc_frame_list()
     uint32_t* frame_list = (uint32_t*)pfa_alloc(1);
     if(frame_list == NULL)
         return NULL;
-    for(uint32_t i = 0; i < 1024; ++i)
-        frame_list[i] = FRAMELIST_TERMINATE;
+    clear_frame_list(frame_list);
     return frame_list;
 }
 
@@ -131,7 +133,7 @@ static bool init_controller(uhci_controller_t* controller)
         return false;
     outportd(controller->io + IO_FRBASEADD, (uint32_t)(uint64_t)controller->frame_list);
 
-    // set sof mod
+    // set sofmod
     outportb(controller->io + IO_SOFMOD, SOFMOD_64);
 
     // clear status register (write/clear)
@@ -155,42 +157,26 @@ static bool reset_port(void* data, uint64_t port)
         return false;
     uint16_t addr = controller->io + IO_PORTSC + port * 2;
 
-    kernel_trace("Resetting port %d", port);
-
     // issue port reset
     port_set(addr, PORTSC_PORT_RESET);
     pit_sleep(50);
-    port_clear(addr, PORTSC_PORT_RESET);
-    // wait for recovery time
-    pit_sleep(10);
+    port_mask(addr, PORTSC_RESET_MASK);
+
+    pit_sleep(1);
     
-    // wait for port to enable
-    for(uint8_t i = 0; i < 16; i++)
-    {
-        pit_sleep(10);
+    // Write clear CSC
+    port_set(addr, PORTSC_STATUS_CHANGE);
+    // enable the port
+    port_set(addr, PORTSC_ENABLE);
 
-        uint16_t status = inportw(addr);
+    pit_sleep(50);
 
-        // check if something is attached
-        if((status & PORTSC_CONNECT_STATUS) == 0)
-            break;
-
-        // check if something changed
-        if((status & (PORTSC_ENABLE_CHANGE | PORTSC_STATUS_CHANGE)) != 0)
-        {
-            port_set(addr, PORTSC_ENABLE_CHANGE | PORTSC_STATUS_CHANGE);
-            continue;
-        }
-
-        // check if port is enabled
-        if((status & PORTSC_ENABLE) != 0)
-            return true;
-
-        // enable port
-        port_set(addr, PORTSC_ENABLE);
-    }
+    // clear PDEC, CSC and set again enable
+    port_set(addr, PORTSC_STATUS_CHANGE | PORTSC_ENABLE | PORTSC_ENABLE_CHANGE);
+    
+    pit_sleep(50);
    
-    return false;
+    return (inportw(addr) & PORTSC_ENABLE) != 0;
 }
 
 static usb_port_status_t port_status(void* data, uint64_t port)
@@ -211,29 +197,16 @@ static usb_port_status_t port_status(void* data, uint64_t port)
         return USB_PORT_STATUS_NOT_CONNECT;
 }
 
-static void sched_stop(uhci_controller_t* controller)
-{
-    outportw(controller->io + IO_USBCMD, inportw(controller->io + IO_USBCMD) & ~USBCMD_RUNSTOP);
-    outportw(controller->io + IO_USBSTS, USBSTS_INT);
-}
-
-static void sched_run(uhci_controller_t* controller)
-{
-    sched_stop(controller);
-    outportw(controller->io + IO_FRNUM, 0);
-    outportw(controller->io + IO_USBCMD, inportw(controller->io + IO_USBCMD) | USBCMD_RUNSTOP);
-}
-
 static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_t endpoint, const usb_packet_t* packets, size_t num_packets)
 {
     uhci_controller_t* controller = data;
 
+    clear_frame_list(controller->frame_list);
     outportw(controller->io + IO_USBSTS, USBSTS_INT);
-    for(uint32_t i = 0; i < 1024; ++i)
-        controller->frame_list[i] = FRAMELIST_TERMINATE;
 
-    // volatile alignas(0x10) transfer_descriptor_t tds[num_packets];
-    volatile transfer_descriptor_t* tds = pfa_alloc(1);
+    volatile alignas(0x10) transfer_descriptor_t tds[num_packets];
+    // kernel_trace("Setting up TDs");
+    // volatile transfer_descriptor_t* tds = pfa_alloc(1);
     memset((void*)tds, 0, sizeof(transfer_descriptor_t) * num_packets);
     for(size_t i = 0; i < num_packets; i++)
     {
@@ -261,44 +234,19 @@ static usb_transfer_status_t transfer_packets(void* data, uint64_t addr, uint64_
         tds[i].bufptr = (uint32_t)(uint64_t)packets[i].buffer;
     }
 
-    // log
-    kernel_log("TDs:\n");
-    for(int i = 0; i < num_packets; i++)
-        kernel_log("[%d](0x%p): link: %#x, flags: %#x, maxlen: %#x, bufptr: %#x\n", i, &tds[i], tds[i].link, tds[i].flags, tds[i].maxlen, tds[i].bufptr);
-    kernel_log("\n");
+    // volatile queue_head_t* qh = pfa_alloc(1);
+    volatile queue_head_t* qh = pfa_calloc(1);
+    qh[0].head_link = QH_TERMINATE;
+    qh[0].element_link = (uint32_t)(uint64_t)&tds[0];
 
-    volatile queue_head_t* qh = pfa_alloc(1);
-    qh->head_link = QH_TERMINATE;
-    qh->element_link = (uint32_t)(uint64_t)&tds[0];
-
-    // for(uint32_t i = 0; i < 1024; ++i)
-    //     controller->frame_list[i] = FRAMELIST_TERMINATE;
-    // controller->frame_list[0] = (uint32_t)(uint64_t)qh | FRAMELIST_QH;
+    clear_frame_list(controller->frame_list);
     outportw(controller->io + IO_USBSTS, USBSTS_INT);
+
     for(uint32_t i = 0; i < 1024; ++i)
         controller->frame_list[i] = (uint32_t)(uint64_t)qh | FRAMELIST_QH;
 
-    // sched_run(controller);
-
-    uint64_t spin = 0;
     while(!(inportw(controller->io + IO_USBSTS) & USBSTS_INT))
-    {
         asm("pause");
-        if(spin++ == 10000)
-        {
-            kernel_log("TDs stuck:\n");
-            for(int i = 0; i < num_packets; i++)
-                kernel_log("[%d](0x%p): link: %#x, flags: %#x, maxlen: %#x, bufptr: %#x\n", i, &tds[i], tds[i].link, tds[i].flags, tds[i].maxlen, tds[i].bufptr);
-            kernel_log("\n");
-        }
-    }
-
-    // sched_stop(controller);
-
-    kernel_log("TDs after:\n");
-    for(int i = 0; i < num_packets; i++)
-        kernel_log("[%d](0x%p): link: %#x, flags: %#x, maxlen: %#x, bufptr: %#x\n", i, &tds[i], tds[i].link, tds[i].flags, tds[i].maxlen, tds[i].bufptr);
-    kernel_log("\n");
 
     return USB_TRANSFER_STATUS_OK;
 } 
@@ -311,9 +259,6 @@ static usb_hci_driver_t uhci_usb_driver = {
 
 void uchi_register_pci(const pci_dev_info_t* pci_device)
 {
-    kernel_trace("Found UHCI controller (VENDOR: %X)", pci_device->dev.vendor_id);
-    kernel_trace("%hhX %hhX %hhX", pci_device->bus, pci_device->device, pci_device->function);
-    
     uhci_controller_t* controller = malloc(sizeof(uhci_controller_t));
     controller->pci = pci_device;
 
@@ -321,7 +266,7 @@ void uchi_register_pci(const pci_dev_info_t* pci_device)
         kernel_panic("UHCI controller is not port based");
 
     pci_set_privileges(pci_device, PCI_PRIV_MMIO | PCI_PRIV_DMA | PCI_PRIV_PIO);
-    pci_write_word(controller->pci, UHCI_PCI_LEGSUP, 0x8F00);
+    pci_write_word(controller->pci, UHCI_PCI_LEGSUP, UHCI_PCI_DISABLE_LEGSUP);
     controller->io = pci_device->dev.base4 & ~PCI_BAR_IO;
 
     if(!init_controller(controller))

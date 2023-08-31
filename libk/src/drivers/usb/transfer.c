@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdalign.h>
+#include <memory/pfa.h>
 
 #include <log.h>
 

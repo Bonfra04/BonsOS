@@ -10,11 +10,11 @@
 #include <memory/pfa.h>
 #include <log.h>
 
-static usb_bus_t* usb_busses;
+static usb_bus_t** usb_busses;
 
 void usb_init()
 {
-    usb_busses = darray(usb_bus_t, 0);
+    usb_busses = darray(usb_bus_t*, 0);
     ehci_init();
     uchi_init();
 }
@@ -33,22 +33,21 @@ static void usb_register_device(usb_bus_t* bus)
     if(addr == 0)
         kernel_panic("Too many usb devices on the same bus");
 
-    usb_device_t* device = calloc(sizeof(usb_device_t), 1);
+    // usb_device_t* device = calloc(sizeof(usb_device_t), 1);
+    usb_device_t* device = pfa_calloc(1);
     device->bus = bus;
     device->addr = addr;
     bus->devices[addr - 1] = device;
 
-    kernel_trace("Getting USB standard descriptor");
     if(usb_get_standard_descriptor(&(usb_device_t){.bus = bus, .addr = 0}, USB_DESCRIPTOR_DEVICE, 0, &device->descriptor, sizeof(usb_device_descriptor_t)) != USB_TRANSFER_STATUS_OK)
         return;
 
-    kernel_trace("Registering USB device at address %d", addr);
     if(usb_set_address(bus, addr) != USB_TRANSFER_STATUS_OK)
         return;
 
-    device->configurations = calloc(sizeof(usb_configuration_t), device->descriptor.num_configurations);
+    // device->configurations = calloc(sizeof(usb_configuration_t), device->descriptor.num_configurations);
+    device->configurations = pfa_calloc(1);
 
-    kernel_trace("Reading USB configurations");
     for(size_t i = 0; i < device->descriptor.num_configurations; i++)
     {
         usb_configuration_descriptor_t* config_desc = &device->configurations[i].descriptor;
@@ -99,10 +98,8 @@ extern size_t packet_size(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint
 
 void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* driver)
 {
-    kernel_trace("Registering USB host controller");
-
-    darray_append(usb_busses, (usb_bus_t){});
-    usb_bus_t* bus = &usb_busses[darray_length(usb_busses) - 1];
+    usb_bus_t* bus = pfa_calloc(1);
+    darray_append(usb_busses, bus);
     memset(bus->devices, 0, sizeof(usb_device_t*) * USB_BUS_MAX_DEVICES);
     bus->hci = (usb_hci_t) {
         .data = data,
@@ -110,7 +107,6 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
         .driver = driver
     };
 
-    kernel_trace("Probing USB ports");
     for(uint64_t i = 0; i < bus->hci.num_ports; i++)
     {
         if(!bus->hci.driver->reset_port(bus->hci.data, i))
@@ -118,40 +114,37 @@ void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* dr
         if(bus->hci.driver->port_status(bus->hci.data, i) == USB_PORT_STATUS_NOT_CONNECT)
             continue;
 
-        kernel_trace("Found connected USB device");
-
         uint8_t* eight = pfa_alloc(1);
         if(usb_get_standard_descriptor(&(usb_device_t){.bus = bus, .addr = 0}, USB_DESCRIPTOR_DEVICE, 0, eight, packet_size(bus, 0, 0)) != USB_TRANSFER_STATUS_OK)
             return;
-
-        kernel_trace("Got first descriptor");
 
         if(!bus->hci.driver->reset_port(bus->hci.data, i))
             continue;
         if(bus->hci.driver->port_status(bus->hci.data, i) == USB_PORT_STATUS_NOT_CONNECT)
             continue;
 
-        kernel_trace("Registering");
         usb_register_device(bus);
     }
 }
 
 void usb_register_driver(const usb_driver_t* driver)
 {
+    kernel_trace("Registering new usb driver");
     for(uint64_t i = 0; i < darray_length(usb_busses); i++)
     {
-        usb_bus_t* bus = &usb_busses[i];
+        usb_bus_t* bus = usb_busses[i];
         for(uint64_t j = 0; j < USB_BUS_MAX_DEVICES; j++)
         {
             usb_device_t* device = bus->devices[j];
             if(device == NULL)
                 continue;
-
+        
             for(uint64_t k = 0; k < device->descriptor.num_configurations; k++)
             {
                 usb_configuration_t* config = &device->configurations[k];
                 for(uint64_t l = 0; l < config->num_inferfaces; l++)
                 {
+                    kernel_trace("Checking interface %d", l);
                     usb_interface_descriptor_t* interface = &config->interfaces[l].descriptor;
                     
                     if(driver->match & USB_DRIVER_MATCH_CLASS && interface->class != driver->class)
@@ -161,11 +154,13 @@ void usb_register_driver(const usb_driver_t* driver)
                     if(driver->match & USB_DRIVER_MATCH_PROTOCOL && interface->protocol != driver->protocol)
                         continue;
 
-                    usb_set_configuration(device, device->configurations[k].descriptor.configuration_value);
-                    usb_set_interface(device, device->configurations[k].interfaces[l].descriptor.interface_number);
+                    kernel_trace("Found matching interface");
+                    usb_set_configuration(device, config->descriptor.configuration_value);
+                    usb_set_interface(device, interface->interface_number);
                     device->curr_configuration = k;
                     device->curr_interface = l;
 
+                    kernel_trace("Initializing driver");
                     driver->init(device);
                     goto next;
                 }
@@ -173,6 +168,7 @@ void usb_register_driver(const usb_driver_t* driver)
             next:{}
         }
     }
+    kernel_trace("Done");
 }
 
 usb_endpoint_t* usb_find_endpoint(const usb_device_t* device, bool in, usb_endpoint_type_t type)
