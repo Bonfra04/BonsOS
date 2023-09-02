@@ -74,6 +74,14 @@ int fprintf(FILE* stream, const char* format, ...);
 int vprintf(const char * format, va_list arg);
 int printf(const char* format, ...);
 
+int vsscanf(const char* str, const char* format, va_list arg);
+int sscanf(const char* str, const char* format, ...);
+
+int vfscanf(FILE* stream, const char* format, va_list arg);
+int fscanf(FILE* stream, const char* format, ...);
+int vscanf(const char* format, va_list arg);
+int scanf(const char* format, ...);
+
 #ifdef __cplusplus
 }
 #endif
