@@ -5,7 +5,7 @@
     #define kernel_warn(format, ...) ((void)0)
 #else
 
-#define kernel_trace(format, ...) __kernel_log("[Trace] %s:%d: " format "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define kernel_trace(format, ...) __kernel_log("[Trace] " format "\n", ##__VA_ARGS__)
 #define kernel_warn(format, ...) __kernel_log("[Warn] %s:%d: " format "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #endif
