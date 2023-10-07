@@ -77,6 +77,8 @@ usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t ad
     return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, 2);
 }
 
+#include <log.h>
+
 usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
 {
     size_t pksiz = packet_size(bus, addr, endpoint);
@@ -97,7 +99,10 @@ usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr,
         size = size > pksiz ? size - pksiz : 0;
     }
 
-    return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
+    kernel_trace("Initializing bulk out transfer");
+    usb_transfer_status_t  res = bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
+    kernel_trace("done bulk out transfer");
+    return res;
 }
 
 usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
@@ -119,5 +124,8 @@ usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, 
         pid++;
     }
 
-    return bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
+    kernel_trace("Initializing bulk in transfer");
+    usb_transfer_status_t res = bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
+    kernel_trace("done bulk in transfer");
+    return res;
 }
