@@ -9,7 +9,7 @@ size_t packet_size(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint)
     if(dev == NULL)
     {
         usb_port_status_t status = bus->hci.driver->port_status(bus->hci.data, addr);
-        return status == USB_PORT_STATUS_CONNECT_FULL_SPEED ? 64 : status == USB_PORT_STATUS_CONNECT_LOW_SPEED ? 8 : 0;
+        return status == USB_PORT_STATUS_CONNECT_FULL_SPEED ? 64 : status == USB_PORT_STATUS_CONNECT_LOW_SPEED ? 8 : 8;
     }
     else
     {
