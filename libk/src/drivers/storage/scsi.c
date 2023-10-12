@@ -25,9 +25,11 @@ static bool read_capacity(scsi_device_t* device)
     alignas(32) scsi_read_capacity_t capacity;
     if(!device->driver.send_scsi_cmd(device->driver.data, &command, &capacity, sizeof(scsi_read_capacity_t)))
         return false;
-
+        
     device->capacity = __builtin_bswap32(capacity.lba) + 1;
     device->sector_size = __builtin_bswap32(capacity.block_size);
+
+    kernel_log("LBA: %#llX Block Size: %#llX\n", device->capacity - 1, capacity.block_size);
 
     if(device->capacity == 0 && device->sector_size == 0)
         return false;
