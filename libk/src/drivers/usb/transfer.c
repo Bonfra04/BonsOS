@@ -79,53 +79,51 @@ usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t ad
 
 #include <log.h>
 
-usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
+usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, usb_endpoint_t* endpoint, void* payload, size_t size)
 {
-    size_t pksiz = packet_size(bus, addr, endpoint);
+    size_t pksiz = packet_size(bus, addr, endpoint->descriptor.endpoint_number);
     size_t num_packets = size / pksiz + (size % pksiz != 0);
     usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
-    int toggle = 0;
     int pid = 0;
     while(size > 0)
     {
         packets[pid].type = USB_PACKET_TYPE_OUT;
         packets[pid].maxlen = size > pksiz ? pksiz : size;
         packets[pid].buffer = payload + pid * pksiz;
-        packets[pid].toggle = toggle;
-        toggle = !toggle;
+        packets[pid].toggle = endpoint->toggle;
+        endpoint->toggle = !endpoint->toggle;
         pid++;
         size = size > pksiz ? size - pksiz : 0;
     }
 
-    kernel_trace("Initializing bulk out transfer");
-    usb_transfer_status_t  res = bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
-    kernel_trace("done bulk out transfer");
+    // kernel_trace("Initializing bulk out transfer");
+    usb_transfer_status_t  res = bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint->descriptor.endpoint_number, packets, num_packets);
+    // kernel_trace("done bulk out transfer");
     return res;
 }
 
-usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size)
+usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, usb_endpoint_t* endpoint, void* payload, size_t size)
 {
-    size_t pksiz = packet_size(bus, addr, endpoint);
+    size_t pksiz = packet_size(bus, addr, endpoint->descriptor.endpoint_number);
     size_t num_packets = size / pksiz + (size % pksiz != 0);
     usb_packet_t packets[num_packets];
     memset(packets, 0, sizeof(usb_packet_t) * num_packets);
 
-    int toggle = 1;
     int pid = 0;
     for(int i = 0; i < size; i += pksiz)
     {
         packets[pid].type = USB_PACKET_TYPE_IN;
         packets[pid].maxlen = pksiz;
         packets[pid].buffer = payload + i;
-        packets[pid].toggle = toggle;
-        toggle = !toggle;
+        packets[pid].toggle = endpoint->toggle;
+        endpoint->toggle = !endpoint->toggle;
         pid++;
     }
 
-    kernel_trace("Initializing bulk in transfer");
-    usb_transfer_status_t res = bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint, packets, num_packets);
-    kernel_trace("done bulk in transfer");
+    // kernel_trace("Initializing bulk in transfer");
+    usb_transfer_status_t res = bus->hci.driver->transfer_packets(bus->hci.data, addr, endpoint->descriptor.endpoint_number, packets, num_packets);
+    // kernel_trace("done bulk in transfer");
     return res;
 }

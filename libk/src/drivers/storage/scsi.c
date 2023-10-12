@@ -47,15 +47,15 @@ static bool inquiry(scsi_device_t* device)
     packet->evpd = 0;
     packet->allocation_length = __builtin_bswap16(sizeof(scsi_inquiry_t));
 
-    kernel_log("Sending inquiry command");
     alignas(32) scsi_inquiry_t inquiry;
     if(!device->driver.send_scsi_cmd(device->driver.data, &command, &inquiry, sizeof(scsi_inquiry_t)))
         return false;
 
+    kernel_log("Found new SCSI device: %16s\n", inquiry.product_id);
+
     if(inquiry.peripheral_device_type != SCSI_TYPE_CD_DVD && inquiry.peripheral_device_type != SCSI_TYPE_DIRECT_ACCESS)
         return false; // TODO: what changes if it's not a cd?
 
-    kernel_log("Reading capacity");
     if(!read_capacity(device))
         return false;
 

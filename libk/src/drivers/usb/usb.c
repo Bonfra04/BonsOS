@@ -74,7 +74,8 @@ static void usb_register_device(usb_bus_t* bus)
             case USB_DESCRIPTOR_ENDPOINT:
             {
                 usb_endpoint_t endpoint = {
-                    .descriptor = *(usb_endpoint_descriptor_t*)ptr
+                    .descriptor = *(usb_endpoint_descriptor_t*)ptr,
+                    .toggle = 0
                 };
                 darray_append(curr_int->endpoints, endpoint);
             }
@@ -88,6 +89,8 @@ static void usb_register_device(usb_bus_t* bus)
         darray_pack(device->configurations[i].interfaces);
     }
 }
+
+#include <log.h>
 
 void usb_register_hci(void* data, uint64_t num_ports, const usb_hci_driver_t* driver)
 {

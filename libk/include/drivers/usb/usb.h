@@ -176,6 +176,7 @@ typedef struct usb_bus usb_bus_t;
 typedef struct usb_endpoint
 {
     usb_endpoint_descriptor_t descriptor;
+    uint8_t toggle;
 } usb_endpoint_t;
 
 typedef struct usb_interface
@@ -353,7 +354,7 @@ usb_transfer_status_t usb_transfer_control_out(const usb_bus_t* bus, uint64_t ad
  * @param[in] payload pointer to the payload
  * @param[in] size size of the payload
 */
-usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size);
+usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, usb_endpoint_t* endpoint, void* payload, size_t size);
 
 /**
  * @brief initiates a bulk transfer from the host to a device
@@ -363,7 +364,7 @@ usb_transfer_status_t usb_transfer_bulk_in(const usb_bus_t* bus, uint64_t addr, 
  * @param[in] payload pointer to the payload
  * @param[in] size size of the payload
 */
-usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, uint64_t endpoint, void* payload, size_t size);
+usb_transfer_status_t usb_transfer_bulk_out(const usb_bus_t* bus, uint64_t addr, usb_endpoint_t* endpoint, void* payload, size_t size);
 
 /**
  * @brief gets the size of a standard packet for a device

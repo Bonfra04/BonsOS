@@ -16,8 +16,12 @@ void storage_init()
     storage_devices = darray(storage_device_t, 0);
 }
 
+#include <log.h>
+
 uint64_t storage_register_device(storage_data_t data)
 {
+    kernel_log("Registering a new storage device\n");
+
     storage_device_t device;
     memset(&device, 0, sizeof(storage_device_t));
     device.capacity = data.capacity;
@@ -30,8 +34,11 @@ uint64_t storage_register_device(storage_data_t data)
     device.partitions = darray(partition_t, 0);
     device.buffer = pfa_alloc(1);
     device.readonly = data.readonly;
-
+    
+    kernel_log("Reading first sector\n");
     device.reader(device.data, device.lba_pos, 1, device.buffer);
+    kernel_log("Analyzing MBR\n");
+
     const master_bootrecord_t* mbr = (master_bootrecord_t*)device.buffer;
 
     for(uint8_t i = 0; i < 4; i++)
