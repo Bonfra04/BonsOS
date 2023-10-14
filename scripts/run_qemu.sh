@@ -1,7 +1,15 @@
 qemu_command="qemu-system-x86_64 -smp 1 -M q35 -m 512M
 -nic none
--drive file=./BonsOS.img,index=0,media=disk,format=raw
--drive if=none,id=stick,format=raw,file=./stick.img
+"
+
+# sata
+# qemu_command+="
+# -drive file=./BonsOS.img,index=0,media=disk,format=raw
+# "
+
+#uhci
+qemu_command+="
+-drive if=none,id=stick,format=raw,file=./BonsOS.img
 -device piix3-usb-uhci,id=usbport
 -device usb-storage,bus=usbport.0,drive=stick
 "
