@@ -5,8 +5,6 @@
 #include <string.h>
 #include <stdalign.h>
 
-#include <log.h>
-
 #include "scsi_types.h"
 
 #define SCSI_TYPE_CD_DVD 0x05
@@ -28,8 +26,6 @@ static bool read_capacity(scsi_device_t* device)
         
     device->capacity = __builtin_bswap32(capacity.lba) + 1;
     device->sector_size = __builtin_bswap32(capacity.block_size);
-
-    kernel_log("LBA: %#llX Block Size: %#llX\n", device->capacity - 1, capacity.block_size);
 
     if(device->capacity == 0 && device->sector_size == 0)
         return false;
@@ -53,8 +49,6 @@ static bool inquiry(scsi_device_t* device)
     if(!device->driver.send_scsi_cmd(device->driver.data, &command, &inquiry, sizeof(scsi_inquiry_t)))
         return false;
 
-    kernel_log("Found new SCSI device: %16s\n", inquiry.product_id);
-
     if(inquiry.peripheral_device_type != SCSI_TYPE_CD_DVD && inquiry.peripheral_device_type != SCSI_TYPE_DIRECT_ACCESS)
         return false; // TODO: what changes if it's not a cd?
 
@@ -68,7 +62,7 @@ static bool scsi_read12(void* device, uint64_t lba, uint64_t nsectors, void* buf
 {
     scsi_device_t* dev = (scsi_device_t*)device;
 
-    scsi_command_t command;
+    alignas(32) scsi_command_t command;
     command.write = false;
     command.packet_len = sizeof(scsi_command_read12_t);
     scsi_command_read12_t* packet = (scsi_command_read12_t*)command.packet;
@@ -133,15 +127,11 @@ void scsi_register_device(scsi_driver_t driver)
     scsi_device_t* device = malloc(sizeof(scsi_device_t));
     device->driver = driver;
 
-    kernel_trace("SCSI: Inquiry");
-
     if(!inquiry(device))
     {
         free(device);
         return;
     }
-
-    kernel_trace("SCSI: Registering device");
 
     storage_data_t storage_data;
     storage_data.sector_size = device->sector_size;

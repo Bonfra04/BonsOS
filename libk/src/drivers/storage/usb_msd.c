@@ -78,7 +78,9 @@ static void init_device(usb_device_t* device)
 
     scsi_driver_t scsi_driver;
     scsi_driver.data = msd_device;
-    scsi_driver.max_packet_size = 16;
+    // scsi_driver.max_packet_size = device->descriptor.max_packet_size;
+    // TODO: should be the above but it doesn't work for some reason
+    scsi_driver.max_packet_size = 8;
     scsi_driver.send_scsi_cmd = send_scsi_command;
 
     scsi_register_device(scsi_driver);
